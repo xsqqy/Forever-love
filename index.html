@@ -14,6 +14,8 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
         }
         input, textarea, [contenteditable="true"] {
             user-select: text;
@@ -41,8 +43,17 @@
             --chat-footer-height: 56px;
             --avatar-size: 40px;
             --avatar-radius: 8px;
+            --other-avatar-size: 40px;
+            --my-avatar-size: 40px;
+            --other-avatar-radius: 8px;
+            --my-avatar-radius: 8px;
             --bubble-radius: 8px;
             --bubble-font-size: 14px;
+            --bubble-padding: 8px;
+            --other-bubble-font-size: 14px;
+            --my-bubble-font-size: 14px;
+            --other-bubble-padding: 8px;
+            --my-bubble-padding: 8px;
             --my-bubble-bg: #1a1a1a;
             --my-bubble-text: #ffffff;
             --my-bubble-border: #1a1a1a;
@@ -78,7 +89,7 @@
         .desktop-wallpaper-layer .wp-panel {
             width: 50%;
             height: 100%;
-            background-size: contain;
+            background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
         }
@@ -252,6 +263,15 @@
             align-items: center;
             gap: 4px;
             cursor: pointer;
+        }
+        /* 组件位置调节标记（长按编辑模式时可见） */
+        .draggable-group {
+            position: relative;
+        }
+        .editing-mode .draggable-group {
+            outline: 2px dashed rgba(100,100,100,0.3);
+            outline-offset: 2px;
+            border-radius: 16px;
         }
         .app-icon {
             width: var(--app-icon-size);
@@ -452,8 +472,8 @@
         .hidden-input {
             display: none;
         }
-        .editing .app-icon,
-        .editing .square-widget {
+        .editing-mode .app-icon,
+        .editing-mode .square-widget {
             animation: shake 0.3s infinite;
         }
         @keyframes shake {
@@ -489,7 +509,7 @@
             border-radius: 14px;
             padding: 12px 10px;
             margin-bottom: 16px;
-            margin-top: -65px
+            margin-top: -85px;
             position: relative;
             overflow: hidden;
         }
@@ -550,8 +570,7 @@
             border-radius: 14px;
             padding: 12px 14px;
             margin-bottom: 16px;
-            margin-top: -10px;  /* 新增，上移10px */
-}
+            margin-top: -10px;
             max-height: 90px;
             overflow-y: auto;
             color: var(--text-color);
@@ -670,11 +689,11 @@
             flex-shrink: 0;
         }
         .chat-back, .chat-menu {
-            font-size: 24px;
+            font-size: 26px;
             color: var(--color-normal-gray);
             font-weight: 300;
             cursor: pointer;
-            width: 30px;
+            width: 32px;
             text-align: center;
             flex-shrink: 0;
         }
@@ -731,9 +750,21 @@
         }
         .msg-row.mine .msg-avatar {
             margin-left: 8px;
+            width: var(--my-avatar-size);
+            height: var(--my-avatar-size);
+            border-radius: var(--my-avatar-radius);
+        }
+        .msg-row.mine .msg-avatar > img {
+            border-radius: var(--my-avatar-radius);
         }
         .msg-row.other .msg-avatar {
             margin-right: 8px;
+            width: var(--other-avatar-size);
+            height: var(--other-avatar-size);
+            border-radius: var(--other-avatar-radius);
+        }
+        .msg-row.other .msg-avatar > img {
+            border-radius: var(--other-avatar-radius);
         }
         .msg-row.avatar-top{flex-direction:column!important;align-items:flex-start!important;gap:6px!important;}
         .msg-row.avatar-top.mine{align-items:flex-end!important;}
@@ -779,12 +810,31 @@
             background: var(--my-bubble-bg);
             color: var(--my-bubble-text);
             border-color: var(--my-bubble-border);
+            font-size: var(--my-bubble-font-size, var(--bubble-font-size));
+            padding: var(--my-bubble-padding, var(--bubble-padding, 8px)) calc(var(--my-bubble-padding, var(--bubble-padding, 8px)) + 4px);
         }
         .msg-row.other .msg-bubble {
             background: var(--other-bubble-bg);
             color: var(--other-bubble-text);
             border-color: var(--other-bubble-border);
+            font-size: var(--other-bubble-font-size, var(--bubble-font-size));
+            padding: var(--other-bubble-padding, var(--bubble-padding, 8px)) calc(var(--other-bubble-padding, var(--bubble-padding, 8px)) + 4px);
         }
+        /* 分方气泡圆角 */
+        .msg-row.other .msg-bubble { border-radius: var(--other-bubble-radius, var(--bubble-radius)); }
+        .msg-row.mine .msg-bubble { border-radius: var(--my-bubble-radius, var(--bubble-radius)); }
+        /* 昵称显示（仅头像在顶部/底部时） */
+        .msg-avatar-name { display: flex; align-items: center; gap: 6px; }
+        .msg-row.avatar-top .msg-avatar-name .msg-avatar,
+        .msg-row.avatar-bottom .msg-avatar-name .msg-avatar { order: 0 !important; margin: 0 !important; }
+        .msg-row.avatar-top .msg-avatar-name { order: -1; }
+        .msg-row.avatar-bottom .msg-avatar-name { order: 1; }
+        .msg-nickname { font-weight: 500; white-space: nowrap; line-height: 1.2; }
+        /* 已读 / 双对号 */
+        .msg-read-inline { margin-top: 3px; font-size: 11px; line-height: 1.2; }
+        .msg-read-outside { margin-top: 3px; font-size: 11px; line-height: 1.2; }
+        .msg-row.other .msg-read-outside { align-self: flex-start; }
+        .msg-row.mine .msg-read-outside { align-self: flex-end; }
         .msg-bubble.tail-left::before {
             content: '';
             position: absolute;
@@ -1029,7 +1079,7 @@
             flex-shrink: 0;
         }
         .settings-back, .page-back {
-            font-size: 26px;
+            font-size: 28px;
             color: var(--color-normal-gray);
             font-weight: 300;
             cursor: pointer;
@@ -2316,7 +2366,7 @@
             cursor: pointer;
             border-left: 3px solid var(--color-deep-gray);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
         .letter-item.favorite { border-left-color: #d4af37; }
         .letter-title {
@@ -2568,7 +2618,7 @@
         </div>
         <!-- 第一页 -->
         <div class="desktop-page page-1">
-            <div class="anniversary-widget" id="anniversaryWidget" onclick="openAnniversaryEdit()">
+            <div class="anniversary-widget draggable-group" id="anniversaryWidget" data-drag-key="anniversary" onclick="openAnniversaryEdit()">
                 <img class="bg-image" id="anniversaryBg" alt="">
                 <div class="content">
                     <div class="anniversary-title" id="anniversaryTitle">我与你相恋已经</div>
@@ -2576,7 +2626,7 @@
                     <div class="anniversary-date" id="anniversaryDate">2024-01-01 星期一</div>
                 </div>
             </div>
-            <div class="app-section">
+            <div class="app-section draggable-group" data-drag-key="appSection">
                 <div class="app-grid-left">
                     <div class="app-item" data-app="chat" onclick="openChat()">
                         <div class="app-icon">
@@ -2612,7 +2662,7 @@
                     <img class="widget-image" alt="">
                 </div>
             </div>
-            <div class="app-section-bottom">
+            <div class="app-section-bottom draggable-group" data-drag-key="appSectionBottom">
                 <div class="square-widget" id="widget2">
                     <svg class="widget-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                     <img class="widget-image" alt="">
@@ -2655,18 +2705,18 @@
         </div>
         <!-- 第二页 -->
         <div class="desktop-page page-2">
-            <div class="period-calendar" id="periodCalendar" onclick="openPeriodBgEdit()">
+            <div class="period-calendar draggable-group" id="periodCalendar" data-drag-key="period" onclick="openPeriodBgEdit()">
                 <img class="bg-image" id="periodBg" alt="">
                 <div class="cal-content">
                     <div class="cal-month" id="calMonth">2026年7月</div>
                     <div class="cal-days-grid" id="calDaysGrid"></div>
                 </div>
             </div>
-            <div class="word-card" id="wordCard" onclick="openWordCardEdit()">
+            <div class="word-card draggable-group" id="wordCard" data-drag-key="wordCard" onclick="openWordCardEdit()">
                 <img class="bg-image" id="wordCardBg" alt="">
                 <div class="word-card-content" id="wordCardContent">Ta今天想对你说的话：这里是对方想对我说的话</div>
             </div>
-            <div class="third-row">
+            <div class="third-row draggable-group" data-drag-key="thirdRow">
                 <div class="time-group">
                     <div class="time-widget" id="timeHis" onclick="openTimeEdit(this)">
                         <img class="bg-image" alt="">
@@ -2848,14 +2898,24 @@
                 </div>
                 <div class="settings-subsection">
                     <div class="settings-row">
-                        <label>头像大小</label>
-                        <input type="range" id="avatarSizeSlider" min="30" max="60" value="40" oninput="updateAvatarSize(this.value)">
-                        <span id="avatarSizeVal">40</span><span style="font-size:10px;color:#999;margin-left:4px;">30-60</span>
+                        <label>调节对方头像大小</label>
+                        <input type="range" id="otherAvatarSizeSlider" min="30" max="60" value="40" oninput="updateOtherAvatarSize(this.value)">
+                        <span id="otherAvatarSizeVal">40</span><span style="font-size:10px;color:#999;margin-left:4px;">30-60</span>
                     </div>
                     <div class="settings-row">
-                        <label>头像圆方程度</label>
-                        <input type="range" id="avatarRadiusSlider" min="0" max="50" value="8" oninput="updateAvatarRadius(this.value)">
-                        <span id="avatarRadiusVal">8</span><span style="font-size:10px;color:#999;margin-left:4px;">0-50</span>
+                        <label>调节我方头像大小</label>
+                        <input type="range" id="myAvatarSizeSlider" min="30" max="60" value="40" oninput="updateMyAvatarSize(this.value)">
+                        <span id="myAvatarSizeVal">40</span><span style="font-size:10px;color:#999;margin-left:4px;">30-60</span>
+                    </div>
+                    <div class="settings-row">
+                        <label>调节对方头像圆方程度</label>
+                        <input type="range" id="otherAvatarRadiusSlider" min="0" max="50" value="8" oninput="updateOtherAvatarRadius(this.value)">
+                        <span id="otherAvatarRadiusVal">8</span><span style="font-size:10px;color:#999;margin-left:4px;">0-50</span>
+                    </div>
+                    <div class="settings-row">
+                        <label>调节我方头像圆方程度</label>
+                        <input type="range" id="myAvatarRadiusSlider" min="0" max="50" value="8" oninput="updateMyAvatarRadius(this.value)">
+                        <span id="myAvatarRadiusVal">8</span><span style="font-size:10px;color:#999;margin-left:4px;">0-50</span>
                     </div>
                 </div>
                 <div class="settings-subsection">
@@ -2879,16 +2939,7 @@
             </div>
             <div class="settings-section">
                 <div class="section-title">气泡设置</div>
-                <div class="bubble-preview">
-                    <div class="bubble-row left">
-                        <div class="avatar-small"></div>
-                        <div class="bubble other-bubble">对方气泡预览</div>
-                    </div>
-                    <div class="bubble-row right">
-                        <div class="bubble my-bubble">我方气泡预览</div>
-                        <div class="avatar-small"></div>
-                    </div>
-                </div>
+                <div class="bubble-preview" id="bubbleSettingsPreview"></div>
                 <div class="settings-grid-2">
                     <div class="color-setting">
                         <label>我方气泡背景色</label>
@@ -2919,17 +2970,26 @@
                         <input type="range" id="bubbleRadius" min="0" max="20" value="8" oninput="updateBubbleStyle()">
                     </div>
                     <div class="slider-setting">
-                        <label>气泡字体大小</label>
-                        <input type="range" id="bubbleFontSize" min="12" max="20" value="14" oninput="updateBubbleStyle()">
+                        <label>修改对方气泡字体大小</label>
+                        <input type="range" id="otherBubbleFontSize" min="12" max="20" value="14" oninput="updateBubbleStyle()">
+                    </div>
+                    <div class="slider-setting">
+                        <label>修改我方气泡字体大小</label>
+                        <input type="range" id="myBubbleFontSize" min="12" max="20" value="14" oninput="updateBubbleStyle()">
                     </div>
                     <div class="switch-setting">
                         <label>开启气泡小尾巴</label>
                         <input type="checkbox" id="bubbleTail" onchange="updateBubbleStyle()">
                     </div>
                     <div class="slider-setting" style="margin-top:8px;">
-                        <label>气泡大小</label>
-                        <input type="range" id="bubblePadding" min="4" max="20" value="8" oninput="updateBubbleStyle()">
-                        <span id="bubblePaddingVal" style="font-size:10px;color:#999;">4-20</span>
+                        <label>修改对方气泡大小</label>
+                        <input type="range" id="otherBubblePadding" min="4" max="20" value="8" oninput="updateBubbleStyle()">
+                        <span id="otherBubblePaddingVal" style="font-size:10px;color:#999;">4-20</span>
+                    </div>
+                    <div class="slider-setting" style="margin-top:8px;">
+                        <label>修改我方气泡大小</label>
+                        <input type="range" id="myBubblePadding" min="4" max="20" value="8" oninput="updateBubbleStyle()">
+                        <span id="myBubblePaddingVal" style="font-size:10px;color:#999;">4-20</span>
                     </div>
                 </div>
                 <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
@@ -2938,6 +2998,78 @@
                 </div>
                 <div id="bubbleFontName" style="margin-top:4px;font-size:11px;color:#999;font-family:var(--font-family);"></div>
                 <input type="file" id="bubbleFontInput" accept=".ttf,.otf" style="display:none;" onchange="handleBubbleFontUpload(event)">
+                <div class="section-subtitle">气泡圆角进阶</div>
+                <div class="switch-setting">
+                    <label>开启修改双方气泡圆方程度</label>
+                    <input type="checkbox" id="dualBubbleRadiusEnabled" onchange="updateBubbleStyle()">
+                </div>
+                <div class="settings-grid-2" id="dualBubbleRadiusGrid" style="display:none;">
+                    <div class="slider-setting">
+                        <label>对方气泡圆方程度</label>
+                        <input type="range" id="otherBubbleRadius" min="0" max="40" value="8" oninput="updateBubbleStyle()">
+                        <span id="otherBubbleRadiusVal" style="font-size:10px;color:#999;">0-40（默认沿用上方）</span>
+                    </div>
+                    <div class="slider-setting">
+                        <label>我方气泡圆方程度</label>
+                        <input type="range" id="myBubbleRadius" min="0" max="40" value="8" oninput="updateBubbleStyle()">
+                        <span id="myBubbleRadiusVal" style="font-size:10px;color:#999;">0-40（默认沿用上方）</span>
+                    </div>
+                </div>
+                <div class="switch-setting">
+                    <label>开启分别设置对方四角圆方程度</label>
+                    <input type="checkbox" id="otherCornersEnabled" onchange="updateBubbleStyle()">
+                </div>
+                <div class="settings-grid-2" id="otherCornersGrid" style="display:none;">
+                    <div class="slider-setting"><label>对方左上角圆方</label><input type="range" id="otherTL" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>对方右上角圆方</label><input type="range" id="otherTR" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>对方右下角圆方</label><input type="range" id="otherBR" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>对方左下角圆方</label><input type="range" id="otherBL" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                </div>
+                <div class="switch-setting">
+                    <label>开启分别设置我方四角圆方程度</label>
+                    <input type="checkbox" id="myCornersEnabled" onchange="updateBubbleStyle()">
+                </div>
+                <div class="settings-grid-2" id="myCornersGrid" style="display:none;">
+                    <div class="slider-setting"><label>我方左上角圆方</label><input type="range" id="myTL" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方右上角圆方</label><input type="range" id="myTR" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方右下角圆方</label><input type="range" id="myBR" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方左下角圆方</label><input type="range" id="myBL" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                </div>
+                <div class="section-subtitle">昵称显示（仅头像在顶部/底部时生效）</div>
+                <div class="switch-setting">
+                    <label>显示双方昵称</label>
+                    <input type="checkbox" id="showNicknames" onchange="updateBubbleStyle()">
+                </div>
+                <div class="settings-grid-2">
+                    <div class="slider-setting"><label>对方昵称大小</label><input type="range" id="otherNicknameSize" min="8" max="24" value="12" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方昵称大小</label><input type="range" id="myNicknameSize" min="8" max="24" value="12" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>对方昵称颜色</label><input type="color" id="otherNicknameColor" value="#666666" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>我方昵称颜色</label><input type="color" id="myNicknameColor" value="#666666" oninput="updateBubbleStyle()"></div>
+                </div>
+                <div class="section-subtitle">已读与双对号</div>
+                <div class="settings-grid-2">
+                    <div class="switch-setting"><label>显示已读</label><input type="checkbox" id="showRead" onchange="updateBubbleStyle()"></div>
+                    <div class="switch-setting"><label>显示双对号</label><input type="checkbox" id="showDoubleCheck" onchange="updateBubbleStyle()"></div>
+                </div>
+                <div class="settings-row"><label>已读/对号位置</label><select id="readPosition" onchange="updateBubbleStyle()"><option value="inside">气泡内部</option><option value="outside">气泡外部</option></select></div>
+                <div class="settings-grid-2">
+                    <div class="switch-setting"><label>仅最后一条显示</label><input type="checkbox" id="onlyLastRead" onchange="updateBubbleStyle()"></div>
+                    <div class="switch-setting"><label>仅第一条显示</label><input type="checkbox" id="onlyFirstRead" onchange="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>已读颜色</label><input type="color" id="readColor" value="#999999" oninput="updateBubbleStyle()"></div>
+                </div>
+                <div class="section-subtitle">分条气泡圆角（第3条及以后沿用第3条）</div>
+                <div class="switch-setting">
+                    <label>开启分条气泡圆角</label>
+                    <input type="checkbox" id="msgRadiusEnabled" onchange="updateBubbleStyle()">
+                </div>
+                <div class="settings-grid-2" id="msgRadiusGrid" style="display:none;">
+                    <div class="slider-setting"><label>对方第1条圆方</label><input type="range" id="otherMsg1Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>对方第2条圆方</label><input type="range" id="otherMsg2Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>对方第3条圆方</label><input type="range" id="otherMsg3Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方第1条圆方</label><input type="range" id="myMsg1Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方第2条圆方</label><input type="range" id="myMsg2Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                    <div class="slider-setting"><label>我方第3条圆方</label><input type="range" id="myMsg3Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
+                </div>
             </div>
             <div class="settings-section">
                 <div class="section-title">显示设置</div>
@@ -3295,6 +3427,7 @@
                 <div class="subsection-title">导出全局文件（选择需要导出的项目）</div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;">
                     <label style="font-size:13px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="export-checkbox" data-key="chatSettings" checked>设置</label>
+                    <label style="font-size:13px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="export-checkbox" data-key="emojis" checked>表情</label>
                     <label style="font-size:13px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="export-checkbox" data-key="wordCards" checked>字卡</label>
                     <label style="font-size:13px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="export-checkbox" data-key="chatHistory" checked>聊天记录</label>
                     <label style="font-size:13px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="export-checkbox" data-key="diary">日记</label>
@@ -3367,12 +3500,12 @@
                 <div class="settings-section">
                     <div class="section-title">气泡美化</div>
                     <div style="width:100%;height:80px;background:#f5f5f5;border-radius:8px;margin-bottom:12px;overflow:hidden;" id="beautifyBubblePreviewBox">
-                        <div style="display:flex;margin:8px;gap:8px;align-items:flex-start;">
+                        <div class="msg-row other" style="display:flex;margin:8px;gap:8px;align-items:flex-start;">
                             <div style="width:30px;height:30px;border-radius:6px;background:#ccc;flex-shrink:0;"></div>
-                            <div class="other-bubble" style="padding:6px 10px;border-radius:8px;font-size:13px;">对方气泡</div>
+                            <div class="msg-bubble-wrap" style="max-width:70%;"><div class="msg-bubble tail-left" style="padding:6px 10px;border-radius:8px;font-size:13px;">对方气泡</div></div>
                         </div>
-                        <div style="display:flex;margin:8px;gap:8px;align-items:flex-start;justify-content:flex-end;">
-                            <div class="my-bubble" style="padding:6px 10px;border-radius:8px;font-size:13px;">我方气泡</div>
+                        <div class="msg-row mine" style="display:flex;margin:8px;gap:8px;align-items:flex-start;justify-content:flex-end;">
+                            <div class="msg-bubble-wrap" style="max-width:70%;"><div class="msg-bubble tail-right" style="padding:6px 10px;border-radius:8px;font-size:13px;">我方气泡</div></div>
                             <div style="width:30px;height:30px;border-radius:6px;background:#ccc;flex-shrink:0;"></div>
                         </div>
                     </div>
@@ -3412,7 +3545,13 @@
         </div>
         <div class="settings-content">
             <div class="settings-section">
-                <div class="section-title">各应用数据占用</div>
+                <div class="section-title">存储空间（内置30GB）</div>
+                <div id="storageOverview" style="margin-bottom:12px;"></div>
+                <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button onclick="compressAllImages()" style="padding:8px 12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">一键压缩所有图片</button>
+                    <button onclick="compressStoredImages()" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;cursor:pointer;">压缩当前图片</button>
+                </div>
+                <div class="section-title" style="margin-top:16px;">各应用数据占用</div>
                 <div id="storageList"></div>
             </div>
         </div>
@@ -3515,10 +3654,11 @@
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
 <!-- 桌面编辑面板 -->
-<div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div></div>
+<div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div style="font-size:13px;color:#999;margin-bottom:8px;font-family:var(--font-family);">组件位置调节（滑动调整）</div><div class="edit-option" onclick="openWidgetPosEditor('anniversary','纪念日组件',1)">第一页 · 纪念日组件</div><div class="edit-option" onclick="openWidgetPosEditor('appSection','聊天/日记/朋友圈/信封',1)">第一页 · 聊天日记朋友圈信封</div><div class="edit-option" onclick="openWidgetPosEditor('appSectionBottom','美化/字卡/调查问卷/他的手机',1)">第一页 · 美化字卡调查问卷</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openWidgetPosEditor('period','生理期组件',2)">第二页 · 生理期组件</div><div class="edit-option" onclick="openWidgetPosEditor('wordCard','Ta今天想对你说的话',2)">第二页 · Ta想对你说的话</div><div class="edit-option" onclick="openWidgetPosEditor('thirdRow','时间/默契挑战/五子棋等',2)">第二页 · 时间和游戏行</div></div>
 <div class="edit-menu" id="sizeEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>图标大小</h3><div class="size-slider"><input type="range" id="iconSizeSlider" min="40" max="80" value="62" oninput="updateIconSize(this.value)"></div></div>
 <div class="edit-menu" id="nameColorEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>应用名称颜色</h3><div class="color-input-row"><label>选择颜色</label><input type="color" id="appNameColorPicker" value="#1a1a1a" oninput="setAppNameColor(this.value)"></div></div>
 <div class="edit-menu" id="appNameSizeEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>应用名称大小</h3><div class="size-slider"><input type="range" id="appNameSizeSlider" min="10" max="18" value="12" step="0.5" oninput="updateAppNameSize(this.value)"></div></div>
+<div class="edit-menu" id="widgetPosEditor"><span class="edit-menu-close" onclick="closeWidgetPosEditor()">×</span><h3 id="widgetPosTitle">组件位置</h3><div style="font-size:12px;color:#999;margin-bottom:6px;font-family:var(--font-family);" id="widgetPosHint">滑动调节组件垂直位置</div><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:12px;color:#666;white-space:nowrap;font-family:var(--font-family);">上移</span><div class="size-slider" style="flex:1;margin:0;"><input type="range" id="widgetPosSlider" min="0" max="100" value="50" step="1" oninput="applyWidgetPosSlider(this.value)"></div><span style="font-size:12px;color:#666;white-space:nowrap;font-family:var(--font-family);">下移</span></div><div style="text-align:center;font-size:11px;color:#bbb;font-family:var(--font-family);" id="widgetPosValue">偏移: 0px</div></div>
 <div class="upload-modal" id="uploadModal"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>选择图片</h3><div class="upload-option" onclick="triggerUpload()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>从相册选择</div><div class="upload-option" onclick="resetWidgetImage()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>重置为初始</div></div>
 <div class="edit-menu" id="anniversaryEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>编辑纪念日</h3><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">第一行文字</label><input type="text" class="edit-input" id="editTitle" placeholder="输入标题"></div><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">日期</label><input type="date" class="edit-input" id="editDate"></div><div class="color-input-row"><label>字体颜色</label><input type="color" id="anniColorPicker" value="#1a1a1a" oninput="setAnniversaryColor(this.value)"></div><div class="edit-option" style="margin-top:12px;" onclick="openAnniversaryBgUpload()">更换背景图片</div><div class="edit-option" onclick="saveAnniversary()">保存</div></div>
 <div class="edit-menu" id="periodEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>日历设置</h3><div class="edit-option" onclick="openPeriodBgUpload()">更换背景图片</div><div class="edit-option" onclick="resetPeriodBg()">重置背景</div><div class="color-input-row"><label>字体颜色</label><input type="color" id="periodColorPicker" value="#1a1a1a" oninput="setPeriodColor(this.value)"></div></div>
@@ -3838,7 +3978,51 @@
     let isMultiDeleteMode = false;
     let multiDeleteSelected = new Set();
     let startX = 0, isDragging = false;
-    const STORAGE_KEY = 'qianyi_data_v7';
+    const STORAGE_KEY = 'qianyi_data_v8';
+    const STORAGE_QUOTA = 30 * 1024 * 1024 * 1024; // 30GB 内置存储
+    // ===== IndexedDB 存储层（支持大容量存储） =====
+    const IDB_NAME = 'qianyi_db_v8';
+    const IDB_STORE = 'appdata';
+    let _idbDB = null;
+    function idbOpen() {
+        if (_idbDB) return Promise.resolve(_idbDB);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(IDB_NAME, 1);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+            };
+            req.onsuccess = (e) => { _idbDB = e.target.result; resolve(_idbDB); };
+            req.onerror = (e) => reject(e.target.error);
+        });
+    }
+    async function idbGet(key) {
+        try {
+            const db = await idbOpen();
+            return await new Promise((resolve) => {
+                const tx = db.transaction(IDB_STORE, 'readonly');
+                const req = tx.objectStore(IDB_STORE).get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(undefined);
+            });
+        } catch(e) { return undefined; }
+    }
+    async function idbSet(key, value) {
+        try {
+            const db = await idbOpen();
+            await new Promise((resolve) => {
+                const tx = db.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).put(value, key);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => resolve(false);
+            });
+            return true;
+        } catch(e) { return false; }
+    }
+    // 请求持久化存储，防止数据被浏览器清除
+    if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().catch(()=>{});
+    }
     const defaultData = {
         periodData: {},
         wordCardText: 'Ta今天想对你说的话：这里是对方想对我说的话',
@@ -3857,6 +4041,10 @@
             myAvatar: '',
             avatarSize: 40,
             avatarRadius: 8,
+            otherAvatarSize: 40,
+            myAvatarSize: 40,
+            otherAvatarRadius: 8,
+            myAvatarRadius: 8,
             otherFrame: 'none',
             myFrame: 'none',
             otherFrames: [],
@@ -3870,8 +4058,48 @@
             bubbleRadius: 8,
             bubbleFontSize: 14,
             bubblePadding: 8,
+            otherBubbleFontSize: 14,
+            myBubbleFontSize: 14,
+            otherBubblePadding: 8,
+            myBubblePadding: 8,
             bubbleTail: false,
             bubbleFont: '',
+            // 气泡圆角进阶（-1 表示沿用 bubbleRadius）
+            dualBubbleRadiusEnabled: false,
+            otherBubbleRadius: -1,
+            myBubbleRadius: -1,
+            // 分别设置四角（对方/我方独立开关）
+            otherCornersEnabled: false,
+            otherTL: 8,
+            otherTR: 8,
+            otherBR: 8,
+            otherBL: 8,
+            myCornersEnabled: false,
+            myTL: 8,
+            myTR: 8,
+            myBR: 8,
+            myBL: 8,
+            // 昵称显示
+            showNicknames: false,
+            otherNicknameSize: 12,
+            myNicknameSize: 12,
+            otherNicknameColor: '#666666',
+            myNicknameColor: '#666666',
+            // 已读与双对号
+            showRead: false,
+            showDoubleCheck: false,
+            readPosition: 'inside',
+            onlyLastRead: false,
+            onlyFirstRead: false,
+            readColor: '#999999',
+            // 分条气泡圆角（-1 表示沿用对应方圆角）
+            msgRadiusEnabled: false,
+            otherMsg1Radius: -1,
+            otherMsg2Radius: -1,
+            otherMsg3Radius: -1,
+            myMsg1Radius: -1,
+            myMsg2Radius: -1,
+            myMsg3Radius: -1,
             avatarPosition: 'middle',
             hideAvatar: false,
             onlyFirstAvatar: false,
@@ -3977,7 +4205,16 @@
         currentViewingDiary: null,
         currentViewingLetter: null,
         publishMediaList: [],
-        batchUploadType: 'word'
+        batchUploadType: 'word',
+        // 组件垂直位置偏移（上移为负值，下移为正值）
+        widgetOffsets: {
+            anniversary: 0,      // 第一页：纪念日组件
+            appSection: 0,       // 第一页：聊天日记朋友圈信封+正方形组件行
+            appSectionBottom: 0, // 第一页：美化字卡调查问卷他的手机+正方形组件行
+            period: 0,           // 第二页：生理期组件
+            wordCard: 0,         // 第二页：Ta今天想对你说的话组件
+            thirdRow: 0          // 第二页：时间组件+默契挑战五子棋恋爱翻翻乐余额行
+        }
     };
     let appData = loadData();
     let currentQuoteMsg = null;
@@ -3993,8 +4230,11 @@
     let videoLongPressTimer = null;
 
     function loadData() {
+        // 先尝试从旧版 localStorage 迁移数据
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            let raw = localStorage.getItem(STORAGE_KEY);
+            // 兼容旧版本key
+            if (!raw) raw = localStorage.getItem('qianyi_data_v7');
             if (raw) {
                 const parsed = JSON.parse(raw);
                 function mergeDeep(target, source) {
@@ -4013,15 +4253,85 @@
                     merged.specialCards.nudge = merged.nudgeCards.map(t => ({text: t, hidden: false}));
                     merged.nudgeCards = [];
                 }
+                // 迁移旧版头像/气泡统一设置到分方设置
+                if (merged.chatSettings) {
+                    const cs = merged.chatSettings;
+                    if (cs.otherAvatarSize === undefined) cs.otherAvatarSize = cs.avatarSize || 40;
+                    if (cs.myAvatarSize === undefined) cs.myAvatarSize = cs.avatarSize || 40;
+                    if (cs.otherAvatarRadius === undefined) cs.otherAvatarRadius = cs.avatarRadius || 8;
+                    if (cs.myAvatarRadius === undefined) cs.myAvatarRadius = cs.avatarRadius || 8;
+                    if (cs.otherBubbleFontSize === undefined) cs.otherBubbleFontSize = cs.bubbleFontSize || 14;
+                    if (cs.myBubbleFontSize === undefined) cs.myBubbleFontSize = cs.bubbleFontSize || 14;
+                    if (cs.otherBubblePadding === undefined) cs.otherBubblePadding = cs.bubblePadding || 8;
+                    if (cs.myBubblePadding === undefined) cs.myBubblePadding = cs.bubblePadding || 8;
+                }
                 return merged;
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error('localStorage数据加载失败，使用默认值:', e);
+        }
         return JSON.parse(JSON.stringify(defaultData));
+    }
+    // 异步从 IndexedDB 加载数据（支持30G大容量存储）
+    let _idbLoaded = false;
+    async function loadDataFromIDB() {
+        if (_idbLoaded) return;
+        _idbLoaded = true;
+        try {
+            const json = await idbGet('appData');
+            if (json) {
+                const parsed = JSON.parse(json);
+                function mergeDeep(target, source) {
+                    for (const key in source) {
+                        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                            target[key] = mergeDeep(target[key] || {}, source[key]);
+                        } else if (!(key in target)) {
+                            target[key] = source[key];
+                        }
+                    }
+                    return target;
+                }
+                const merged = mergeDeep(parsed, JSON.parse(JSON.stringify(defaultData)));
+                // 迁移旧版统一设置到分方设置
+                if (merged.chatSettings) {
+                    const cs = merged.chatSettings;
+                    if (cs.otherAvatarSize === undefined) cs.otherAvatarSize = cs.avatarSize || 40;
+                    if (cs.myAvatarSize === undefined) cs.myAvatarSize = cs.avatarSize || 40;
+                    if (cs.otherAvatarRadius === undefined) cs.otherAvatarRadius = cs.avatarRadius || 8;
+                    if (cs.myAvatarRadius === undefined) cs.myAvatarRadius = cs.avatarRadius || 8;
+                    if (cs.otherBubbleFontSize === undefined) cs.otherBubbleFontSize = cs.bubbleFontSize || 14;
+                    if (cs.myBubbleFontSize === undefined) cs.myBubbleFontSize = cs.bubbleFontSize || 14;
+                    if (cs.otherBubblePadding === undefined) cs.otherBubblePadding = cs.bubblePadding || 8;
+                    if (cs.myBubblePadding === undefined) cs.myBubblePadding = cs.bubblePadding || 8;
+                }
+                appData = merged;
+                // 重新初始化界面以应用IndexedDB数据
+                if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
+            } else {
+                // IndexedDB 没有数据，把当前 localStorage 数据写入 IndexedDB
+                saveData();
+            }
+        } catch(e) {
+            console.error('IndexedDB数据加载失败:', e);
+        }
     }
     function saveData() {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-        } catch (e) {}
+            const json = JSON.stringify(appData);
+            // 主存储：IndexedDB（支持30G大容量）
+            idbSet('appData', json);
+            // 备份：localStorage（小容量，可能失败，不影响主存储）
+            try {
+                localStorage.setItem(STORAGE_KEY, json);
+            } catch (e) {
+                // localStorage 空间不足时尝试压缩后备份
+                if (json.length > 3000000) {
+                    console.warn('localStorage空间不足，仅使用IndexedDB存储');
+                }
+            }
+        } catch (e) {
+            console.error('数据序列化失败:', e);
+        }
     }
 
     // ===== 页面滑动 =====
@@ -4029,9 +4339,12 @@
         if (e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
             e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
             e.target.closest('.modal') || e.target.closest('.moments-page') || e.target.closest('.diary-page') ||
-            e.target.closest('.letter-page')) return;
+            e.target.closest('.letter-page') || e.target.closest('.video-call-page') || e.target.closest('.sv-float') ||
+            e.target.closest('.app-item') || e.target.closest('.square-widget') || e.target.closest('.dock-bar') ||
+            e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+            e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.page-dot')) return;
         startX = e.touches[0].clientX; isDragging = true;
-    });
+    }, { passive: true });
     document.querySelector('.phone-container').addEventListener('touchend', function(e) {
         if (!isDragging) return; isDragging = false;
         const endX = e.changedTouches[0].clientX; const diff = startX - endX;
@@ -4048,16 +4361,16 @@
     // ===== 长按编辑 =====
     const container = document.getElementById('phoneContainer');
     function startLongPress(e) {
-        if (e.target.closest('.app-item') || e.target.closest('.square-widget') || e.target.closest('.anniversary-widget') ||
+        if (e.target.closest('.app-item') || e.target.closest('.square-widget') ||
             e.target.closest('.dock-bar') || e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
-            e.target.closest('.period-calendar') || e.target.closest('.word-card') || e.target.closest('.time-widget') ||
+            e.target.closest('.time-widget') ||
             e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
             e.target.closest('.moments-page') || e.target.closest('.diary-page') || e.target.closest('.letter-page')) {
             return;
         }
         longPressTimer = setTimeout(() => {
             showMainEditMenu();
-            document.querySelectorAll('.desktop-page').forEach(p => p.classList.add('editing'));
+            document.body.classList.add('editing-mode');
         }, 800);
     }
     container.addEventListener('touchstart', startLongPress);
@@ -4068,6 +4381,132 @@
     container.addEventListener('mouseleave', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} });
 
     // ===== 长按图标/组件触发上传 =====
+
+    // ===== 组件位置滑块调节 =====
+    let currentWidgetPosKey = null;
+    let widgetPosMinOffset = -150;
+    let widgetPosMaxOffset = 150;
+    let widgetPosZeroSliderValue = 50; // slider中间值=0偏移
+
+    function getWidgetPageInfo(dragKey) {
+        const el = document.querySelector('[data-drag-key="' + dragKey + '"]');
+        if (!el) return null;
+        const page = el.closest('.desktop-page');
+        if (!page) return null;
+        const pageRect = page.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        // 当前元素顶部相对于页面顶部的位置
+        const currentTopInPage = elRect.top - pageRect.top;
+        // 上移极限：元素顶部至少留5px边距
+        const minTop = 5;
+        const maxUp = currentTopInPage - minTop; // 上移量（负数）
+        // 下移极限：元素底部不超出页面可视区域底部 - 90px（dock栏）
+        const maxBottom = window.innerHeight - 90;
+        const maxDown = maxBottom - elRect.bottom; // 下移量（正数）
+        return { el, page, minOffset: -maxUp, maxOffset: maxDown };
+    }
+
+    function openWidgetPosEditor(dragKey, label, pageNum) {
+        document.getElementById('mainEditMenu').classList.remove('show');
+        currentWidgetPosKey = dragKey;
+        document.getElementById('widgetPosTitle').textContent = '第' + pageNum + '页 · ' + label;
+        // 计算滑块范围
+        const info = getWidgetPageInfo(dragKey);
+        if (info) {
+            widgetPosMinOffset = Math.round(info.minOffset);
+            widgetPosMaxOffset = Math.round(info.maxOffset);
+        } else {
+            widgetPosMinOffset = -150;
+            widgetPosMaxOffset = 150;
+        }
+        const slider = document.getElementById('widgetPosSlider');
+        const totalRange = widgetPosMaxOffset - widgetPosMinOffset;
+        slider.min = 0;
+        slider.max = totalRange;
+        slider.step = 1;
+        // 将当前偏移转换为滑块值
+        const currentOffset = appData.widgetOffsets[dragKey] || 0;
+        const sliderVal = Math.round(currentOffset - widgetPosMinOffset);
+        slider.value = Math.max(0, Math.min(totalRange, sliderVal));
+        updateWidgetPosDisplay();
+        document.getElementById('widgetPosEditor').classList.add('show');
+    }
+
+    function applyWidgetPosSlider(sliderVal) {
+        if (!currentWidgetPosKey) return;
+        const offset = parseInt(sliderVal) + widgetPosMinOffset;
+        // 额外安全限制
+        const clamped = Math.max(widgetPosMinOffset, Math.min(widgetPosMaxOffset, offset));
+        appData.widgetOffsets[currentWidgetPosKey] = clamped;
+        const el = document.querySelector('[data-drag-key="' + currentWidgetPosKey + '"]');
+        if (el) el.style.marginTop = clamped + 'px';
+        updateWidgetPosDisplay();
+        saveData();
+    }
+
+    function updateWidgetPosDisplay() {
+        const currentOffset = appData.widgetOffsets[currentWidgetPosKey] || 0;
+        const display = document.getElementById('widgetPosValue');
+        if (currentOffset === 0) {
+            display.textContent = '偏移: 0px（默认位置）';
+        } else if (currentOffset < 0) {
+            display.textContent = '上移: ' + Math.abs(currentOffset) + 'px';
+        } else {
+            display.textContent = '下移: ' + currentOffset + 'px';
+        }
+    }
+
+    function closeWidgetPosEditor() {
+        document.getElementById('widgetPosEditor').classList.remove('show');
+        document.getElementById('mainEditMenu').classList.add('show');
+        currentWidgetPosKey = null;
+    }
+
+    function restoreWidgetOffsets() {
+        if (!appData.widgetOffsets) return;
+        const groups = document.querySelectorAll('.draggable-group');
+        groups.forEach(group => {
+            const key = group.dataset.dragKey;
+            if (key && appData.widgetOffsets[key] !== undefined) {
+                group.style.marginTop = appData.widgetOffsets[key] + 'px';
+            }
+        });
+    }
+
+    // ===== 全局阻止浏览器复制/选择/长按菜单 =====
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.closest('.desktop-page') || e.target.closest('.dock-bar') ||
+            e.target.closest('.app-item') || e.target.closest('.square-widget') ||
+            e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+            e.target.closest('.word-card') || e.target.closest('.time-widget') ||
+            e.target.closest('.edit-menu') || e.target.closest('.overlay')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.closest('.desktop-page') || e.target.closest('.dock-bar') ||
+            e.target.closest('.app-item') || e.target.closest('.square-widget') ||
+            e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+            e.target.closest('.word-card') || e.target.closest('.time-widget')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // 阻止iOS长按弹出菜单/复制气泡
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('[contenteditable="true"]')) return;
+        // 不对可交互元素（app-item、anniversary-widget、period-calendar、word-card、time-widget、square-widget等）阻止默认行为，否则click事件无法触发
+        if (e.target.closest('.app-item') || e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+            e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.square-widget') ||
+            e.target.closest('.page-dot') || e.target.closest('button') || e.target.closest('a')) return;
+        if (e.target.closest('.desktop-page') || e.target.closest('.dock-bar')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
     function setupLongPressForElements() {
         const targets = document.querySelectorAll('.app-icon, .square-widget');
         targets.forEach(el => {
@@ -4108,7 +4547,8 @@
     function closeAllModals() {
         document.getElementById('overlay').classList.remove('show');
         document.querySelectorAll('.edit-menu, .upload-modal, .modal').forEach(el => el.classList.remove('show'));
-        document.querySelectorAll('.desktop-page').forEach(p => p.classList.remove('editing'));
+        document.body.classList.remove('editing-mode');
+        currentWidgetPosKey = null;
         currentEditTarget = null; currentEditType = null;
     }
     document.getElementById('overlay').addEventListener('click', closeAllModals);
@@ -4515,8 +4955,8 @@
         const allCards = getAllVisibleWordCards();
         if (allCards.length === 0) return '这里是对方想对我说的话';
         const count = Math.min(Math.floor(Math.random() * 3) + 1, allCards.length);
-        const shuffled = allCards.sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, count).join('');
+        const shuffled = [...allCards].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count).join(' ');
     }
     function getAllVisibleWordCards() {
         let all = [];
@@ -4639,15 +5079,24 @@
         
         document.documentElement.style.setProperty('--avatar-size', s.avatarSize + 'px');
         document.documentElement.style.setProperty('--avatar-radius', s.avatarRadius + 'px');
+        document.documentElement.style.setProperty('--other-avatar-size', (s.otherAvatarSize||s.avatarSize) + 'px');
+        document.documentElement.style.setProperty('--my-avatar-size', (s.myAvatarSize||s.avatarSize) + 'px');
+        document.documentElement.style.setProperty('--other-avatar-radius', (s.otherAvatarRadius||s.avatarRadius) + 'px');
+        document.documentElement.style.setProperty('--my-avatar-radius', (s.myAvatarRadius||s.avatarRadius) + 'px');
         document.documentElement.style.setProperty('--bubble-radius', s.bubbleRadius + 'px');
         document.documentElement.style.setProperty('--bubble-font-size', s.bubbleFontSize + 'px');
         document.documentElement.style.setProperty('--bubble-padding', (s.bubblePadding || 8) + 'px');
+        document.documentElement.style.setProperty('--other-bubble-font-size', (s.otherBubbleFontSize||s.bubbleFontSize) + 'px');
+        document.documentElement.style.setProperty('--my-bubble-font-size', (s.myBubbleFontSize||s.bubbleFontSize) + 'px');
+        document.documentElement.style.setProperty('--other-bubble-padding', (s.otherBubblePadding||s.bubblePadding||8) + 'px');
+        document.documentElement.style.setProperty('--my-bubble-padding', (s.myBubblePadding||s.bubblePadding||8) + 'px');
         document.documentElement.style.setProperty('--my-bubble-bg', s.myBubbleBg);
         document.documentElement.style.setProperty('--my-bubble-text', s.myBubbleText);
         document.documentElement.style.setProperty('--my-bubble-border', s.myBubbleBorder);
         document.documentElement.style.setProperty('--other-bubble-bg', s.otherBubbleBg);
         document.documentElement.style.setProperty('--other-bubble-text', s.otherBubbleText);
         document.documentElement.style.setProperty('--other-bubble-border', s.otherBubbleBorder);
+        applyBubbleRadiusVars(s);
         applyBubbleFont();
         
         if (s.chatWallpaper) {
@@ -4663,10 +5112,14 @@
         document.querySelector('.emoji-panel').style.backgroundColor = s.bottomBgColor;
         document.querySelector('.plus-panel').style.backgroundColor = s.bottomBgColor;
         
-        document.getElementById('avatarSizeSlider').value = s.avatarSize;
-        document.getElementById('avatarSizeVal').textContent = s.avatarSize;
-        document.getElementById('avatarRadiusSlider').value = s.avatarRadius;
-        document.getElementById('avatarRadiusVal').textContent = s.avatarRadius;
+        document.getElementById('otherAvatarSizeSlider').value = s.otherAvatarSize || s.avatarSize;
+        document.getElementById('otherAvatarSizeVal').textContent = s.otherAvatarSize || s.avatarSize;
+        document.getElementById('myAvatarSizeSlider').value = s.myAvatarSize || s.avatarSize;
+        document.getElementById('myAvatarSizeVal').textContent = s.myAvatarSize || s.avatarSize;
+        document.getElementById('otherAvatarRadiusSlider').value = s.otherAvatarRadius || s.avatarRadius;
+        document.getElementById('otherAvatarRadiusVal').textContent = s.otherAvatarRadius || s.avatarRadius;
+        document.getElementById('myAvatarRadiusSlider').value = s.myAvatarRadius || s.avatarRadius;
+        document.getElementById('myAvatarRadiusVal').textContent = s.myAvatarRadius || s.avatarRadius;
         document.getElementById('myBubbleBg').value = s.myBubbleBg;
         document.getElementById('otherBubbleBg').value = s.otherBubbleBg;
         document.getElementById('myBubbleBorder').value = s.myBubbleBorder;
@@ -4674,9 +5127,54 @@
         document.getElementById('myBubbleText').value = s.myBubbleText;
         document.getElementById('otherBubbleText').value = s.otherBubbleText;
         document.getElementById('bubbleRadius').value = s.bubbleRadius;
-        document.getElementById('bubbleFontSize').value = s.bubbleFontSize;
-        document.getElementById('bubblePadding').value = s.bubblePadding || 8;
+        document.getElementById('otherBubbleFontSize').value = s.otherBubbleFontSize || s.bubbleFontSize;
+        document.getElementById('myBubbleFontSize').value = s.myBubbleFontSize || s.bubbleFontSize;
+        document.getElementById('otherBubblePadding').value = s.otherBubblePadding || s.bubblePadding || 8;
+        document.getElementById('myBubblePadding').value = s.myBubblePadding || s.bubblePadding || 8;
         document.getElementById('bubbleTail').checked = s.bubbleTail;
+        // 圆角进阶
+        document.getElementById('dualBubbleRadiusEnabled').checked = s.dualBubbleRadiusEnabled;
+        document.getElementById('otherBubbleRadius').value = s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius;
+        document.getElementById('myBubbleRadius').value = s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius;
+        const _dbr = document.getElementById('dualBubbleRadiusGrid'); if (_dbr) _dbr.style.display = s.dualBubbleRadiusEnabled ? 'grid' : 'none';
+        // 对方四角
+        document.getElementById('otherCornersEnabled').checked = s.otherCornersEnabled;
+        document.getElementById('otherTL').value = s.otherTL;
+        document.getElementById('otherTR').value = s.otherTR;
+        document.getElementById('otherBR').value = s.otherBR;
+        document.getElementById('otherBL').value = s.otherBL;
+        const _ocg = document.getElementById('otherCornersGrid'); if (_ocg) _ocg.style.display = s.otherCornersEnabled ? 'grid' : 'none';
+        // 我方四角
+        document.getElementById('myCornersEnabled').checked = s.myCornersEnabled;
+        document.getElementById('myTL').value = s.myTL;
+        document.getElementById('myTR').value = s.myTR;
+        document.getElementById('myBR').value = s.myBR;
+        document.getElementById('myBL').value = s.myBL;
+        const _mcg = document.getElementById('myCornersGrid'); if (_mcg) _mcg.style.display = s.myCornersEnabled ? 'grid' : 'none';
+        // 昵称
+        document.getElementById('showNicknames').checked = s.showNicknames;
+        document.getElementById('otherNicknameSize').value = s.otherNicknameSize;
+        document.getElementById('myNicknameSize').value = s.myNicknameSize;
+        document.getElementById('otherNicknameColor').value = s.otherNicknameColor;
+        document.getElementById('myNicknameColor').value = s.myNicknameColor;
+        // 已读与双对号
+        document.getElementById('showRead').checked = s.showRead;
+        document.getElementById('showDoubleCheck').checked = s.showDoubleCheck;
+        document.getElementById('readPosition').value = s.readPosition;
+        document.getElementById('onlyLastRead').checked = s.onlyLastRead;
+        document.getElementById('onlyFirstRead').checked = s.onlyFirstRead;
+        document.getElementById('readColor').value = s.readColor;
+        // 分条圆角
+        document.getElementById('msgRadiusEnabled').checked = s.msgRadiusEnabled;
+        const _mrg = document.getElementById('msgRadiusGrid'); if (_mrg) _mrg.style.display = s.msgRadiusEnabled ? 'grid' : 'none';
+        document.getElementById('otherMsg1Radius').value = s.otherMsg1Radius >= 0 ? s.otherMsg1Radius : s.bubbleRadius;
+        document.getElementById('otherMsg2Radius').value = s.otherMsg2Radius >= 0 ? s.otherMsg2Radius : s.bubbleRadius;
+        document.getElementById('otherMsg3Radius').value = s.otherMsg3Radius >= 0 ? s.otherMsg3Radius : s.bubbleRadius;
+        document.getElementById('myMsg1Radius').value = s.myMsg1Radius >= 0 ? s.myMsg1Radius : s.bubbleRadius;
+        document.getElementById('myMsg2Radius').value = s.myMsg2Radius >= 0 ? s.myMsg2Radius : s.bubbleRadius;
+        document.getElementById('myMsg3Radius').value = s.myMsg3Radius >= 0 ? s.myMsg3Radius : s.bubbleRadius;
+        const _oVal = document.getElementById('otherBubbleRadiusVal'); if (_oVal) _oVal.textContent = (s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius) + ' px';
+        const _mVal = document.getElementById('myBubbleRadiusVal'); if (_mVal) _mVal.textContent = (s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius) + ' px';
         document.getElementById('avatarPosition').value = s.avatarPosition;
         document.getElementById('hideAvatar').checked = s.hideAvatar;
         document.getElementById('onlyFirstAvatar').checked = s.onlyFirstAvatar;
@@ -4711,6 +5209,8 @@
         
         renderEmojis();
         renderFrames();
+        // 加载设置后更新气泡设置预览
+        updateBubbleSettingsPreview();
     }
     function renderFrames() { ['other','my'].forEach(type=>{const grid=document.getElementById(type==='other'?'otherFrameGrid':'myFrameGrid');const frames=type==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;const current=type==='other'?appData.chatSettings.otherFrame:appData.chatSettings.myFrame;const items=grid.querySelectorAll('.frame-item');items.forEach(el=>{if(el.dataset.frame&&el.dataset.frame!=='none')el.remove();});for(const[id,fd]of Object.entries(frames)){const src=typeof fd==='object'?fd.src:fd;const item=document.createElement('div');item.className='frame-item'+(current===id?' active':'');item.dataset.frame=id;item.style.backgroundImage='url('+src+')';item.style.backgroundSize='cover';item.style.position='relative';const db=document.createElement('div');db.style.cssText='position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:red;color:#fff;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;';db.textContent='×';db.onclick=(e)=>{e.stopPropagation();deleteFrame(type,id);};item.appendChild(db);item.onclick=()=>selectFrame(type,id);grid.insertBefore(item,grid.querySelector('.frame-add'));}}); }
     function updateAvatarPreview(type, src) {
@@ -4733,11 +5233,14 @@
         const s = appData.chatSettings;
         
         let lastSender = null;
+        let otherMsgCount = 0, myMsgCount = 0;
         
         history.forEach((msg, index) => {
             const isFirst = msg.sender !== lastSender;
             const isLast = index === history.length - 1 || (history[index + 1] && history[index + 1].sender !== msg.sender);
             lastSender = msg.sender;
+            if (msg.sender === 'other') otherMsgCount++;
+            else if (msg.sender === 'mine') myMsgCount++;
             
             if (msg.type === 'system') {
                 const row = document.createElement('div');
@@ -4773,7 +5276,20 @@
             const isVerticalAvatar = s.avatarPosition === 'top' || s.avatarPosition === 'bottom';
             if (msg.sender === 'other') {
                 if (showAvatar) {
-                    row.appendChild(createAvatarElement('other'));
+                    if (s.showNicknames && isVerticalAvatar) {
+                        var _nw = document.createElement('div');
+                        _nw.className = 'msg-avatar-name';
+                        _nw.appendChild(createAvatarElement('other'));
+                        var _nick = document.createElement('span');
+                        _nick.className = 'msg-nickname';
+                        _nick.textContent = s.otherNickname || '对方';
+                        _nick.style.fontSize = s.otherNicknameSize + 'px';
+                        _nick.style.color = s.otherNicknameColor;
+                        _nw.appendChild(_nick);
+                        row.appendChild(_nw);
+                    } else {
+                        row.appendChild(createAvatarElement('other'));
+                    }
                 } else if (!isVerticalAvatar && !s.hideAvatar) {
                     const ph = document.createElement('div');
                     ph.style.width = 'var(--avatar-size)';
@@ -4843,12 +5359,91 @@
                 if (!msg.answer && msg.sender === 'mine' && !msg._replyScheduled) { msg._replyScheduled = true; const _s = appData.chatSettings; const _delay = (Math.floor(Math.random() * (_s.replyTimeMax - _s.replyTimeMin + 1)) + _s.replyTimeMin) * 1000; setTimeout(() => { if (!msg.answer) { msg.answer = msg.options[Math.floor(Math.random() * msg.options.length)]; saveData(); renderMessages(); } }, _delay); }
             }
             
+            // 分条气泡圆角：根据消息序号覆盖圆角
+            // 仅当开启分条气泡圆角时生效；关闭则不影响气泡（沿用对应方CSS变量）
+            // -1 表示沿用对应方的CSS变量（含四角圆角），>=0 时用具体值覆盖
+            var _msgR = -1;
+            if (s.msgRadiusEnabled) {
+                if (msg.sender === 'other') {
+                    _msgR = otherMsgCount === 1 ? s.otherMsg1Radius : (otherMsgCount === 2 ? s.otherMsg2Radius : s.otherMsg3Radius);
+                } else {
+                    _msgR = myMsgCount === 1 ? s.myMsg1Radius : (myMsgCount === 2 ? s.myMsg2Radius : s.myMsg3Radius);
+                }
+            }
+            if (_msgR >= 0) {
+                // 分条圆角指定了具体值，直接覆盖（不使用四角圆角）
+                bubble.style.borderRadius = _msgR + 'px';
+            }
+            // 当 _msgR === -1 时，不设置 inline borderRadius，CSS变量自动生效（含四角）
+
+            // 已读 / 双对号
+            var _showReadThis = (s.showRead || s.showDoubleCheck);
+            if (_showReadThis && s.onlyLastRead && s.onlyFirstRead) {
+                _showReadThis = isLast || isFirst;
+            } else if (_showReadThis && s.onlyLastRead) {
+                _showReadThis = isLast;
+            } else if (_showReadThis && s.onlyFirstRead) {
+                _showReadThis = isFirst;
+            }
+            if (_showReadThis) {
+                var _readText = '';
+                if (s.showRead) _readText += '已读';
+                if (s.showDoubleCheck) _readText += (s.showRead ? ' ' : '') + '✓✓';
+                if (s.readPosition === 'inside') {
+                    if (msg.type === 'text') {
+                        // 行内格式：对方「文字内容  已读/双对号」，我方「已读/双对号 文字内容」
+                        var _rs = document.createElement('span');
+                        _rs.style.cssText = 'color:' + s.readColor + ';font-size:11px;margin:0 4px;white-space:nowrap;line-height:1.2;';
+                        _rs.textContent = _readText;
+                        if (msg.sender === 'other') {
+                            // 文字内容  已读/双对号
+                            bubble.appendChild(document.createTextNode(' '));
+                            bubble.appendChild(_rs);
+                        } else {
+                            // 已读/双对号 文字内容
+                            bubble.insertBefore(_rs, bubble.firstChild);
+                            bubble.insertBefore(document.createTextNode(' '), _rs.nextSibling);
+                        }
+                    } else {
+                        // 非文字消息：已读标记独占一行显示在内容下方
+                        var _ri = document.createElement('div');
+                        _ri.style.cssText = 'color:' + s.readColor + ';font-size:11px;display:block;width:100%;clear:both;margin-top:4px;line-height:1.2;';
+                        _ri.style.textAlign = msg.sender === 'other' ? 'right' : 'left';
+                        _ri.textContent = _readText;
+                        bubble.appendChild(_ri);
+                    }
+                }
+            }
+
             wrap.appendChild(bubble);
+
+            // 已读 / 双对号（外部）
+            if (_showReadThis && s.readPosition === 'outside') {
+                var _ro = document.createElement('div');
+                _ro.style.cssText = 'color:' + s.readColor + ';font-size:11px;margin-top:3px;line-height:1.2;';
+                _ro.style.textAlign = msg.sender === 'other' ? 'left' : 'right';
+                _ro.textContent = (s.showRead ? '已读' : '') + (s.showDoubleCheck ? (s.showRead ? ' ' : '') + '✓✓' : '');
+                wrap.appendChild(_ro);
+            }
+
             row.appendChild(wrap);
             
             if (msg.sender === 'mine') {
                 if (showAvatar) {
-                    row.appendChild(createAvatarElement('mine'));
+                    if (s.showNicknames && isVerticalAvatar) {
+                        var _nw2 = document.createElement('div');
+                        _nw2.className = 'msg-avatar-name';
+                        var _nick2 = document.createElement('span');
+                        _nick2.className = 'msg-nickname';
+                        _nick2.textContent = s.myNickname || '我';
+                        _nick2.style.fontSize = s.myNicknameSize + 'px';
+                        _nick2.style.color = s.myNicknameColor;
+                        _nw2.appendChild(_nick2);
+                        _nw2.appendChild(createAvatarElement('mine'));
+                        row.appendChild(_nw2);
+                    } else {
+                        row.appendChild(createAvatarElement('mine'));
+                    }
                 } else if (!isVerticalAvatar && !s.hideAvatar) {
                     const ph = document.createElement('div');
                     ph.style.width = 'var(--avatar-size)';
@@ -4907,7 +5502,7 @@
     }
     function scrollToBottom() {
         const el = document.getElementById('chatMessages');
-        el.scrollTop = el.scrollHeight;
+        if (el) el.scrollTop = el.scrollHeight;
     }
     function handleChatEnter(e) {
         if (e.key === 'Enter') {
@@ -4979,8 +5574,8 @@
             let text;
             if (s.enableSplice && Math.random() > 0.5) {
                 const spliceCount = Math.min(Math.floor(Math.random() * 3) + 1, allCards.length);
-                const shuffled = allCards.sort(() => 0.5 - Math.random());
-                text = shuffled.slice(0, spliceCount).join('');
+                const shuffled = [...allCards].sort(() => 0.5 - Math.random());
+                text = shuffled.slice(0, spliceCount).join(' ');
             } else {
                 text = allCards[Math.floor(Math.random() * allCards.length)];
             }
@@ -5668,17 +6263,112 @@
         currentEditType = 'myAvatar';
         document.getElementById('fileInput').click();
     }
-    function updateAvatarSize(v) {
-        appData.chatSettings.avatarSize = parseInt(v);
-        document.getElementById('avatarSizeVal').textContent = v;
+    function updateOtherAvatarSize(v) {
+        appData.chatSettings.otherAvatarSize = parseInt(v);
+        appData.chatSettings.avatarSize = parseInt(v); // 保持兼容
+        document.getElementById('otherAvatarSizeVal').textContent = v;
+        document.documentElement.style.setProperty('--other-avatar-size', v + 'px');
         document.documentElement.style.setProperty('--avatar-size', v + 'px');
         saveData();
         renderMessages();
     }
-    function updateAvatarRadius(v) {
-        appData.chatSettings.avatarRadius = parseInt(v);
-        document.getElementById('avatarRadiusVal').textContent = v;
+    function updateMyAvatarSize(v) {
+        appData.chatSettings.myAvatarSize = parseInt(v);
+        document.getElementById('myAvatarSizeVal').textContent = v;
+        document.documentElement.style.setProperty('--my-avatar-size', v + 'px');
+        saveData();
+        renderMessages();
+    }
+    /* 气泡设置动态预览：显示3对方+我方气泡，完整反映所有设置 */
+    function updateBubbleSettingsPreview() {
+        const container = document.getElementById('bubbleSettingsPreview');
+        if (!container) return;
+        const s = appData.chatSettings;
+        const oBase = s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius;
+        const mBase = s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius;
+        // 计算每条气泡的圆角值
+        function getMsgRadius(sender, msgIdx) {
+            // 分条圆角（仅当开启时生效）
+            let perMsgR = -1;
+            if (s.msgRadiusEnabled) {
+                if (sender === 'other') {
+                    perMsgR = msgIdx === 0 ? s.otherMsg1Radius : (msgIdx === 1 ? s.otherMsg2Radius : s.otherMsg3Radius);
+                } else {
+                    perMsgR = msgIdx === 0 ? s.myMsg1Radius : (msgIdx === 1 ? s.myMsg2Radius : s.myMsg3Radius);
+                }
+            }
+            if (perMsgR >= 0) return perMsgR + 'px';
+            // 优先级：四角 > 双方圆方 > 通用
+            if (sender === 'other') {
+                if (s.otherCornersEnabled) {
+                    return s.otherTL + 'px ' + s.otherTR + 'px ' + s.otherBR + 'px ' + s.otherBL + 'px';
+                }
+                if (s.dualBubbleRadiusEnabled && s.otherBubbleRadius >= 0) return s.otherBubbleRadius + 'px';
+                return s.bubbleRadius + 'px';
+            } else {
+                if (s.myCornersEnabled) {
+                    return s.myTL + 'px ' + s.myTR + 'px ' + s.myBR + 'px ' + s.myBL + 'px';
+                }
+                if (s.dualBubbleRadiusEnabled && s.myBubbleRadius >= 0) return s.myBubbleRadius + 'px';
+                return s.bubbleRadius + 'px';
+            }
+        }
+        // 已读文本
+        function getReadText(sender) {
+            let txt = '';
+            if (s.showRead) txt += '已读';
+            if (s.showDoubleCheck) txt += (s.showRead ? ' ' : '') + '✓✓';
+            return txt;
+        }
+        function buildBubble(sender, msgIdx) {
+            const isOther = sender === 'other';
+            const bg = isOther ? s.otherBubbleBg : s.myBubbleBg;
+            const color = isOther ? s.otherBubbleText : s.myBubbleText;
+            const border = isOther ? s.otherBubbleBorder : s.myBubbleBorder;
+            const radius = getMsgRadius(sender, msgIdx);
+            const padding = isOther ? (s.otherBubblePadding||s.bubblePadding) : (s.myBubblePadding||s.bubblePadding);
+            const fontSize = (isOther ? (s.otherBubbleFontSize||s.bubbleFontSize) : (s.myBubbleFontSize||s.bubbleFontSize)) + 'px';
+            const tailClass = (s.bubbleTail) ? (isOther ? 'tail-left' : 'tail-right') : '';
+            const readText = getReadText(sender);
+            const label = isOther ? '对方气泡' + (msgIdx + 1) : '我方气泡' + (msgIdx + 1);
+            // 气泡内部时：行内已读标记。对方「文字内容  已读/双对号」，我方「已读/双对号 文字内容」
+            let innerContent = label;
+            if (readText && s.readPosition === 'inside') {
+                const readSpan = '<span style="color:' + s.readColor + ';font-size:11px;margin:0 4px;white-space:nowrap;line-height:1.2;">' + readText + '</span>';
+                innerContent = isOther ? (label + ' ' + readSpan) : (readSpan + ' ' + label);
+            }
+            const bubbleHtml = '<div class="msg-bubble ' + tailClass + '" style="padding:' + padding + 'px ' + (padding + 4) + 'px;border-radius:' + radius + ';font-size:' + fontSize + ';background:' + bg + ';color:' + color + ';border:1px solid ' + border + ';">' + innerContent + '</div>';
+            return bubbleHtml;
+        }
+        let html = '';
+        // 3对方 + 3我方 气泡
+        for (let i = 0; i < 3; i++) {
+            html += '<div class="msg-row other" style="display:flex;margin-bottom:8px;align-items:flex-start;">';
+            html += '<div class="avatar-small"></div>';
+            html += '<div class="msg-bubble-wrap" style="max-width:70%;">' + buildBubble('other', i) + '</div>';
+            html += '</div>';
+        }
+        for (let i = 0; i < 3; i++) {
+            html += '<div class="msg-row mine" style="display:flex;margin-bottom:8px;align-items:flex-start;justify-content:flex-end;">';
+            html += '<div class="msg-bubble-wrap" style="max-width:70%;">' + buildBubble('mine', i) + '</div>';
+            html += '<div class="avatar-small"></div>';
+            html += '</div>';
+        }
+        container.innerHTML = html;
+    }
+    function updateOtherAvatarRadius(v) {
+        appData.chatSettings.otherAvatarRadius = parseInt(v);
+        appData.chatSettings.avatarRadius = parseInt(v); // 保持兼容
+        document.getElementById('otherAvatarRadiusVal').textContent = v;
+        document.documentElement.style.setProperty('--other-avatar-radius', v + 'px');
         document.documentElement.style.setProperty('--avatar-radius', v + 'px');
+        saveData();
+        renderMessages();
+    }
+    function updateMyAvatarRadius(v) {
+        appData.chatSettings.myAvatarRadius = parseInt(v);
+        document.getElementById('myAvatarRadiusVal').textContent = v;
+        document.documentElement.style.setProperty('--my-avatar-radius', v + 'px');
         saveData();
         renderMessages();
     }
@@ -5703,6 +6393,29 @@
     function confirmFr(){const t=window._pFrT,s=window._pFrS,id='fr_'+Date.now();const frames=t==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;frames[id]={src:s,offsetX:parseInt(document.getElementById('frameOX').value),offsetY:parseInt(document.getElementById('frameOY').value),size:parseInt(document.getElementById('frameSize').value)};if(t==='other')appData.chatSettings.otherFrame=id;else appData.chatSettings.myFrame=id;saveData();renderFrames();renderMessages();cancelFr();}
     function cancelFr(){const m=document.getElementById('frameAdjModal');if(m)m.style.display='none';}
     function deleteFrame(type,fid){const frames=type==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;delete frames[fid];if(type==='other'&&appData.chatSettings.otherFrame===fid)appData.chatSettings.otherFrame='none';if(type==='my'&&appData.chatSettings.myFrame===fid)appData.chatSettings.myFrame='none';saveData();renderFrames();renderMessages();}
+    function applyBubbleRadiusVars(s) {
+        // 优先级：四角（独立开关）> 双方圆方（开关）> 通用 bubbleRadius
+        // 关闭对应开关时，该项设置不再影响气泡
+        let oR, mR;
+        // 对方
+        if (s.otherCornersEnabled) {
+            oR = s.otherTL + 'px ' + s.otherTR + 'px ' + s.otherBR + 'px ' + s.otherBL + 'px';
+        } else if (s.dualBubbleRadiusEnabled && s.otherBubbleRadius >= 0) {
+            oR = s.otherBubbleRadius + 'px';
+        } else {
+            oR = s.bubbleRadius + 'px';
+        }
+        // 我方
+        if (s.myCornersEnabled) {
+            mR = s.myTL + 'px ' + s.myTR + 'px ' + s.myBR + 'px ' + s.myBL + 'px';
+        } else if (s.dualBubbleRadiusEnabled && s.myBubbleRadius >= 0) {
+            mR = s.myBubbleRadius + 'px';
+        } else {
+            mR = s.bubbleRadius + 'px';
+        }
+        document.documentElement.style.setProperty('--other-bubble-radius', oR);
+        document.documentElement.style.setProperty('--my-bubble-radius', mR);
+    }
     function updateBubbleStyle() {
         const s = appData.chatSettings;
         s.myBubbleBg = document.getElementById('myBubbleBg').value;
@@ -5712,22 +6425,88 @@
         s.myBubbleText = document.getElementById('myBubbleText').value;
         s.otherBubbleText = document.getElementById('otherBubbleText').value;
         s.bubbleRadius = parseInt(document.getElementById('bubbleRadius').value);
-        s.bubbleFontSize = parseInt(document.getElementById('bubbleFontSize').value);
-        s.bubblePadding = parseInt(document.getElementById('bubblePadding').value);
+        s.otherBubbleFontSize = parseInt(document.getElementById('otherBubbleFontSize').value);
+        s.myBubbleFontSize = parseInt(document.getElementById('myBubbleFontSize').value);
+        s.bubbleFontSize = s.otherBubbleFontSize; // 保持兼容
+        s.otherBubblePadding = parseInt(document.getElementById('otherBubblePadding').value);
+        s.myBubblePadding = parseInt(document.getElementById('myBubblePadding').value);
+        s.bubblePadding = s.otherBubblePadding; // 保持兼容
         s.bubbleTail = document.getElementById('bubbleTail').checked;
+        // 圆角进阶
+        s.dualBubbleRadiusEnabled = document.getElementById('dualBubbleRadiusEnabled').checked;
+        // 当 slider 值等于 bubbleRadius 时存 -1（沿用上方），否则存实际值
+        const oBRSVal = parseInt(document.getElementById('otherBubbleRadius').value);
+        s.otherBubbleRadius = (oBRSVal === s.bubbleRadius) ? -1 : oBRSVal;
+        const mBRSVal = parseInt(document.getElementById('myBubbleRadius').value);
+        s.myBubbleRadius = (mBRSVal === s.bubbleRadius) ? -1 : mBRSVal;
+        // 对方四角
+        s.otherCornersEnabled = document.getElementById('otherCornersEnabled').checked;
+        s.otherTL = parseInt(document.getElementById('otherTL').value);
+        s.otherTR = parseInt(document.getElementById('otherTR').value);
+        s.otherBR = parseInt(document.getElementById('otherBR').value);
+        s.otherBL = parseInt(document.getElementById('otherBL').value);
+        // 我方四角
+        s.myCornersEnabled = document.getElementById('myCornersEnabled').checked;
+        s.myTL = parseInt(document.getElementById('myTL').value);
+        s.myTR = parseInt(document.getElementById('myTR').value);
+        s.myBR = parseInt(document.getElementById('myBR').value);
+        s.myBL = parseInt(document.getElementById('myBL').value);
+        // 昵称
+        s.showNicknames = document.getElementById('showNicknames').checked;
+        s.otherNicknameSize = parseInt(document.getElementById('otherNicknameSize').value);
+        s.myNicknameSize = parseInt(document.getElementById('myNicknameSize').value);
+        s.otherNicknameColor = document.getElementById('otherNicknameColor').value;
+        s.myNicknameColor = document.getElementById('myNicknameColor').value;
+        // 已读与双对号
+        s.showRead = document.getElementById('showRead').checked;
+        s.showDoubleCheck = document.getElementById('showDoubleCheck').checked;
+        s.readPosition = document.getElementById('readPosition').value;
+        s.onlyLastRead = document.getElementById('onlyLastRead').checked;
+        s.onlyFirstRead = document.getElementById('onlyFirstRead').checked;
+        s.readColor = document.getElementById('readColor').value;
+        // 分条圆角：当 slider 值等于对应方圆角时存 -1（沿用），否则存实际值
+        s.msgRadiusEnabled = document.getElementById('msgRadiusEnabled').checked;
+        const omR = s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius;
+        const mmR = s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius;
+        s.otherMsg1Radius = (parseInt(document.getElementById('otherMsg1Radius').value) === omR) ? -1 : parseInt(document.getElementById('otherMsg1Radius').value);
+        s.otherMsg2Radius = (parseInt(document.getElementById('otherMsg2Radius').value) === omR) ? -1 : parseInt(document.getElementById('otherMsg2Radius').value);
+        s.otherMsg3Radius = (parseInt(document.getElementById('otherMsg3Radius').value) === omR) ? -1 : parseInt(document.getElementById('otherMsg3Radius').value);
+        s.myMsg1Radius = (parseInt(document.getElementById('myMsg1Radius').value) === mmR) ? -1 : parseInt(document.getElementById('myMsg1Radius').value);
+        s.myMsg2Radius = (parseInt(document.getElementById('myMsg2Radius').value) === mmR) ? -1 : parseInt(document.getElementById('myMsg2Radius').value);
+        s.myMsg3Radius = (parseInt(document.getElementById('myMsg3Radius').value) === mmR) ? -1 : parseInt(document.getElementById('myMsg3Radius').value);
         
         document.documentElement.style.setProperty('--bubble-radius', s.bubbleRadius + 'px');
         document.documentElement.style.setProperty('--bubble-font-size', s.bubbleFontSize + 'px');
         document.documentElement.style.setProperty('--bubble-padding', s.bubblePadding + 'px');
+        document.documentElement.style.setProperty('--other-bubble-font-size', s.otherBubbleFontSize + 'px');
+        document.documentElement.style.setProperty('--my-bubble-font-size', s.myBubbleFontSize + 'px');
+        document.documentElement.style.setProperty('--other-bubble-padding', s.otherBubblePadding + 'px');
+        document.documentElement.style.setProperty('--my-bubble-padding', s.myBubblePadding + 'px');
         document.documentElement.style.setProperty('--my-bubble-bg', s.myBubbleBg);
         document.documentElement.style.setProperty('--my-bubble-text', s.myBubbleText);
         document.documentElement.style.setProperty('--my-bubble-border', s.myBubbleBorder);
         document.documentElement.style.setProperty('--other-bubble-bg', s.otherBubbleBg);
         document.documentElement.style.setProperty('--other-bubble-text', s.otherBubbleText);
         document.documentElement.style.setProperty('--other-bubble-border', s.otherBubbleBorder);
+        applyBubbleRadiusVars(s);
+        // 各圆角面板显隐 + 数值提示
+        const _dbr2 = document.getElementById('dualBubbleRadiusGrid');
+        if (_dbr2) _dbr2.style.display = s.dualBubbleRadiusEnabled ? 'grid' : 'none';
+        const _ocg2 = document.getElementById('otherCornersGrid');
+        if (_ocg2) _ocg2.style.display = s.otherCornersEnabled ? 'grid' : 'none';
+        const _mcg2 = document.getElementById('myCornersGrid');
+        if (_mcg2) _mcg2.style.display = s.myCornersEnabled ? 'grid' : 'none';
+        const _mrg2 = document.getElementById('msgRadiusGrid');
+        if (_mrg2) _mrg2.style.display = s.msgRadiusEnabled ? 'grid' : 'none';
+        const oVal = document.getElementById('otherBubbleRadiusVal');
+        if (oVal) oVal.textContent = (s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius) + ' px';
+        const mVal = document.getElementById('myBubbleRadiusVal');
+        if (mVal) mVal.textContent = (s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius) + ' px';
         
         saveData();
         renderMessages();
+        // 更新气泡设置预览
+        updateBubbleSettingsPreview();
     }
     // ===== 气泡字体上传 =====
     function uploadBubbleFont() {
@@ -5740,21 +6519,21 @@
         reader.onload = function(ev) {
             const fontData = ev.target.result;
             const fontName = 'BubbleCustomFont_' + Date.now();
-            // 移除旧的 @font-face
-            const oldStyle = document.getElementById('bubbleFontStyle');
-            if (oldStyle) oldStyle.remove();
-            // 创建新的 @font-face
-            const style = document.createElement('style');
-            style.id = 'bubbleFontStyle';
-            style.textContent = '@font-face { font-family: "' + fontName + '"; src: url(' + fontData + ') format("truetype"); }';
-            document.head.appendChild(style);
+            // 使用统一的 @font-face 加载方式（兼容 ttf/otf）
+            applyFontFace('bubbleFontStyle', fontName, fontData);
             // 应用到气泡
             document.documentElement.style.setProperty('--bubble-font-family', fontName);
             appData.chatSettings.bubbleFont = fontData;
+            appData.chatSettings.bubbleFontName = fontName;
             saveData();
             const nameEl = document.getElementById('bubbleFontName');
             if (nameEl) nameEl.textContent = '当前字体: ' + file.name;
             renderMessages();
+            updateBubbleSettingsPreview();
+            alert('气泡字体上传成功！');
+        };
+        reader.onerror = function() {
+            alert('字体文件读取失败，请重试');
         };
         reader.readAsDataURL(file);
         event.target.value = '';
@@ -5764,22 +6543,22 @@
         if (oldStyle) oldStyle.remove();
         document.documentElement.style.removeProperty('--bubble-font-family');
         appData.chatSettings.bubbleFont = '';
+        appData.chatSettings.bubbleFontName = '';
         saveData();
         const nameEl = document.getElementById('bubbleFontName');
         if (nameEl) nameEl.textContent = '';
         renderMessages();
+        updateBubbleSettingsPreview();
     }
     function applyBubbleFont() {
         const fontData = appData.chatSettings.bubbleFont;
         if (fontData) {
-            const fontName = 'BubbleCustomFont_Loaded';
-            const oldStyle = document.getElementById('bubbleFontStyle');
-            if (oldStyle) oldStyle.remove();
-            const style = document.createElement('style');
-            style.id = 'bubbleFontStyle';
-            style.textContent = '@font-face { font-family: "' + fontName + '"; src: url(' + fontData + ') format("truetype"); }';
-            document.head.appendChild(style);
+            const fontName = appData.chatSettings.bubbleFontName || 'BubbleCustomFont_Loaded';
+            applyFontFace('bubbleFontStyle', fontName, fontData);
             document.documentElement.style.setProperty('--bubble-font-family', fontName);
+            // 更新字体名称显示
+            const nameEl = document.getElementById('bubbleFontName');
+            if (nameEl && !nameEl.textContent) nameEl.textContent = '已加载自定义气泡字体';
         }
     }
     function updateDisplaySettings() {
@@ -5895,32 +6674,23 @@
     }
     function updateReplySettings() {
         const s = appData.chatSettings;
-        s.replyTimeMin = parseInt(document.getElementById('replyTimeMin').value);
-        s.replyTimeMax = parseInt(document.getElementById('replyTimeMax').value);
-        s.replyCountMin = parseInt(document.getElementById('replyCountMin').value);
-        s.replyCountMax = parseInt(document.getElementById('replyCountMax').value);
+        function safeInt(id, fallback) { const v = parseInt(document.getElementById(id).value); return isNaN(v) ? fallback : v; }
+        s.replyTimeMin = safeInt('replyTimeMin', s.replyTimeMin);
+        s.replyTimeMax = safeInt('replyTimeMax', s.replyTimeMax);
+        s.replyCountMin = safeInt('replyCountMin', s.replyCountMin);
+        s.replyCountMax = safeInt('replyCountMax', s.replyCountMax);
         s.enableSplice = document.getElementById('enableSplice').checked;
-        s.nudgeProb = parseInt(document.getElementById('nudgeProb').value);
-        s.emojiProb = parseInt(document.getElementById('emojiProb').value);
-        s.callAnswerProb = parseInt(document.getElementById('callAnswerProb').value);
-        s.callInitProb = parseInt(document.getElementById('callInitProb').value);
-        s.momentCount = parseInt(document.getElementById('momentCount').value);
+        s.nudgeProb = safeInt('nudgeProb', s.nudgeProb);
+        s.emojiProb = safeInt('emojiProb', s.emojiProb);
+        s.callAnswerProb = safeInt('callAnswerProb', s.callAnswerProb);
+        s.callInitProb = safeInt('callInitProb', s.callInitProb);
+        s.momentCount = safeInt('momentCount', s.momentCount);
         s.momentSplice = document.getElementById('momentSplice').checked;
-        s.diaryReplyTime = parseInt(document.getElementById('diaryReplyTime').value);
-        s.letterReplyMin = parseInt(document.getElementById('letterReplyMin').value);
-        s.letterReplyMax = parseInt(document.getElementById('letterReplyMax').value);
-        s.letterCountMin = parseInt(document.getElementById('letterCountMin').value);
-        s.letterCountMax = parseInt(document.getElementById('letterCountMax').value);
-        
-        //  s.replyTimeMin;
-        //  s.replyTimeMax;
-        //  s.replyCountMin;
-        //  s.replyCountMax;
-        //  s.nudgeProb;
-        //  s.emojiProb;
-        //  s.momentCount;
-        //  s.letterCountMin;
-        //  s.letterCountMax;
+        s.diaryReplyTime = safeInt('diaryReplyTime', s.diaryReplyTime);
+        s.letterReplyMin = safeInt('letterReplyMin', s.letterReplyMin);
+        s.letterReplyMax = safeInt('letterReplyMax', s.letterReplyMax);
+        s.letterCountMin = safeInt('letterCountMin', s.letterCountMin);
+        s.letterCountMax = safeInt('letterCountMax', s.letterCountMax);
         
         saveData();
     }
@@ -6386,7 +7156,7 @@
 
     // ========== 朋友圈功能 ==========
     function openMoments() {
-        document.getElementById('momentsPage').style.display = 'block';
+        document.getElementById('momentsPage').style.display = 'flex';
         initMomentsPage();
     }
     function closeMoments() {
@@ -6432,8 +7202,8 @@
             if (allCards.length > 0) {
                 if (appData.chatSettings.momentSplice) {
                     const spliceCount = Math.min(Math.floor(Math.random() * 3) + 1, allCards.length);
-                    const shuffled = allCards.sort(() => 0.5 - Math.random());
-                    text = shuffled.slice(0, spliceCount).join('');
+                    const shuffled = [...allCards].sort(() => 0.5 - Math.random());
+                    text = shuffled.slice(0, spliceCount).join(' ');
                 } else {
                     text = allCards[Math.floor(Math.random() * allCards.length)];
                 }
@@ -6442,7 +7212,7 @@
             let media = [];
             if (images.length > 0 && Math.random() > 0.5) {
                 const imgCount = Math.min(Math.floor(Math.random() * 9) + 1, images.length);
-                const shuffled = images.sort(() => 0.5 - Math.random());
+                const shuffled = [...images].sort(() => 0.5 - Math.random());
                 media = shuffled.slice(0, imgCount).map(src => ({type: 'image', src: src}));
             }
             
@@ -6815,7 +7585,7 @@
         
         for (let i = 0; i < count; i++) {
             const spliceCount = Math.floor(Math.random() * (s.spliceMax - s.spliceMin + 1)) + s.spliceMin;
-            const shuffled = allCards.sort(() => 0.5 - Math.random());
+            const shuffled = [...allCards].sort(() => 0.5 - Math.random());
             const text = shuffled.slice(0, Math.min(spliceCount, allCards.length)).join('\n');
             const isHidden = Math.random() * 100 < s.hideProb;
             const ts = Date.now() - i * 7200000;
@@ -7113,7 +7883,9 @@
         const modalContent = document.querySelector('#diaryDetailModal .modal-content');
         if (modalContent) {
             if (s.bgImage) { modalContent.style.background = 'url('+s.bgImage+') center/cover no-repeat'; }
-            else { modalContent.style.background = 'var(--color-white)'; }
+            else { modalContent.style.background = s.cardBg || 'var(--color-white)'; }
+            modalContent.style.color = s.textColor || '#333';
+            if (s.fontFamily) modalContent.style.fontFamily = s.fontFamily;
         }
     }
     function deleteCurrentDiary() {
@@ -7266,6 +8038,9 @@
     }
     function resetDiaryFont() {
         appData.diary.settings.fontFamily = '';
+        appData.diary.settings.fontData = '';
+        const oldStyle = document.getElementById('diaryFontStyle');
+        if (oldStyle) oldStyle.remove();
         saveData();
         renderDiaryList();
     }
@@ -7284,6 +8059,9 @@
     }
     function resetLetterFont() {
         appData.letter.settings.fontFamily = '';
+        appData.letter.settings.fontData = '';
+        const oldStyle = document.getElementById('letterFontStyle');
+        if (oldStyle) oldStyle.remove();
         saveData();
         renderLetterList();
     }
@@ -7303,31 +8081,39 @@
         reader.onload = function(ev) {
             const base64 = ev.target.result;
             const fontName = 'customFont_' + Date.now();
-            const fontFace = new FontFace(fontName, 'url(' + base64 + ')');
-            fontFace.load().then(function(loadedFont) {
-                document.fonts.add(loadedFont);
-                if (currentEditType === 'diaryFont') {
-                    appData.diary.settings.fontFamily = fontName;
-                    saveData();
-                    renderDiaryList();
-                } else if (currentEditType === 'letterFont') {
-                    appData.letter.settings.fontFamily = fontName;
-                    saveData();
-                    renderLetterList();
-                } else if (currentEditType === 'globalFont') {
-                    appData.globalSettings.fontFamily = fontName;
-                    applyGlobalSettings();
-                    saveData();
-                }
-                closeAllModals();
-            }).catch(function() {
-                alert('字体加载失败，请确认是有效的TTF/OTF文件');
-            });
+            // 使用 @font-face 方式加载字体（兼容性更好，不会导致界面重启）
+            let styleId = '';
+            if (currentEditType === 'diaryFont') styleId = 'diaryFontStyle';
+            else if (currentEditType === 'letterFont') styleId = 'letterFontStyle';
+            else if (currentEditType === 'globalFont') styleId = 'globalFontStyle';
+            applyFontFace(styleId, fontName, base64);
+            if (currentEditType === 'diaryFont') {
+                appData.diary.settings.fontFamily = fontName;
+                appData.diary.settings.fontData = base64;
+                saveData();
+                renderDiaryList();
+                alert('日记字体上传成功！');
+            } else if (currentEditType === 'letterFont') {
+                appData.letter.settings.fontFamily = fontName;
+                appData.letter.settings.fontData = base64;
+                saveData();
+                renderLetterList();
+                alert('信封字体上传成功！');
+            } else if (currentEditType === 'globalFont') {
+                appData.globalSettings.fontFamily = fontName;
+                appData.globalSettings.fontData = base64;
+                applyGlobalSettings();
+                saveData();
+                alert('全局字体上传成功！');
+            }
+        };
+        reader.onerror = function() {
+            alert('字体文件读取失败，请重试');
         };
         reader.readAsDataURL(file);
         event.target.value = '';
     }
-    function checkDailyAutoLetter(){const today=new Date().toDateString();if(appData._lastAutoLetterDate===today)return;const s=appData.chatSettings;const mn=s.letterCountMin||0;const mx=s.letterCountMax||1;if(mn===0&&mx===0)return;appData._lastAutoLetterDate=today;const cnt=Math.floor(Math.random()*(mx-mn+1))+mn;const ac=getAllVisibleWordCards();if(ac.length===0)return;for(let i=0;i<cnt;i++){const sh=ac.sort(()=>0.5-Math.random());const t=sh.slice(0,Math.min(Math.floor(Math.random()*8)+3,ac.length)).join('');appData.letter.inbox.unshift({id:Date.now()+i,title:'来自'+(appData.chatSettings.otherNickname||'对方')+'的信',content:t,sender:'other',time:Date.now()-i*3600000,favorite:false});}saveData();if(document.getElementById('letterPage').style.display==='flex')renderLetterList();}
+    function checkDailyAutoLetter(){const today=new Date().toDateString();if(appData._lastAutoLetterDate===today)return;const s=appData.chatSettings;const mn=s.letterCountMin||0;const mx=s.letterCountMax||1;if(mn===0&&mx===0)return;appData._lastAutoLetterDate=today;const cnt=Math.floor(Math.random()*(mx-mn+1))+mn;const ac=getAllVisibleWordCards();if(ac.length===0)return;for(let i=0;i<cnt;i++){const sh=ac.sort(()=>0.5-Math.random());const t=sh.slice(0,Math.min(Math.floor(Math.random()*8)+3,ac.length)).join(' ');appData.letter.inbox.unshift({id:Date.now()+i,title:'来自'+(appData.chatSettings.otherNickname||'对方')+'的信',content:t,sender:'other',time:Date.now()-i*3600000,favorite:false});}saveData();if(document.getElementById('letterPage').style.display==='flex')renderLetterList();}
 
     // ========== 信封功能 ==========
     function openLetter() {
@@ -7373,7 +8159,7 @@
             item.appendChild(date);
 
             // Swipe to delete
-            let swipeStartX = 0, swipeStartY = 0, isSwiping = false;
+            let swipeStartX = 0, swipeStartY = 0, isSwiping = false, isSwipedOpen = false;
             const deleteBtn = document.createElement('div');
             deleteBtn.textContent = '删除';
             deleteBtn.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:60px;background:#ff4444;color:#fff;display:none;align-items:center;justify-content:center;font-size:14px;cursor:pointer;z-index:1;';
@@ -7391,7 +8177,7 @@
                 swipeStartY = e.touches[0].clientY;
                 isSwiping = true;
                 item.style.transition = 'none';
-            });
+            }, {passive: true});
             item.addEventListener('touchmove', (e) => {
                 if (!isSwiping) return;
                 const dx = e.touches[0].clientX - swipeStartX;
@@ -7402,9 +8188,17 @@
                     item.style.transform = 'translateX(' + offset + 'px)';
                     if (offset < -10) {
                         deleteBtn.style.display = 'flex';
+                    } else {
+                        deleteBtn.style.display = 'none';
+                    }
+                } else if (isSwipedOpen && dx > 0) {
+                    const offset = Math.min(0, -60 + dx);
+                    item.style.transform = 'translateX(' + offset + 'px)';
+                    if (offset > -30) {
+                        deleteBtn.style.display = 'none';
                     }
                 }
-            });
+            }, {passive: true});
             item.addEventListener('touchend', () => {
                 isSwiping = false;
                 item.style.transition = 'transform 0.3s ease';
@@ -7414,27 +8208,25 @@
                     if (matrix.m41 < -30) {
                         item.style.transform = 'translateX(-60px)';
                         deleteBtn.style.display = 'flex';
+                        isSwipedOpen = true;
                     } else {
                         item.style.transform = 'translateX(0)';
                         deleteBtn.style.display = 'none';
+                        isSwipedOpen = false;
                     }
                 } else {
                     item.style.transform = 'translateX(0)';
                     deleteBtn.style.display = 'none';
+                    isSwipedOpen = false;
                 }
             });
 
             item.addEventListener('click', (e) => {
-                const currentTransform = getComputedStyle(item).transform;
-                let isOpen = false;
-                if (currentTransform && currentTransform !== 'none') {
-                    const matrix = new DOMMatrix(currentTransform);
-                    isOpen = matrix.m41 <= -30;
-                }
-                if (isOpen) {
+                if (isSwipedOpen) {
                     item.style.transition = 'transform 0.3s ease';
                     item.style.transform = 'translateX(0)';
                     deleteBtn.style.display = 'none';
+                    isSwipedOpen = false;
                     return;
                 }
                 openLetterDetail(index);
@@ -7471,7 +8263,9 @@
         const letterModalContent = document.querySelector('#letterDetailModal .modal-content');
         if (letterModalContent) {
             if (ls.bgImage) { letterModalContent.style.background = 'url('+ls.bgImage+') center/cover no-repeat'; }
-            else { letterModalContent.style.background = 'var(--color-white)'; }
+            else { letterModalContent.style.background = ls.cardBg || 'var(--color-white)'; }
+            letterModalContent.style.color = ls.textColor || '#1a1a1a';
+            if (ls.fontFamily) letterModalContent.style.fontFamily = ls.fontFamily;
         }
     }
     function closeLetterDetail() {
@@ -7543,7 +8337,7 @@
         const replyDelay = (Math.floor(Math.random() * (appData.chatSettings.letterReplyMax - appData.chatSettings.letterReplyMin + 1)) + appData.chatSettings.letterReplyMin) * 3600000;
         setTimeout(() => {
             const allCards = getAllVisibleWordCards();
-            if(allCards.length===0)return; const replyContent=allCards.sort(()=>0.5-Math.random()).slice(0,Math.min(Math.floor(Math.random()*10)+5,allCards.length)).join('');
+            if(allCards.length===0)return; const replyContent=allCards.sort(()=>0.5-Math.random()).slice(0,Math.min(Math.floor(Math.random()*10)+5,allCards.length)).join(' ');
             appData.letter.reply.unshift({
                 id: Date.now(),
                 title: '回信：' + title,
@@ -7588,11 +8382,11 @@
             weather: { temp: 26, condition: '晴', city: '光启市', lastUpdate: '' },
             body: { heartRate: 72, temperature: 36.5, sleep: 7.5, fatigue: 20, lastUpdate: '' },
             callLog: [],
-            meals: { breakfast: [], lunch: [], dinner: [], drink: [], breakfastAte: true, lunchAte: true, dinnerAte: true, breakfastReminded: false, lunchReminded: false, dinnerReminded: false, lastUpdate: '' },
+            meals: { breakfast: [], lunch: [], dinner: [], drink: [], breakfastAte: false, lunchAte: false, dinnerAte: false, breakfastReminded: false, lunchReminded: false, dinnerReminded: false, breakfastUpdated: false, lunchUpdated: false, dinnerUpdated: false, lastUpdate: '' },
             mood: { current: '', log: [], lastUpdate: '' },
             work: { status: '', location: '', progress: 0, todos: [], lastUpdate: '' },
             travel: { location: '', trips: [], lastUpdate: '' },
-            beautify: { iconImage: '', wallpaper: '', fontColor: '#1a1a1a', frameColor: '#1a1a1a' }
+            beautify: { iconImage: '', iconColor: '#5b6270', wallpaper: '', fontColor: '#1a1a1a', frameColor: '#1a1a1a' }
         };
     }
     if (!appData.balanceData) {
@@ -7718,6 +8512,9 @@
     }
     function resetGlobalFont() {
         appData.globalSettings.fontFamily = '';
+        appData.globalSettings.fontData = '';
+        const oldStyle = document.getElementById('globalFontStyle');
+        if (oldStyle) oldStyle.remove();
         document.getElementById('globalFontPreview').textContent = '跟随系统';
         saveData();
         applyGlobalSettings();
@@ -7769,16 +8566,44 @@
     // 备份功能
     function exportAllData() {
         const exportObj = {};
+        // 所有 appData 顶层 key，确保导出不遗漏任何数据
+        const allKnownKeys = [
+            'periodData','wordCardText','timeOffset','anniversary','dailyWordUpdate',
+            'wordGroups','currentGroup','specialSettings','nudgeCards','selectedCards',
+            'appNames','widgetImages','appIconImages','colors','appNameSize','videoBg',
+            'beautifyPresets','widgetOffsets',
+            'chatSettings','chatHistory','emojis',
+            'wordCards','specialCards',
+            'moments','diary','letter',
+            'hisPhoneData','surveyData','balanceData','globalSettings',
+            'publishMediaList','batchUploadType',
+            'currentViewingDiary','currentViewingLetter'
+        ];
+        
         const items = document.querySelectorAll('.export-checkbox');
+        const checkedKeys = [];
         items.forEach(cb => {
-            if (cb.checked) {
-                const key = cb.dataset.key;
-                exportObj[key] = appData[key];
-            }
+            if (cb.checked) checkedKeys.push(cb.dataset.key);
         });
-        if (Object.keys(exportObj).length === 0) {
+        
+        // 如果没有勾选任何选项，导出完整备份（包含所有数据）
+        if (checkedKeys.length === 0) {
             exportObj.full = JSON.parse(JSON.stringify(appData));
+        } else {
+            // 勾选了部分选项，先导出勾选的核心模块
+            checkedKeys.forEach(key => {
+                if (appData[key] !== undefined) {
+                    exportObj[key] = JSON.parse(JSON.stringify(appData[key]));
+                }
+            });
+            // 无论勾选了什么，都导出所有已知 key，确保导入后数据不缺失
+            allKnownKeys.forEach(key => {
+                if (appData[key] !== undefined && !exportObj[key]) {
+                    exportObj[key] = JSON.parse(JSON.stringify(appData[key]));
+                }
+            });
         }
+        
         const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -7817,15 +8642,30 @@
                 try {
                     const data = JSON.parse(ev.target.result);
                     if (type === 'full') {
-                        Object.keys(data).forEach(key => {
-                            if (key === 'full') {
-                                Object.assign(appData, data.full);
-                            } else {
-                                appData[key] = data[key];
+                        function importMergeDeep(target, source) {
+                            for (const key in source) {
+                                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                                    if (target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
+                                        target[key] = importMergeDeep(target[key], source[key]);
+                                    } else {
+                                        target[key] = JSON.parse(JSON.stringify(source[key]));
+                                    }
+                                } else {
+                                    target[key] = JSON.parse(JSON.stringify(source[key]));
+                                }
                             }
-                        });
+                            return target;
+                        }
+                        if (data.full) {
+                            // 完整备份文件
+                            importMergeDeep(appData, data.full);
+                        } else {
+                            // 模块化备份文件，深合并所有字段
+                            importMergeDeep(appData, data);
+                        }
                         saveData();
-                        alert('导入成功，请刷新页面');
+                        alert('导入成功，即将刷新页面');
+                        setTimeout(() => location.reload(), 500);
                     } else if (type === 'chat') {
                         if (Array.isArray(data)) {
                             appData.chatHistory = data;
@@ -7924,6 +8764,136 @@
             }
             saveData();
             setTimeout(() => alert(compressed > 0 ? '已压缩 ' + compressed + ' 张图片' : '没有需要压缩的图片'), 500);
+        };
+        processAll();
+    }
+    // 一键压缩所有图片（包括所有组图片：聊天记录图片、朋友圈图片、日记图片、信封图片、他的手机图片等）
+    function compressAllImages() {
+        if (!confirm('将压缩所有应用中的图片，可能需要一些时间。继续？')) return;
+        let compressed = 0;
+        const canvas = document.createElement('canvas');
+        const processImage = (dataUrl, maxW, maxH, quality) => {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width, h = img.height;
+                    if (w > maxW) { h = h * maxW / w; w = maxW; }
+                    if (h > maxH) { w = w * maxH / h; h = maxH; }
+                    canvas.width = Math.max(1, Math.round(w));
+                    canvas.height = Math.max(1, Math.round(h));
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => resolve(dataUrl);
+                img.src = dataUrl;
+            });
+        };
+        const isImageData = (s) => typeof s === 'string' && s.indexOf('data:image') === 0 && s.length > 20000;
+        const processAll = async () => {
+            // 聊天壁纸
+            if (appData.chatSettings && isImageData(appData.chatSettings.chatWallpaper)) {
+                appData.chatSettings.chatWallpaper = await processImage(appData.chatSettings.chatWallpaper, 1080, 1920, 0.7); compressed++;
+            }
+            // 聊天头像
+            for (const k of ['otherAvatar','myAvatar']) {
+                if (appData.chatSettings && isImageData(appData.chatSettings[k])) {
+                    appData.chatSettings[k] = await processImage(appData.chatSettings[k], 200, 200, 0.8); compressed++;
+                }
+            }
+            // 聊天记录中的图片
+            if (appData.chatHistory) {
+                for (const msg of appData.chatHistory) {
+                    if (msg.type === 'image' && isImageData(msg.content)) {
+                        msg.content = await processImage(msg.content, 1080, 1920, 0.7); compressed++;
+                    }
+                }
+            }
+            // app图标图片
+            if (appData.appIconImages) {
+                for (const k of Object.keys(appData.appIconImages)) {
+                    if (isImageData(appData.appIconImages[k])) {
+                        appData.appIconImages[k] = await processImage(appData.appIconImages[k], 120, 120, 0.8); compressed++;
+                    }
+                }
+            }
+            // widget图片
+            if (appData.widgetImages) {
+                for (const k of Object.keys(appData.widgetImages)) {
+                    if (isImageData(appData.widgetImages[k])) {
+                        appData.widgetImages[k] = await processImage(appData.widgetImages[k], 400, 400, 0.7); compressed++;
+                    }
+                }
+            }
+            // 朋友圈图片
+            if (appData.moments && appData.moments.list) {
+                for (const m of appData.moments.list) {
+                    if (m.images && Array.isArray(m.images)) {
+                        for (let i = 0; i < m.images.length; i++) {
+                            if (isImageData(m.images[i])) {
+                                m.images[i] = await processImage(m.images[i], 1080, 1080, 0.7); compressed++;
+                            }
+                        }
+                    }
+                    if (m.image && isImageData(m.image)) {
+                        m.image = await processImage(m.image, 1080, 1080, 0.7); compressed++;
+                    }
+                }
+            }
+            // 朋友圈壁纸
+            if (appData.moments && isImageData(appData.moments.wallpaper)) {
+                appData.moments.wallpaper = await processImage(appData.moments.wallpaper, 1080, 1920, 0.7); compressed++;
+            }
+            // 日记背景图
+            if (appData.diary && appData.diary.settings && isImageData(appData.diary.settings.bgImage)) {
+                appData.diary.settings.bgImage = await processImage(appData.diary.settings.bgImage, 1080, 1920, 0.7); compressed++;
+            }
+            // 日记图片
+            if (appData.diary) {
+                for (const list of [appData.diary.singleList, appData.diary.doubleList]) {
+                    if (list) for (const d of list) {
+                        if (d.images && Array.isArray(d.images)) {
+                            for (let i = 0; i < d.images.length; i++) {
+                                if (isImageData(d.images[i])) { d.images[i] = await processImage(d.images[i], 1080, 1080, 0.7); compressed++; }
+                            }
+                        }
+                    }
+                }
+            }
+            // 信封背景图
+            if (appData.letter && appData.letter.settings && isImageData(appData.letter.settings.bgImage)) {
+                appData.letter.settings.bgImage = await processImage(appData.letter.settings.bgImage, 1080, 1920, 0.7); compressed++;
+            }
+            // 他的手机美化图片
+            if (appData.hisPhoneData && appData.hisPhoneData.beautify) {
+                const b = appData.hisPhoneData.beautify;
+                if (isImageData(b.iconImage)) { b.iconImage = await processImage(b.iconImage, 200, 200, 0.8); compressed++; }
+                if (isImageData(b.wallpaper)) { b.wallpaper = await processImage(b.wallpaper, 1080, 1920, 0.7); compressed++; }
+            }
+            // 聊天顶底栏背景图
+            if (appData.chatSettings && isImageData(appData.chatSettings.topBgImage)) { appData.chatSettings.topBgImage = await processImage(appData.chatSettings.topBgImage, 1080, 200, 0.7); compressed++; }
+            if (appData.chatSettings && isImageData(appData.chatSettings.bottomBgImage)) { appData.chatSettings.bottomBgImage = await processImage(appData.chatSettings.bottomBgImage, 1080, 200, 0.7); compressed++; }
+            // 全局壁纸
+            if (appData.globalSettings && isImageData(appData.globalSettings.chatWallpaper)) { appData.globalSettings.chatWallpaper = await processImage(appData.globalSettings.chatWallpaper, 1080, 1920, 0.7); compressed++; }
+            // 头像框
+            if (appData.chatSettings) {
+                for (const fk of ['otherFrames','myFrames']) {
+                    const frames = appData.chatSettings[fk];
+                    if (Array.isArray(frames)) {
+                        for (let i = 0; i < frames.length; i++) {
+                            const fd = frames[i];
+                            const src = typeof fd === 'object' ? fd.src : fd;
+                            if (isImageData(src)) {
+                                const newSrc = await processImage(src, 200, 200, 0.8);
+                                if (typeof fd === 'object') fd.src = newSrc; else frames[i] = newSrc;
+                                compressed++;
+                            }
+                        }
+                    }
+                }
+            }
+            saveData();
+            if (document.getElementById('storagePage').style.display === 'flex') renderStorageList();
+            setTimeout(() => alert(compressed > 0 ? '一键压缩完成！共压缩 ' + compressed + ' 张图片' : '没有需要压缩的图片'), 300);
         };
         processAll();
     }
@@ -8049,6 +9019,14 @@
         const container = document.getElementById('storageList');
         container.innerHTML = '';
         const total = JSON.stringify(appData).length;
+        // 存储概览（30GB）
+        const overview = document.getElementById('storageOverview');
+        if (overview) {
+            const usedPercent = Math.min(100, (total / STORAGE_QUOTA) * 100);
+            overview.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:13px;color:#4a4a4a;margin-bottom:6px;"><span>已使用：' + formatBytes(total) + '</span><span>总容量：30 GB</span></div>' +
+                '<div style="width:100%;height:12px;background:#e0e0e0;border-radius:6px;overflow:hidden;"><div style="width:' + usedPercent + '%;height:100%;background:linear-gradient(90deg,#1a1a1a,#666);transition:width 0.3s;"></div></div>' +
+                '<div style="font-size:11px;color:#999;margin-top:4px;">剩余可用：' + formatBytes(Math.max(0, STORAGE_QUOTA - total)) + '</div>';
+        }
         const items = [
             { key: '聊天记录', dataKey: 'chatHistory', size: JSON.stringify(appData.chatHistory || []).length },
             { key: '字卡', dataKey: 'wordCards', size: (JSON.stringify(appData.wordCards || {}) + JSON.stringify(appData.specialCards || {})).length },
@@ -8099,7 +9077,8 @@
     function formatBytes(bytes) {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
     }
     function clearStorageData(key) {
         if (key === 'chatHistory') appData.chatHistory = [];
@@ -8164,9 +9143,22 @@
         const b = appData.hisPhoneData.beautify || {};
         const frame = document.getElementById('hpFrame');
         const screen = document.getElementById('hpScreen');
+        if (!frame || !screen) return;
         if (b.frameColor) frame.style.background = b.frameColor;
         if (b.wallpaper) screen.style.background = 'url(' + b.wallpaper + ') center/cover';
         else screen.style.background = 'linear-gradient(160deg,#e8e8e8,#f5f5f5)';
+        // 应用字体颜色
+        if (b.fontColor) {
+            screen.style.color = b.fontColor;
+            const subContent = document.getElementById('hisPhoneSubContent');
+            if (subContent) subContent.style.color = b.fontColor;
+            const subTitle = document.getElementById('hisPhoneSubTitle');
+            if (subTitle) subTitle.style.color = b.fontColor;
+        }
+        // 应用图标颜色
+        const iconColor = b.iconColor || '#555';
+        screen.querySelectorAll('.hp-icon-box svg').forEach(svg => { svg.style.stroke = iconColor; });
+        screen.querySelectorAll('.hp-icon span').forEach(span => { span.style.color = iconColor; });
     }
     function hpUpdateHourlyData() {
         const hd = appData.hisPhoneData;
@@ -8248,17 +9240,42 @@
             delete hd.meals.reminded;
             saveData();
         }
-        const today = new Date().toDateString();
+        const now = new Date();
+        const today = now.toDateString();
+        const hour = now.getHours();
+        // 新的一天：重置所有餐次状态
         if (hd.meals.lastUpdate !== today) {
             hd.meals.lastUpdate = today;
             hd.meals.breakfastReminded = false;
             hd.meals.lunchReminded = false;
             hd.meals.dinnerReminded = false;
+            hd.meals.breakfastUpdated = false;
+            hd.meals.lunchUpdated = false;
+            hd.meals.dinnerUpdated = false;
+            hd.meals.breakfast = [];
+            hd.meals.lunch = [];
+            hd.meals.dinner = [];
+            hd.meals.drink = [];
+            saveData();
+        }
+        // 早餐时段 5:00-10:00 更新早饭（过后自动补更新）
+        if (hour >= 5 && !hd.meals.breakfastUpdated) {
+            hd.meals.breakfastUpdated = true;
             hd.meals.breakfastAte = Math.random() > 0.15;
-            hd.meals.lunchAte = Math.random() > 0.15;
-            hd.meals.dinnerAte = Math.random() > 0.15;
             hd.meals.breakfast = hd.meals.breakfastAte ? hpGetMealItems('早饭') : [];
+            saveData();
+        }
+        // 中餐时段 11:00-14:00 更新中饭（过后自动补更新）
+        if (hour >= 11 && !hd.meals.lunchUpdated) {
+            hd.meals.lunchUpdated = true;
+            hd.meals.lunchAte = Math.random() > 0.15;
             hd.meals.lunch = hd.meals.lunchAte ? hpGetMealItems('中饭') : [];
+            saveData();
+        }
+        // 晚餐时段 15:00-24:00 更新晚饭
+        if (hour >= 15 && !hd.meals.dinnerUpdated) {
+            hd.meals.dinnerUpdated = true;
+            hd.meals.dinnerAte = Math.random() > 0.15;
             hd.meals.dinner = hd.meals.dinnerAte ? hpGetMealItems('晚饭') : [];
             hd.meals.drink = Math.random() < 0.1 ? hpGetMealItems('饮料') : [];
             saveData();
@@ -8421,23 +9438,18 @@
         } else if (sub === 'beautify') {
             const b = appData.hisPhoneData.beautify || {};
             html = '<div style="padding:4px 0;">';
-            html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">修改图标</div>';
+            html += '<div style="font-size:13px;font-weight:600;margin-bottom:6px;">调节图标颜色</div>';
             html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">';
-            html += '<div id="hpIconPreview" style="width:44px;height:44px;border-radius:11px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;overflow:hidden;">';
-            if (b.iconImage) html += '<img src="' + b.iconImage + '" style="width:100%;height:100%;object-fit:cover;">';
-            else html += '<svg viewBox="0 0 24 24" width="22" height="22" stroke="#666" fill="none" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>';
+            html += '<input type="color" value="' + (b.iconColor||'#5b6270') + '" oninput="hpSetIconColor(this.value)" style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;">';
+            html += '<span onclick="hpResetIconColor()" style="font-size:12px;padding:6px 12px;background:#f0f0f0;border-radius:6px;cursor:pointer;">恢复默认</span>';
             html += '</div>';
-            html += '<span onclick="document.getElementById(\'hpIconInput\').click()" style="font-size:12px;padding:6px 12px;background:#1a1a1a;color:#fff;border-radius:6px;cursor:pointer;">上传图标</span>';
-            html += '<span onclick="hpResetIcon()" style="font-size:12px;padding:6px 12px;background:#f0f0f0;border-radius:6px;cursor:pointer;">恢复默认</span>';
-            html += '</div>';
-            html += '<input type="file" id="hpIconInput" accept="image/*" style="display:none;" onchange="hpUploadIcon(event)">';
             html += '<div style="font-size:13px;font-weight:600;margin-bottom:6px;margin-top:10px;">修改壁纸</div>';
             html += '<span onclick="document.getElementById(\'hpWallInput\').click()" style="font-size:12px;padding:6px 12px;background:#1a1a1a;color:#fff;border-radius:6px;cursor:pointer;">上传壁纸</span>';
             html += '<input type="file" id="hpWallInput" accept="image/*" style="display:none;" onchange="hpUploadWall(event)">';
             html += '<div style="font-size:13px;font-weight:600;margin:14px 0 6px;">修改字体颜色</div>';
-            html += '<input type="color" value="' + (b.fontColor||'#1a1a1a') + '" onchange="hpSetFont(this.value)" style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;">';
+            html += '<input type="color" value="' + (b.fontColor||'#1a1a1a') + '" oninput="hpSetFont(this.value)" style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;">';
             html += '<div style="font-size:13px;font-weight:600;margin:14px 0 6px;">修改手机边框颜色</div>';
-            html += '<input type="color" value="' + (b.frameColor||'#1a1a1a') + '" onchange="hpSetFrame(this.value)" style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;">';
+            html += '<input type="color" value="' + (b.frameColor||'#1a1a1a') + '" oninput="hpSetFrame(this.value)" style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;">';
             html += '</div>';
         } else if (sub === 'diary') {
             const allDiary = [...appData.diary.singleList, ...appData.diary.doubleList].filter(d => d.sender === 'other');
@@ -8459,6 +9471,7 @@
             html = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">功能加载中...</div>';
         }
         content.innerHTML = html;
+        hpApplyBeautify();
     }
     function closeHisPhoneSubApp() {
         document.getElementById('hisPhoneSubPage').classList.remove('show');
@@ -8518,28 +9531,23 @@
         else delay = 1 * 60 * 1000;
         setTimeout(() => {
             hd.meals[ateKey] = true;
-            if (mealType === '早饭') hd.meals.breakfast = hpGetMealItems('早饭');
-            else if (mealType === '中饭') hd.meals.lunch = hpGetMealItems('中饭');
-            else if (mealType === '晚饭') hd.meals.dinner = hpGetMealItems('晚饭');
+            if (mealType === '早饭') { hd.meals.breakfast = hpGetMealItems('早饭'); hd.meals.breakfastUpdated = true; }
+            else if (mealType === '中饭') { hd.meals.lunch = hpGetMealItems('中饭'); hd.meals.lunchUpdated = true; }
+            else if (mealType === '晚饭') { hd.meals.dinner = hpGetMealItems('晚饭'); hd.meals.dinnerUpdated = true; }
             saveData();
             if (document.getElementById('hisPhonePage').style.display === 'flex') openHisPhoneSubApp('meals');
         }, delay);
     }
     // 美化
-    function hpUploadIcon(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            appData.hisPhoneData.beautify.iconImage = ev.target.result;
-            saveData();
-            openHisPhoneSubApp('beautify');
-        };
-        reader.readAsDataURL(file);
-    }
-    function hpResetIcon() {
-        appData.hisPhoneData.beautify.iconImage = '';
+    function hpSetIconColor(c) {
+        appData.hisPhoneData.beautify.iconColor = c;
         saveData();
+        hpApplyBeautify();
+    }
+    function hpResetIconColor() {
+        appData.hisPhoneData.beautify.iconColor = '#5b6270';
+        saveData();
+        hpApplyBeautify();
         openHisPhoneSubApp('beautify');
     }
     function hpUploadWall(e) {
@@ -8557,6 +9565,7 @@
     function hpSetFont(c) {
         appData.hisPhoneData.beautify.fontColor = c;
         saveData();
+        hpApplyBeautify();
     }
     function hpSetFrame(c) {
         appData.hisPhoneData.beautify.frameColor = c;
@@ -9798,19 +10807,132 @@
         if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
     }
 
+    // ========== 字体恢复 ==========
+    function applyFontFace(styleId, fontName, fontData) {
+        if (!fontData) return;
+        const old = document.getElementById(styleId);
+        if (old) old.remove();
+        const style = document.createElement('style');
+        style.id = styleId;
+        // 兼容 ttf/otf 格式
+        const fmt = fontData.indexOf('data:font/opentype') === 0 || fontData.indexOf('data:application/x-font-otf') === 0 ? 'opentype' : 'truetype';
+        style.textContent = '@font-face { font-family: "' + fontName + '"; src: url(' + fontData + ') format("' + fmt + '"); }';
+        document.head.appendChild(style);
+    }
+    function restoreCustomFonts() {
+        // 恢复日记字体
+        if (appData.diary && appData.diary.settings && appData.diary.settings.fontData && appData.diary.settings.fontFamily) {
+            applyFontFace('diaryFontStyle', appData.diary.settings.fontFamily, appData.diary.settings.fontData);
+        }
+        // 恢复信封字体
+        if (appData.letter && appData.letter.settings && appData.letter.settings.fontData && appData.letter.settings.fontFamily) {
+            applyFontFace('letterFontStyle', appData.letter.settings.fontFamily, appData.letter.settings.fontData);
+        }
+        // 恢复全局字体
+        if (appData.globalSettings && appData.globalSettings.fontData && appData.globalSettings.fontFamily) {
+            applyFontFace('globalFontStyle', appData.globalSettings.fontFamily, appData.globalSettings.fontData);
+        }
+    }
+
+    // ========== IndexedDB 加载后重新初始化 ==========
+    // 共享CSS变量恢复函数（init 和 reinitAfterIDBLoad 都使用）
+    function applyChatCSSVars(cs) {
+        document.documentElement.style.setProperty('--avatar-size', cs.avatarSize + 'px');
+        document.documentElement.style.setProperty('--avatar-radius', cs.avatarRadius + 'px');
+        document.documentElement.style.setProperty('--other-avatar-size', (cs.otherAvatarSize||cs.avatarSize) + 'px');
+        document.documentElement.style.setProperty('--my-avatar-size', (cs.myAvatarSize||cs.avatarSize) + 'px');
+        document.documentElement.style.setProperty('--other-avatar-radius', (cs.otherAvatarRadius||cs.avatarRadius) + 'px');
+        document.documentElement.style.setProperty('--my-avatar-radius', (cs.myAvatarRadius||cs.avatarRadius) + 'px');
+        document.documentElement.style.setProperty('--bubble-radius', cs.bubbleRadius + 'px');
+        document.documentElement.style.setProperty('--bubble-font-size', cs.bubbleFontSize + 'px');
+        document.documentElement.style.setProperty('--bubble-padding', (cs.bubblePadding || 8) + 'px');
+        document.documentElement.style.setProperty('--other-bubble-font-size', (cs.otherBubbleFontSize||cs.bubbleFontSize) + 'px');
+        document.documentElement.style.setProperty('--my-bubble-font-size', (cs.myBubbleFontSize||cs.bubbleFontSize) + 'px');
+        document.documentElement.style.setProperty('--other-bubble-padding', (cs.otherBubblePadding||cs.bubblePadding||8) + 'px');
+        document.documentElement.style.setProperty('--my-bubble-padding', (cs.myBubblePadding||cs.bubblePadding||8) + 'px');
+        document.documentElement.style.setProperty('--my-bubble-bg', cs.myBubbleBg);
+        document.documentElement.style.setProperty('--my-bubble-text', cs.myBubbleText);
+        document.documentElement.style.setProperty('--my-bubble-border', cs.myBubbleBorder);
+        document.documentElement.style.setProperty('--other-bubble-bg', cs.otherBubbleBg);
+        document.documentElement.style.setProperty('--other-bubble-text', cs.otherBubbleText);
+        document.documentElement.style.setProperty('--other-bubble-border', cs.otherBubbleBorder);
+    }
+    function reinitAfterIDBLoad() {
+        restoreCustomFonts();
+        applyGlobalSettings();
+        applyDesktopWallpaper();
+        applyChatCSSVars(appData.chatSettings);
+        applyBubbleRadiusVars(appData.chatSettings);
+        applyBubbleFont();
+        restoreAppIcons();
+        restoreWidgets();
+        initAnniversary();
+        updateBubbleSettingsPreview();
+        if (document.getElementById('chatPage').style.display === 'flex') {
+            initChatPage();
+            renderMessages();
+        }
+        if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
+        if (document.getElementById('letterPage').style.display === 'flex') renderLetterList();
+    }
+
     // ========== 初始化 ==========
     function init() {
+        // 异步从 IndexedDB 加载数据（支持30G大容量存储）
+        loadDataFromIDB();
+        restoreCustomFonts();
         initAnniversary();
         buildCalendar();
         initDailyWord();
         updateTimes();
         restoreAppIcons();
         restoreWidgets();
+        restoreWidgetOffsets();
         setupLongPressForElements();
         setupVideoLongPress();
         initTimeWidgets();
         applyGlobalSettings();
         applyDesktopWallpaper();
+        // 恢复聊天设置CSS变量（共享函数，避免与 reinitAfterIDBLoad 重复）
+        applyChatCSSVars(appData.chatSettings);
+        applyBubbleRadiusVars(appData.chatSettings);
+        applyBubbleFont();
+        // 初始化气泡设置预览
+        updateBubbleSettingsPreview();
+        // 恢复美化预设CSS
+        ['chatGlobal', 'bubble', 'moments'].forEach(type => {
+            if (appData.beautifyPresets && appData.beautifyPresets[type]) {
+                const active = appData.beautifyPresets[type].find(p => p.active);
+                if (active) {
+                    let styleEl = document.getElementById('beautifyCustomStyle_' + type);
+                    if (!styleEl) {
+                        styleEl = document.createElement('style');
+                        styleEl.id = 'beautifyCustomStyle_' + type;
+                        document.head.appendChild(styleEl);
+                    }
+                    styleEl.textContent = active.css;
+                }
+            }
+        });
+        // 恢复字卡样式
+        restoreWordCardStyle();
+        // 恢复聊天壁纸
+        const cs = appData.chatSettings;
+        if (cs.chatWallpaper) {
+            const chatMsgs = document.querySelector('.chat-messages');
+            if (chatMsgs) chatMsgs.style.backgroundImage = `url(${cs.chatWallpaper})`;
+        }
+        // 恢复顶底栏背景
+        const chatHeader = document.querySelector('.chat-header');
+        if (chatHeader) {
+            chatHeader.style.backgroundColor = cs.topBgColor;
+            if (cs.topBgImage) { chatHeader.style.backgroundImage = 'url(' + cs.topBgImage + ')'; chatHeader.style.backgroundSize = 'cover'; }
+        }
+        const chatFooter = document.querySelector('.chat-footer');
+        if (chatFooter) {
+            chatFooter.style.backgroundColor = cs.bottomBgColor;
+            if (cs.bottomBgImage) { chatFooter.style.backgroundImage = 'url(' + cs.bottomBgImage + ')'; chatFooter.style.backgroundSize = 'cover'; }
+        }
         scheduleOtherQuestion();
         checkDailyAutoLetter();
         checkDailyMoments();
