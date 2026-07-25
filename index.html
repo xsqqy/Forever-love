@@ -1373,6 +1373,24 @@
         .wordcard-tab.add-tab {
             border-style: dashed;
         }
+        .wordcard-tab-del {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            margin-left: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.35);
+            font-size: 13px;
+            line-height: 1;
+            color: inherit;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .wordcard-tab.active .wordcard-tab-del {
+            background: rgba(255,255,255,0.3);
+        }
         .wordcard-actions {
             display: flex;
             gap: 8px;
@@ -3210,6 +3228,23 @@
                     <input type="number" id="letterCountMin" min="0" max="20" value="1" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" onchange="updateReplySettings()">
                     <input type="number" id="letterCountMax" min="0" max="20" value="3" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" onchange="updateReplySettings()">
                 </div>
+                <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                        <label>对方主动发消息</label>
+                        <input type="checkbox" id="proactiveEnable" onchange="updateReplySettings()">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;width:100%;font-size:12px;color:#999;">
+                        <span>最低</span>
+                        <input type="number" id="proactiveMinSec" min="1" max="3600" value="30" style="width:50px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 4px;font-size:13px;outline:none;" onchange="updateReplySettings()"> 秒
+                        <span style="margin-left:8px;">最高</span>
+                        <input type="number" id="proactiveMaxMin" min="1" max="1440" value="5" style="width:50px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 4px;font-size:13px;outline:none;" onchange="updateReplySettings()"> 分钟
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <label>已读不回(%)</label>
+                    <input type="range" id="readNoReplyProb" min="0" max="100" value="0" oninput="document.getElementById('readNoReplyProbVal').textContent=this.value;updateReplySettings()">
+                    <span id="readNoReplyProbVal">0</span><span style="font-size:10px;color:#999;margin-left:4px;">0-100</span>
+                </div>
                 <div class="settings-row danger" onclick="clearChatHistory()">
                     <span>清空聊天记录</span>
                 </div>
@@ -3233,6 +3268,7 @@
             <div class="action-btn" onclick="deleteSelectedCards()">删除选中</div>
             <div class="action-btn" onclick="hideSelectedCards()">隐藏选中</div>
             <div class="action-btn" onclick="clearAllCards()">清空分组</div>
+            <div class="action-btn" onclick="dedupWordCards()">去重</div>
         </div>
         <div class="wordcard-list" id="wordcardList"></div>
         <div class="special-section">
@@ -3244,6 +3280,7 @@
                     <div class="special-actions">
                         <button onclick="batchUploadNudge()">批量上传</button>
                         <button onclick="uploadNudgeFile()">文件上传</button>
+                        <button onclick="dedupSpecialCards('nudge')">去重</button>
                     </div>
                 </div>
                 <div class="special-card-list" id="nudgeCardList"></div>
@@ -3255,6 +3292,7 @@
                     <div class="special-actions">
                         <button onclick="batchUploadEmoji()">批量上传</button>
                         <button onclick="uploadEmojiFile()">文件上传</button>
+                        <button onclick="dedupSpecialCards('emoji')">去重</button>
                     </div>
                 </div>
                 <div class="settings-row">
@@ -3278,6 +3316,7 @@
                     <div class="special-actions">
                         <button onclick="batchUploadKaomoji()">批量上传</button>
                         <button onclick="uploadKaomojiFile()">文件上传</button>
+                        <button onclick="dedupSpecialCards('kaomoji')">去重</button>
                     </div>
                 </div>
                 <div class="settings-row">
@@ -3298,7 +3337,10 @@
             <div class="special-item">
                 <div class="special-header">
                     <span>图片字卡（仅朋友圈）</span>
-                    <button onclick="uploadImageCards()">批量上传</button>
+                    <div class="special-actions">
+                        <button onclick="uploadImageCards()">批量上传</button>
+                        <button onclick="dedupSpecialCards('image')">去重</button>
+                    </div>
                 </div>
                 <div class="image-card-grid" id="imageCardGrid"></div>
             </div>
@@ -4125,7 +4167,13 @@
             letterReplyMin: 2,
             letterReplyMax: 48,
             letterCountMin: 1,
-            letterCountMax: 3
+            letterCountMax: 3,
+            // 对方主动发消息
+            proactiveEnable: false,
+            proactiveMinSec: 30,
+            proactiveMaxMin: 5,
+            // 已读不回概率(%)
+            readNoReplyProb: 0
         },
         chatHistory: [],
         emojis: { mine: [], other: [] },
@@ -4274,6 +4322,7 @@
     }
     // 异步从 IndexedDB 加载数据（支持30G大容量存储）
     let _idbLoaded = false;
+    let _idbReady = false; // 标记 IndexedDB 数据是否已加载完毕，防止 init 中的每日检查用默认数据覆盖真实数据
     async function loadDataFromIDB() {
         if (_idbLoaded) return;
         _idbLoaded = true;
@@ -4305,21 +4354,29 @@
                     if (cs.myBubblePadding === undefined) cs.myBubblePadding = cs.bubblePadding || 8;
                 }
                 appData = merged;
+                _idbReady = true; // 数据加载完毕，允许 saveData 写入 IndexedDB
                 // 重新初始化界面以应用IndexedDB数据
                 if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
             } else {
                 // IndexedDB 没有数据，把当前 localStorage 数据写入 IndexedDB
+                _idbReady = true;
                 saveData();
             }
+            // 数据就绪后执行每日检查（此时 appData 已是真实数据，saveData 可安全写入）
+            runDailyChecks();
         } catch(e) {
+            _idbReady = true;
             console.error('IndexedDB数据加载失败:', e);
+            runDailyChecks();
         }
     }
     function saveData() {
         try {
             const json = JSON.stringify(appData);
-            // 主存储：IndexedDB（支持30G大容量）
-            idbSet('appData', json);
+            // 主存储：IndexedDB（支持30G大容量）—— 数据未加载完毕前不写入，防止默认数据覆盖真实数据
+            if (_idbReady) {
+                idbSet('appData', json);
+            }
             // 备份：localStorage（小容量，可能失败，不影响主存储）
             try {
                 localStorage.setItem(STORAGE_KEY, json);
@@ -5206,6 +5263,13 @@
         //  s.letterCountMin;
         document.getElementById('letterCountMax').value = s.letterCountMax;
         //  s.letterCountMax;
+        // 对方主动发消息
+        document.getElementById('proactiveEnable').checked = s.proactiveEnable || false;
+        document.getElementById('proactiveMinSec').value = s.proactiveMinSec || 30;
+        document.getElementById('proactiveMaxMin').value = s.proactiveMaxMin || 5;
+        // 已读不回
+        document.getElementById('readNoReplyProb').value = s.readNoReplyProb || 0;
+        document.getElementById('readNoReplyProbVal').textContent = s.readNoReplyProb || 0;
         
         renderEmojis();
         renderFrames();
@@ -5533,9 +5597,14 @@
     }
     function triggerReceive() {
         if (replyTimer) clearTimeout(replyTimer);
+        const s = appData.chatSettings;
+        // 已读不回：按概率决定对方是否回复
+        if (Math.random() * 100 < (s.readNoReplyProb || 0)) {
+            // 对方已读但决定不回复
+            return;
+        }
         isTyping = true;
         document.getElementById('chatTitle').textContent = '对方正在输入中...';
-        const s = appData.chatSettings;
         const delay = Math.floor(Math.random() * (s.replyTimeMax - s.replyTimeMin + 1) + s.replyTimeMin) * 1000;
         
         replyTimer = setTimeout(() => {
@@ -5857,11 +5926,10 @@
     function saveNudgeCards() {
         const text = document.getElementById('nudgeTextInput').value;
         const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-        const existing = appData.specialCards.nudge.map(c => c.text);
+        const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
         lines.forEach(line => {
-            if (!existing.includes(line)) {
-                appData.specialCards.nudge.push({text: line, hidden: false});
-            }
+            const key = line.trim();
+            if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); }
         });
         saveData();
         renderNudgeCardList();
@@ -5999,12 +6067,27 @@
                 reader.readAsDataURL(file);
             });
         } else if (currentEditType === 'imageCard') {
+            let imgDupCount = 0;
+            let processed = 0;
+            const total = files.length;
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    appData.specialCards.image.push(ev.target.result);
-                    saveData();
-                    renderImageCards();
+                    const src = ev.target.result;
+                    // 自动去重：相同图片不重复添加
+                    if (appData.specialCards.image.includes(src)) {
+                        imgDupCount++;
+                    } else {
+                        appData.specialCards.image.push(src);
+                    }
+                    processed++;
+                    if (processed === total) {
+                        saveData();
+                        renderImageCards();
+                        if (imgDupCount > 0) {
+                            alert(`已添加 ${total - imgDupCount} 张，重复 ${imgDupCount} 张已自动去重`);
+                        }
+                    }
                 };
                 reader.readAsDataURL(file);
             });
@@ -6691,8 +6774,16 @@
         s.letterReplyMax = safeInt('letterReplyMax', s.letterReplyMax);
         s.letterCountMin = safeInt('letterCountMin', s.letterCountMin);
         s.letterCountMax = safeInt('letterCountMax', s.letterCountMax);
+        // 对方主动发消息
+        s.proactiveEnable = document.getElementById('proactiveEnable').checked;
+        s.proactiveMinSec = safeInt('proactiveMinSec', s.proactiveMinSec);
+        s.proactiveMaxMin = safeInt('proactiveMaxMin', s.proactiveMaxMin);
+        // 已读不回
+        s.readNoReplyProb = safeInt('readNoReplyProb', s.readNoReplyProb);
         
         saveData();
+        // 重新调度主动发消息定时器
+        scheduleProactiveMessage();
     }
     function clearChatHistory() {
         if (confirm('确定清空所有聊天记录吗？')) {
@@ -6726,6 +6817,16 @@
             tab.dataset.group = group;
             tab.textContent = group === 'default' ? '未分组' : group;
             tab.onclick = () => switchWordGroup(group);
+
+            // 非"未分组"的分组显示删除按钮
+            if (group !== 'default') {
+                const del = document.createElement('span');
+                del.className = 'wordcard-tab-del';
+                del.textContent = '×';
+                del.title = '删除分组';
+                del.onclick = (e) => { e.stopPropagation(); deleteWordGroup(group); };
+                tab.appendChild(del);
+            }
             container.appendChild(tab);
         });
         
@@ -6742,7 +6843,20 @@
         renderWordGroups();
         renderWordCardList();
     }
-    function deleteWordGroup(gn){if(gn==='default'||gn==='未分组')return;if(!confirm('删除分组"'+gn+'"？字卡将移至未分组。'))return;const cards=appData.wordCards[gn]||[];if(!appData.wordCards['未分组'])appData.wordCards['未分组']=[];appData.wordCards['未分组']=appData.wordCards['未分组'].concat(cards);delete appData.wordCards[gn];appData.wordGroups=appData.wordGroups.filter(g=>g!==gn);if(appData.currentGroup===gn)appData.currentGroup='未分组';saveData();renderWordGroups();renderWordCardList();}
+    function deleteWordGroup(gn){
+        if(gn==='default') return;
+        if(!confirm('删除分组"'+gn+'"？该分组内的字卡将自动归类到"未分组"。')) return;
+        const cards=appData.wordCards[gn]||[];
+        // 将原分组字卡移至默认分组(default=未分组)
+        if(!appData.wordCards['default']) appData.wordCards['default']=[];
+        appData.wordCards['default']=appData.wordCards['default'].concat(cards);
+        delete appData.wordCards[gn];
+        appData.wordGroups=appData.wordGroups.filter(g=>g!==gn);
+        if(appData.currentGroup===gn) appData.currentGroup='default';
+        saveData();
+        renderWordGroups();
+        renderWordCardList();
+    }
     function addGroup() {
         const name = prompt('输入分组名称');
         if (!name || !name.trim()) return;
@@ -6819,13 +6933,15 @@
         
         if (type === 'word') {
             const group = appData.currentGroup;
-            const existing = appData.wordCards[group].map(c => c.text);
+            const seen = new Set(appData.wordCards[group].map(c => (c.text || '').trim()));
             let duplicateCount = 0;
             
             lines.forEach(line => {
-                if (existing.includes(line)) {
+                const key = line.trim();
+                if (seen.has(key)) {
                     duplicateCount++;
                 } else {
+                    seen.add(key);
                     appData.wordCards[group].push({ text: line, hidden: false });
                 }
             });
@@ -6835,29 +6951,26 @@
                 alert(`已添加 ${lines.length - duplicateCount} 张，重复 ${duplicateCount} 张已自动去重`);
             }
         } else if (type === 'emoji') {
-            const existing = appData.specialCards.emoji.map(c => c.text);
+            const seen = new Set(appData.specialCards.emoji.map(c => (c.text || '').trim()));
             lines.forEach(line => {
-                if (!existing.includes(line)) {
-                    appData.specialCards.emoji.push({text: line, hidden: false});
-                }
+                const key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.emoji.push({text: line, hidden: false}); }
             });
             saveData();
             renderEmojiCardList();
         } else if (type === 'kaomoji') {
-            const existing = appData.specialCards.kaomoji.map(c => c.text);
+            const seen = new Set(appData.specialCards.kaomoji.map(c => (c.text || '').trim()));
             lines.forEach(line => {
-                if (!existing.includes(line)) {
-                    appData.specialCards.kaomoji.push({text: line, hidden: false});
-                }
+                const key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.kaomoji.push({text: line, hidden: false}); }
             });
             saveData();
             renderKaomojiCardList();
         } else if (type === 'nudge') {
-            const existing = appData.specialCards.nudge.map(c => c.text);
+            const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
             lines.forEach(line => {
-                if (!existing.includes(line)) {
-                    appData.specialCards.nudge.push({text: line, hidden: false});
-                }
+                const key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); }
             });
             saveData();
             renderNudgeCardList();
@@ -6878,13 +6991,15 @@
                 const text = ev.target.result;
                 const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                 const group = appData.currentGroup;
-                const existing = appData.wordCards[group].map(c => c.text);
+                const seen = new Set(appData.wordCards[group].map(c => (c.text || '').trim()));
                 let duplicateCount = 0;
                 
                 lines.forEach(line => {
-                    if (existing.includes(line)) {
+                    const key = line.trim();
+                    if (seen.has(key)) {
                         duplicateCount++;
                     } else {
+                        seen.add(key);
                         appData.wordCards[group].push({ text: line, hidden: false });
                     }
                 });
@@ -6904,11 +7019,10 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-                const existing = appData.specialCards.emoji.map(c => c.text);
+                const seen = new Set(appData.specialCards.emoji.map(c => (c.text || '').trim()));
                 lines.forEach(line => {
-                    if (!existing.includes(line)) {
-                        appData.specialCards.emoji.push({text: line, hidden: false});
-                    }
+                    const key = line.trim();
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.emoji.push({text: line, hidden: false}); }
                 });
                 saveData();
                 renderEmojiCardList();
@@ -6921,11 +7035,10 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-                const existing = appData.specialCards.kaomoji.map(c => c.text);
+                const seen = new Set(appData.specialCards.kaomoji.map(c => (c.text || '').trim()));
                 lines.forEach(line => {
-                    if (!existing.includes(line)) {
-                        appData.specialCards.kaomoji.push({text: line, hidden: false});
-                    }
+                    const key = line.trim();
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.kaomoji.push({text: line, hidden: false}); }
                 });
                 saveData();
                 renderKaomojiCardList();
@@ -6938,11 +7051,10 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-                const existing = appData.specialCards.nudge.map(c => c.text);
+                const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
                 lines.forEach(line => {
-                    if (!existing.includes(line)) {
-                        appData.specialCards.nudge.push({text: line, hidden: false});
-                    }
+                    const key = line.trim();
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); }
                 });
                 saveData();
                 renderNudgeCardList();
@@ -6989,6 +7101,26 @@
             saveData();
             renderWordCardList();
         }
+    }
+    // 手动去重：删除当前分组内重复的字卡（仅保留首次出现）
+    function dedupWordCards() {
+        const group = appData.currentGroup;
+        const cards = appData.wordCards[group] || [];
+        if (cards.length === 0) { alert('当前分组没有字卡'); return; }
+        const seen = {};
+        const unique = [];
+        let dupCount = 0;
+        cards.forEach(card => {
+            const key = (card.text || '').trim();
+            if (seen[key]) { dupCount++; }
+            else { seen[key] = true; unique.push(card); }
+        });
+        if (dupCount === 0) { alert('当前分组没有重复字卡'); return; }
+        appData.wordCards[group] = unique;
+        appData.selectedCards = [];
+        saveData();
+        renderWordCardList();
+        alert(`已去重，删除重复字卡 ${dupCount} 张`);
     }
 
     function editWordCard(index) {
@@ -7152,6 +7284,34 @@
         appData.specialCards.image.splice(idx, 1);
         saveData();
         renderImageCards();
+    }
+    // 特殊字卡手动去重：nudge/emoji/kaomoji 按 text 去重，image 按图片数据去重
+    function dedupSpecialCards(type) {
+        const list = appData.specialCards[type];
+        if (!list || list.length === 0) { alert('没有可去重的内容'); return; }
+        const seen = {};
+        const unique = [];
+        let dupCount = 0;
+        if (type === 'image') {
+            list.forEach(src => {
+                if (seen[src]) { dupCount++; }
+                else { seen[src] = true; unique.push(src); }
+            });
+        } else {
+            list.forEach(card => {
+                const key = (card.text || '').trim();
+                if (seen[key]) { dupCount++; }
+                else { seen[key] = true; unique.push(card); }
+            });
+        }
+        if (dupCount === 0) { alert('没有重复内容'); return; }
+        appData.specialCards[type] = unique;
+        saveData();
+        if (type === 'nudge') renderNudgeCardList();
+        else if (type === 'emoji') renderEmojiCardList();
+        else if (type === 'kaomoji') renderKaomojiCardList();
+        else if (type === 'image') renderImageCards();
+        alert(`已去重，删除重复 ${dupCount} 项`);
     }
 
     // ========== 朋友圈功能 ==========
@@ -10069,6 +10229,49 @@
         }, interval);
     }
 
+    // ===== 数据就绪后执行的每日检查 =====
+    function runDailyChecks() {
+        initDailyWord();
+        checkDailyMoments();
+        checkDailyAutoLetter();
+        scheduleOtherQuestion();
+        scheduleProactiveMessage();
+    }
+
+    // ===== 对方主动发消息：到达设定时间后，对方主动调取字卡发消息 =====
+    let _proactiveTimer = null;
+    function scheduleProactiveMessage() {
+        if (_proactiveTimer) { clearTimeout(_proactiveTimer); _proactiveTimer = null; }
+        const s = appData.chatSettings;
+        if (!s.proactiveEnable) return;
+        // 最低以秒为单位，最高以分钟为单位
+        const minMs = Math.max(1, s.proactiveMinSec || 30) * 1000;
+        const maxMs = Math.max(minMs, (s.proactiveMaxMin || 5) * 60 * 1000);
+        const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+        _proactiveTimer = setTimeout(() => {
+            // 调取字卡给对方主动发消息
+            const allCards = getAllVisibleWordCards();
+            if (allCards.length > 0) {
+                let text;
+                if (s.enableSplice && Math.random() > 0.5) {
+                    const spliceCount = Math.min(Math.floor(Math.random() * 3) + 1, allCards.length);
+                    const shuffled = [...allCards].sort(() => 0.5 - Math.random());
+                    text = shuffled.slice(0, spliceCount).join(' ');
+                } else {
+                    text = allCards[Math.floor(Math.random() * allCards.length)];
+                }
+                addMessage({
+                    id: Date.now(),
+                    sender: 'other',
+                    type: 'text',
+                    content: text
+                });
+            }
+            // 继续调度下一次
+            scheduleProactiveMessage();
+        }, delay);
+    }
+
     // ========== 恋爱翻翻乐 ==========
     var flipState = { level: 1, matched: 0, firstCard: null, lock: false, timer: null, timeLeft: 0, maxLevel: 0, inviteChecked: false };
     const FLIP_ICONS = ['heart','star','moon','sun','cloud','rainbow','flower','music','clover','blossom','sunflower','rose','mushroom','leaf','wave','fire','diamond','balloon'];
@@ -10858,6 +11061,7 @@
         document.documentElement.style.setProperty('--other-bubble-border', cs.otherBubbleBorder);
     }
     function reinitAfterIDBLoad() {
+        // 重新应用 IndexedDB 中加载的真实数据，避免刷新时 localStorage 备份丢失导致桌面恢复默认
         restoreCustomFonts();
         applyGlobalSettings();
         applyDesktopWallpaper();
@@ -10866,8 +11070,44 @@
         applyBubbleFont();
         restoreAppIcons();
         restoreWidgets();
+        restoreWidgetOffsets();
+        initTimeWidgets();
+        restoreWordCardStyle();
         initAnniversary();
+        buildCalendar();
+        updateTimes();
         updateBubbleSettingsPreview();
+        // 恢复美化预设CSS
+        ['chatGlobal', 'bubble', 'moments'].forEach(type => {
+            if (appData.beautifyPresets && appData.beautifyPresets[type]) {
+                const active = appData.beautifyPresets[type].find(p => p.active);
+                if (active) {
+                    let styleEl = document.getElementById('beautifyCustomStyle_' + type);
+                    if (!styleEl) {
+                        styleEl = document.createElement('style');
+                        styleEl.id = 'beautifyCustomStyle_' + type;
+                        document.head.appendChild(styleEl);
+                    }
+                    styleEl.textContent = active.css;
+                }
+            }
+        });
+        // 恢复聊天壁纸及顶底栏背景
+        const cs = appData.chatSettings;
+        if (cs.chatWallpaper) {
+            const chatMsgs = document.querySelector('.chat-messages');
+            if (chatMsgs) chatMsgs.style.backgroundImage = `url(${cs.chatWallpaper})`;
+        }
+        const chatHeader = document.querySelector('.chat-header');
+        if (chatHeader) {
+            chatHeader.style.backgroundColor = cs.topBgColor;
+            if (cs.topBgImage) { chatHeader.style.backgroundImage = 'url(' + cs.topBgImage + ')'; chatHeader.style.backgroundSize = 'cover'; }
+        }
+        const chatFooter = document.querySelector('.chat-footer');
+        if (chatFooter) {
+            chatFooter.style.backgroundColor = cs.bottomBgColor;
+            if (cs.bottomBgImage) { chatFooter.style.backgroundImage = 'url(' + cs.bottomBgImage + ')'; chatFooter.style.backgroundSize = 'cover'; }
+        }
         if (document.getElementById('chatPage').style.display === 'flex') {
             initChatPage();
             renderMessages();
@@ -10883,7 +11123,6 @@
         restoreCustomFonts();
         initAnniversary();
         buildCalendar();
-        initDailyWord();
         updateTimes();
         restoreAppIcons();
         restoreWidgets();
@@ -10933,9 +11172,8 @@
             chatFooter.style.backgroundColor = cs.bottomBgColor;
             if (cs.bottomBgImage) { chatFooter.style.backgroundImage = 'url(' + cs.bottomBgImage + ')'; chatFooter.style.backgroundSize = 'cover'; }
         }
-        scheduleOtherQuestion();
-        checkDailyAutoLetter();
-        checkDailyMoments();
+        // 注意：每日检查（initDailyWord / checkDailyMoments / checkDailyAutoLetter / scheduleOtherQuestion）
+        // 已移至 loadDataFromIDB 完成后的 runDailyChecks()，避免用默认数据覆盖 IndexedDB 真实数据
 
         // Dock栏点击
         document.querySelector('[data-app="settings"]').addEventListener('click', openGlobalSettings);
