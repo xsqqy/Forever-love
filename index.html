@@ -68,8 +68,7 @@
         }
         html, body {
             width: 100%;
-            height: 100vh;
-            height: var(--app-height, 100vh);
+            height: 100%;
             overflow: hidden;
             font-family: var(--font-family);
             background: var(--color-bg);
@@ -77,8 +76,7 @@
         }
         .phone-container {
             width: 100%;
-            height: 100vh;
-            height: var(--app-height, 100vh);
+            height: 100%;
             position: relative;
             overflow: hidden;
         }
@@ -112,14 +110,14 @@
             width: 50%;
             height: 100%;
             position: relative;
-            padding: 125px 16px calc(100px + env(safe-area-inset-bottom));
+            padding: calc(125px + env(safe-area-inset-top, 0px)) 16px calc(100px + env(safe-area-inset-bottom, 0px));
             overflow-y: auto;
             overflow-x: hidden;
             background: transparent !important;
         }
         .page-indicator {
             position: fixed;
-            bottom: calc(85px + env(safe-area-inset-bottom));
+            bottom: 85px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -330,7 +328,7 @@
         }
         .dock-bar {
             position: fixed;
-            bottom: calc(20px + env(safe-area-inset-bottom));
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 32px);
@@ -665,6 +663,10 @@
             width: var(--app-icon-size);
             height: var(--app-icon-size);
         }
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .dock-bar { bottom: calc(20px + env(safe-area-inset-bottom)); }
+            .page-indicator { bottom: calc(85px + env(safe-area-inset-bottom)); }
+        }
         /* ========== 聊天界面样式 ========== */
         .chat-page {
             width: 100%;
@@ -900,7 +902,7 @@
         .msg-row.multi-select-mode .multi-check{display:flex;}
         .multi-check{display:none;width:22px;height:22px;border:2px solid #ccc;border-radius:4px;align-items:center;justify-content:center;margin:0 4px;flex-shrink:0;cursor:pointer;font-size:14px;color:#fff;}
         .multi-check.checked{background:#1a1a1a;border-color:#1a1a1a;}
-        .multi-delete-bar{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;display:none;align-items:center;gap:12px;z-index:200;font-size:14px;}
+        .multi-delete-bar{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;display:none;align-items:center;gap:12px;z-index:200;font-size:14px;}
         .multi-delete-bar.show{display:flex;}
         .multi-delete-bar button{padding:6px 14px;border:none;border-radius:14px;cursor:pointer;font-size:13px;}
         .multi-delete-bar .del-btn{background:#ff4444;color:#fff;}
@@ -959,7 +961,6 @@
             border-top: 1px solid #e0e0e0;
             display: none;
             padding: 12px;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom));
             overflow-y: auto;
             flex-shrink: 0;
         }
@@ -1021,36 +1022,6 @@
             stroke: currentColor;
             fill: none;
             stroke-width: 1.5;
-        }
-        /* 字卡网格样式 */
-        .wordcard-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 8px !important;
-        }
-        .wordcard-grid-item {
-            background: var(--color-white);
-            border-radius: 8px;
-            padding: 10px 12px;
-            cursor: pointer;
-            font-size: 13px;
-            line-height: 1.4;
-            color: var(--color-deep-black);
-            word-break: break-all;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            transition: background 0.15s;
-        }
-        .wordcard-grid-item:active {
-            background: #e8e8e8;
-        }
-        .wordcard-grid-empty {
-            grid-column: 1 / -1;
-            text-align: center;
-            color: var(--color-light-gray);
-            font-size: 13px;
-            padding: 30px 0;
         }
         .plus-grid {
             display: grid;
@@ -2568,8 +2539,6 @@
         html.dark-mode .emoji-item{background:#333!important;}
         html.dark-mode .emoji-add{border-color:#555!important;color:#e0e0e0!important;background:#333!important;}
         html.dark-mode .emoji-add svg{stroke:#e0e0e0!important;}
-        html.dark-mode .wordcard-grid-item{background:#333!important;color:#e0e0e0!important;}
-        html.dark-mode .wordcard-grid-item:active{background:#3a3a3a!important;}
         html.dark-mode .system-msg span{background:rgba(45,45,45,.6)!important;color:#aaa!important;border-color:rgba(255,255,255,.1)!important;}
         html.dark-mode .transfer-msg{background:var(--transfer-bg,#E8913A)!important;}
         html.dark-mode .transfer-msg.claimed,html.dark-mode .transfer-msg.refunded{background:var(--transfer-bg-claimed,#666)!important;}
@@ -2871,8 +2840,6 @@
             <div class="emoji-tabs">
                 <div class="emoji-tab active" data-tab="mine" onclick="switchEmojiTab('mine')">我的表情</div>
                 <div class="emoji-tab" data-tab="other" onclick="switchEmojiTab('other')">对方表情</div>
-                <div class="emoji-tab" data-tab="myWord" onclick="switchEmojiTab('myWord')">我的字卡</div>
-                <div class="emoji-tab" data-tab="otherWord" onclick="switchEmojiTab('otherWord')">对方字卡</div>
             </div>
             <div class="emoji-grid" id="emojiGridMine">
                 <div class="emoji-add" onclick="addEmoji('mine')">
@@ -2884,8 +2851,6 @@
                     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </div>
             </div>
-            <div class="emoji-grid wordcard-grid" id="emojiGridMyWord" style="display:none;"></div>
-            <div class="emoji-grid wordcard-grid" id="emojiGridOtherWord" style="display:none;"></div>
         </div>
         <div class="plus-panel" id="plusPanel">
             <div class="plus-grid">
@@ -5902,46 +5867,10 @@
         document.querySelectorAll('.emoji-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
         document.getElementById('emojiGridMine').style.display = tab === 'mine' ? 'grid' : 'none';
         document.getElementById('emojiGridOther').style.display = tab === 'other' ? 'grid' : 'none';
-        document.getElementById('emojiGridMyWord').style.display = tab === 'myWord' ? 'grid' : 'none';
-        document.getElementById('emojiGridOtherWord').style.display = tab === 'otherWord' ? 'grid' : 'none';
-        if (tab === 'myWord' || tab === 'otherWord') renderWordCardGrid(tab);
     }
     function renderEmojis() {
         renderEmojiGrid('mine', appData.emojis.mine);
         renderEmojiGrid('other', appData.emojis.other);
-    }
-    // 渲染字卡网格（聊天面板内）
-    function renderWordCardGrid(tab) {
-        const gridId = tab === 'myWord' ? 'emojiGridMyWord' : 'emojiGridOtherWord';
-        const grid = document.getElementById(gridId);
-        if (!grid) return;
-        grid.innerHTML = '';
-        const allCards = getAllVisibleWordCards();
-        if (allCards.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'wordcard-grid-empty';
-            empty.textContent = '暂无字卡，请先在字卡管理中添加';
-            grid.appendChild(empty);
-            return;
-        }
-        allCards.forEach(text => {
-            const item = document.createElement('div');
-            item.className = 'wordcard-grid-item';
-            item.textContent = text;
-            item.onclick = () => sendWordCardMessage(tab, text);
-            grid.appendChild(item);
-        });
-    }
-    // 从聊天面板发送字卡
-    function sendWordCardMessage(tab, text) {
-        const sender = tab === 'myWord' ? 'mine' : 'other';
-        addMessage({
-            id: Date.now(),
-            sender: sender,
-            type: 'text',
-            content: text
-        });
-        document.getElementById('emojiPanel').classList.remove('show');
     }
     function renderEmojiGrid(type, list) {
         const grid = document.getElementById(type === 'mine' ? 'emojiGridMine' : 'emojiGridOther');
@@ -5992,21 +5921,12 @@
         document.getElementById('multiFileInput').click();
     }
     function sendEmoji(type, src) {
-        if (type === 'mine') {
-            addMessage({
-                id: Date.now(),
-                sender: 'mine',
-                type: 'emoji',
-                content: src
-            });
-        } else if (type === 'other') {
-            addMessage({
-                id: Date.now(),
-                sender: 'other',
-                type: 'emoji',
-                content: src
-            });
-        }
+        addMessage({
+            id: Date.now(),
+            sender: type === 'mine' ? 'mine' : 'other',
+            type: 'emoji',
+            content: src
+        });
         document.getElementById('emojiPanel').classList.remove('show');
     }
 
@@ -6048,7 +5968,6 @@
         saveData();
         if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
         
-        // 先生成唯一 ID，确保 addMessage 和 setTimeout 使用同一个 ID
         const sentTransferId = Date.now();
         addMessage({
             id: sentTransferId,
@@ -6171,13 +6090,6 @@
     function renderNudgeCardList() {
         const container = document.getElementById('nudgeCardList');
         container.innerHTML = '';
-        if (appData.specialCards.nudge.length === 0) {
-            const empty = document.createElement('div');
-            empty.style.cssText = 'text-align:center;padding:20px;color:#999;font-size:13px;font-family:var(--font-family);';
-            empty.textContent = '暂无拍一拍字卡，点击上方按钮添加';
-            container.appendChild(empty);
-            return;
-        }
         appData.specialCards.nudge.forEach((card, index) => {
             const item = document.createElement('div');
             item.className = 'special-card-item' + (card.hidden ? ' hidden' : '');
@@ -6191,6 +6103,18 @@
             `;
             container.appendChild(item);
         });
+        // 搜索结果提示
+        if (keyword && visibleCount === 0) {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'text-align:center;padding:20px;color:#999;font-size:13px;font-family:var(--font-family);';
+            hint.textContent = '没有找到匹配的字卡';
+            container.appendChild(hint);
+        } else if (keyword) {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'text-align:center;padding:8px;color:#999;font-size:12px;font-family:var(--font-family);';
+            hint.textContent = '找到 ' + visibleCount + ' 条匹配结果';
+            container.appendChild(hint);
+        }
     }
     function editNudgeCard(index) {
         const newText = prompt('修改拍一拍内容', appData.specialCards.nudge[index].text);
@@ -11589,23 +11513,6 @@
             }
         }, 3600000);
     }
-
-    // ===== iOS standalone 模式视口高度修复 =====
-    // iOS 添加到主屏幕后，100vh/100% 可能不等于实际可见高度，
-    // 导致底部内容被遮挡或上移。通过 JS 实时获取 innerHeight 并设置 CSS 变量。
-    function fixViewportHeight() {
-        function setHeight() {
-            document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-        }
-        setHeight();
-        window.addEventListener('resize', setHeight);
-        window.addEventListener('orientationchange', function() { setTimeout(setHeight, 200); });
-        // iOS standalone 模式下，页面可见时重新计算（处理从后台切回前台时高度变化）
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) setTimeout(setHeight, 100);
-        });
-    }
-    fixViewportHeight();
 
     init();
 
