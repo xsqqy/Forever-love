@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="迁逸">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <link rel="icon" type="image/png" href="./icon-192.png">
     <title>迁逸 · 双屏</title>
     <style>
         * {
@@ -800,7 +805,7 @@
             padding: var(--bubble-padding, 8px) calc(var(--bubble-padding, 8px) + 4px);
             border-radius: var(--bubble-radius);
             font-size: var(--bubble-font-size);
-            font-family: var(--bubble-font-family, var(--font-family));
+            font-family: var(--bubble-font-family, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
             line-height: 1.5;
             word-break: break-word;
             position: relative;
@@ -867,15 +872,14 @@
             margin: 12px 0;
         }
         .system-msg span{display:inline-block;padding:4px 12px;background:rgba(255,255,255,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(0,0,0,0.06);border-radius:0;font-size:12px;color:#aaa;}
-        .transfer-msg{width:200px;padding:12px;border-radius:8px;cursor:pointer;}
-        .transfer-msg.pending{background:#E8913A;color:#fff;}
-        .transfer-msg.pending .transfer-desc,.transfer-msg.pending .transfer-status{color:rgba(255,255,255,0.85);}
-        .transfer-msg.claimed,.transfer-msg.refunded{background:#999;color:#fff;}
+        .transfer-msg{width:200px;padding:12px;border-radius:var(--transfer-radius,8px);cursor:pointer;background:var(--transfer-bg,#E8913A);color:var(--transfer-text-color,#fff);border:1px solid transparent;}
+        .transfer-msg .transfer-desc{color:var(--transfer-remark-color,rgba(255,255,255,0.85));font-size:12px;opacity:1;margin-bottom:8px;}
+        .transfer-msg .transfer-status{color:var(--transfer-remark-color,rgba(255,255,255,0.85));font-size:12px;}
+        .transfer-msg.claimed,.transfer-msg.refunded{background:var(--transfer-bg-claimed,#999);color:var(--transfer-text-color-claimed,#fff);}
         .transfer-msg.claimed .transfer-desc,.transfer-msg.refunded .transfer-desc,
-        .transfer-msg.claimed .transfer-status,.transfer-msg.refunded .transfer-status{color:rgba(255,255,255,0.85);}
+        .transfer-msg.claimed .transfer-status,.transfer-msg.refunded .transfer-status{color:var(--transfer-remark-color-claimed,rgba(255,255,255,0.85));}
         .transfer-msg .transfer-amount{font-size:20px;font-weight:500;margin-bottom:4px;}
-        .transfer-msg .transfer-desc{font-size:12px;opacity:0.85;margin-bottom:8px;}
-        .transfer-msg .transfer-status{font-size:12px;}
+        /* 转账形状独立于气泡圆角设置，始终使用自己的border-radius */
         .survey-msg {
             width: 220px;
             padding: 12px;
@@ -2536,8 +2540,8 @@
         html.dark-mode .emoji-add{border-color:#555!important;color:#e0e0e0!important;background:#333!important;}
         html.dark-mode .emoji-add svg{stroke:#e0e0e0!important;}
         html.dark-mode .system-msg span{background:rgba(45,45,45,.6)!important;color:#aaa!important;border-color:rgba(255,255,255,.1)!important;}
-        html.dark-mode .transfer-msg.pending{background:#E8913A!important;}
-        html.dark-mode .transfer-msg.claimed,html.dark-mode .transfer-msg.refunded{background:#666!important;}
+        html.dark-mode .transfer-msg{background:var(--transfer-bg,#E8913A)!important;}
+        html.dark-mode .transfer-msg.claimed,html.dark-mode .transfer-msg.refunded{background:var(--transfer-bg-claimed,#666)!important;}
         html.dark-mode .survey-msg .survey-option{color:#e0e0e0!important;border-color:#555!important;}
         html.dark-mode .survey-msg .survey-answer{color:#aaa!important;}
         html.dark-mode .bubble-preview{background:#2d2d2d!important;}
@@ -3088,6 +3092,21 @@
                     <div class="slider-setting"><label>我方第2条圆方</label><input type="range" id="myMsg2Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
                     <div class="slider-setting"><label>我方第3条圆方</label><input type="range" id="myMsg3Radius" min="0" max="40" value="8" oninput="updateBubbleStyle()"></div>
                 </div>
+                <div class="section-subtitle">转账样式（独立于气泡形状）</div>
+                <div class="settings-grid-2">
+                    <div class="color-setting"><label>转账背景色</label><input type="color" id="transferBgColor" value="#E8913A" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>转账文字色</label><input type="color" id="transferTextColor" value="#ffffff" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>转账备注色</label><input type="color" id="transferRemarkColor" value="#ffffff" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>已领取背景色</label><input type="color" id="transferBgClaimed" value="#999999" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>已领取文字色</label><input type="color" id="transferTextClaimed" value="#ffffff" oninput="updateBubbleStyle()"></div>
+                    <div class="color-setting"><label>已领取备注色</label><input type="color" id="transferRemarkClaimed" value="#ffffff" oninput="updateBubbleStyle()"></div>
+                </div>
+                <div class="settings-row" style="margin-top:8px;">
+                    <label>转账圆角</label>
+                    <input type="range" id="transferRadius" min="0" max="40" value="8" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('transferRadiusVal').textContent=this.value;updateBubbleStyle()">
+                    <span id="transferRadiusVal">8</span>
+                    <button onclick="resetTransferStyle()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;margin-left:8px;">重置</button>
+                </div>
             </div>
             <div class="settings-section">
                 <div class="section-title">显示设置</div>
@@ -3263,6 +3282,9 @@
             <div class="wordcard-tab.add-tab" onclick="addGroup()">+ 添加分组</div>
         </div>
         <div class="wordcard-actions">
+            <div style="width:100%;margin-bottom:8px;">
+                <input type="text" id="wordcardSearchInput" placeholder="搜索字卡..." oninput="renderWordCardList()" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;font-family:var(--font-family);box-sizing:border-box;">
+            </div>
             <div class="action-btn" onclick="batchUploadWord()">批量上传</div>
             <div class="action-btn" onclick="uploadWordFile()">上传文件</div>
             <div class="action-btn" onclick="deleteSelectedCards()">删除选中</div>
@@ -3463,6 +3485,22 @@
                     <input type="range" id="globalFontSizeSlider" min="12" max="20" value="14" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('globalFontSizeVal').textContent=this.value;updateGlobalFontSize(this.value)">
                     <span id="globalFontSizeVal">14</span>
                 </div>
+            </div>
+            <div class="settings-section">
+                <div class="section-title">消息通知</div>
+                <div class="settings-row">
+                    <label>开启站内消息通知</label>
+                    <input type="checkbox" id="notificationToggle" onchange="toggleNotification()">
+                </div>
+                <div style="font-size:12px;color:#999;margin:4px 0 8px;font-family:var(--font-family);">开启后，当你离开聊天界面时，对方发消息会有弹窗提醒</div>
+            </div>
+            <div class="settings-section">
+                <div class="section-title">后台保活</div>
+                <div class="settings-row">
+                    <label>开启后台保活</label>
+                    <input type="checkbox" id="keepAliveToggle" onchange="toggleKeepAlive()">
+                </div>
+                <div style="font-size:12px;color:#999;margin:4px 0 8px;font-family:var(--font-family);">开启后，切到后台时保持运行，回来后自动补发离开期间对方的消息，并防止屏幕息屏。建议先"添加到主屏幕"获得最佳效果</div>
             </div>
             <div class="settings-section">
                 <div class="section-title">备份与恢复</div>
@@ -3694,6 +3732,12 @@
     </div>
 <!-- 通用遮罩 -->
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+
+<!-- 站内消息通知弹窗 -->
+<div id="chatNotification" style="position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:9999;background:rgba(26,26,26,0.9);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;max-width:80%;box-shadow:0 4px 20px rgba(0,0,0,0.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform 0.3s ease,opacity 0.3s ease;opacity:0;pointer-events:none;font-family:var(--font-family);cursor:pointer;text-align:center;" onclick="openChatFromNotification()">
+    <div id="notifSenderName" style="font-size:12px;opacity:0.7;margin-bottom:2px;"></div>
+    <div id="notifContent" style="max-height:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+</div>
 
 <!-- 桌面编辑面板 -->
 <div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div style="font-size:13px;color:#999;margin-bottom:8px;font-family:var(--font-family);">组件位置调节（滑动调整）</div><div class="edit-option" onclick="openWidgetPosEditor('anniversary','纪念日组件',1)">第一页 · 纪念日组件</div><div class="edit-option" onclick="openWidgetPosEditor('appSection','聊天/日记/朋友圈/信封',1)">第一页 · 聊天日记朋友圈信封</div><div class="edit-option" onclick="openWidgetPosEditor('appSectionBottom','美化/字卡/调查问卷/他的手机',1)">第一页 · 美化字卡调查问卷</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openWidgetPosEditor('period','生理期组件',2)">第二页 · 生理期组件</div><div class="edit-option" onclick="openWidgetPosEditor('wordCard','Ta今天想对你说的话',2)">第二页 · Ta想对你说的话</div><div class="edit-option" onclick="openWidgetPosEditor('thirdRow','时间/默契挑战/五子棋等',2)">第二页 · 时间和游戏行</div></div>
@@ -4140,6 +4184,14 @@
             otherMsg2Radius: -1,
             otherMsg3Radius: -1,
             myMsg1Radius: -1,
+            // 转账样式（独立于气泡）
+            transferBgColor: '#E8913A',
+            transferTextColor: '#ffffff',
+            transferRemarkColor: '#ffffff',
+            transferBgClaimed: '#999999',
+            transferTextClaimed: '#ffffff',
+            transferRemarkClaimed: '#ffffff',
+            transferRadius: 8,
             myMsg2Radius: -1,
             myMsg3Radius: -1,
             avatarPosition: 'middle',
@@ -4422,7 +4474,14 @@
             e.target.closest('.dock-bar') || e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
             e.target.closest('.time-widget') ||
             e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
-            e.target.closest('.moments-page') || e.target.closest('.diary-page') || e.target.closest('.letter-page')) {
+            e.target.closest('.moments-page') || e.target.closest('.diary-page') || e.target.closest('.letter-page') ||
+            e.target.closest('.beautify-page') || e.target.closest('.storage-page') || e.target.closest('.his-phone-page') ||
+            e.target.closest('.survey-app-page') || e.target.closest('.flip-app-page') || e.target.closest('.goban-app-page') ||
+            e.target.closest('.challenge-app-page') || e.target.closest('.balance-app-page') ||
+            e.target.closest('.video-call-page') || e.target.closest('.sv-float') ||
+            e.target.closest('.modal') || e.target.closest('.emoji-panel') || e.target.closest('.plus-panel') ||
+            e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+            e.target.closest('.word-card')) {
             return;
         }
         longPressTimer = setTimeout(() => {
@@ -4555,11 +4614,25 @@
     // 阻止iOS长按弹出菜单/复制气泡
     document.addEventListener('touchstart', function(e) {
         if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('[contenteditable="true"]')) return;
-        // 不对可交互元素（app-item、anniversary-widget、period-calendar、word-card、time-widget、square-widget等）阻止默认行为，否则click事件无法触发
+        // 不对可交互元素阻止默认行为，否则click事件无法触发
         if (e.target.closest('.app-item') || e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
             e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.square-widget') ||
-            e.target.closest('.page-dot') || e.target.closest('button') || e.target.closest('a')) return;
-        if (e.target.closest('.desktop-page') || e.target.closest('.dock-bar')) {
+            e.target.closest('.page-dot') || e.target.closest('button') || e.target.closest('a') ||
+            e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
+            e.target.closest('.modal') || e.target.closest('.chat-page') || e.target.closest('.settings-page') ||
+            e.target.closest('.wordcard-page') || e.target.closest('.moments-page') || e.target.closest('.diary-page') ||
+            e.target.closest('.letter-page') || e.target.closest('.dock-bar') || e.target.closest('.emoji-panel') ||
+            e.target.closest('.plus-panel') || e.target.closest('.beautify-page') || e.target.closest('.storage-page') ||
+            e.target.closest('.his-phone-page') || e.target.closest('.sv-float') || e.target.closest('.video-call-page') ||
+            e.target.closest('.settings-content') || e.target.closest('.settings-header') ||
+            e.target.closest('.wordcard-header') || e.target.closest('.wordcard-tabs') ||
+            e.target.closest('.wordcard-actions') || e.target.closest('.special-section') ||
+            e.target.closest('.wordcard-list') || e.target.closest('.special-card-list') ||
+            e.target.closest('.batch-upload-modal') || e.target.closest('.transferModal') ||
+            e.target.closest('.flip-app-page') || e.target.closest('.goban-app-page') ||
+            e.target.closest('.challenge-app-page') || e.target.closest('.balance-app-page') ||
+            e.target.closest('.survey-app-page')) return;
+        if (e.target.closest('.desktop-page') || e.target.closest('.phone-container')) {
             e.preventDefault();
         }
     }, { passive: false });
@@ -4594,7 +4667,11 @@
     function openSizeEditor() { document.getElementById('mainEditMenu').classList.remove('show'); document.getElementById('sizeEditor').classList.add('show'); }
     function openNameColorEditor() { document.getElementById('mainEditMenu').classList.remove('show'); document.getElementById('nameColorEditor').classList.add('show'); }
     function openAppNameSizeEditor() { document.getElementById('mainEditMenu').classList.remove('show'); document.getElementById('appNameSizeEditor').classList.add('show'); }
-    function updateIconSize(v) { document.documentElement.style.setProperty('--app-icon-size', v + 'px'); }
+    function updateIconSize(v) {
+        document.documentElement.style.setProperty('--app-icon-size', v + 'px');
+        appData.iconSize = parseInt(v);
+        saveData();
+    }
     function updateAppNameSize(v) { 
         document.documentElement.style.setProperty('--app-name-font-size', v + 'px');
         appData.appNameSize = parseFloat(v);
@@ -4788,6 +4865,26 @@
         saveData();
     }
     function openAnniversaryBgUpload() { document.getElementById('anniversaryEditor').classList.remove('show'); document.getElementById('uploadModal').classList.add('show'); }
+    function calcAnniversaryDays(dateStr) {
+        // 兼容iOS Safari: 用split手动解析日期，避免 new Date('YYYY-MM-DD') 时区问题
+        const parts = dateStr.split('-');
+        const target = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const diffTime = Math.abs(today.getTime() - target.getTime());
+        return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+    function calcWeekDay(dateStr) {
+        const parts = dateStr.split('-');
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const week = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+        return week[d.getDay()];
+    }
+    function updateAnniversaryDisplay(dateStr) {
+        const diffDays = calcAnniversaryDays(dateStr);
+        document.getElementById('anniversaryDays').textContent = diffDays + ' Days';
+        document.getElementById('anniversaryDate').textContent = dateStr + ' ' + calcWeekDay(dateStr);
+    }
     function saveAnniversary() {
         const title = document.getElementById('editTitle').value;
         const dateStr = document.getElementById('editDate').value;
@@ -4795,15 +4892,7 @@
         if(title) { appData.anniversary.title = title; document.getElementById('anniversaryTitle').textContent = title; }
         if(dateStr) {
             appData.anniversary.date = dateStr;
-            const target = new Date(dateStr);
-            const today = new Date();
-            target.setHours(0,0,0,0);
-            today.setHours(0,0,0,0);
-            const diffTime = Math.abs(today.getTime() - target.getTime());
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            document.getElementById('anniversaryDays').textContent = diffDays + ' Days';
-            const week = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
-            document.getElementById('anniversaryDate').textContent = dateStr + ' ' + week[target.getDay()];
+            updateAnniversaryDisplay(dateStr);
         }
         document.getElementById('anniversaryTitle').style.color = color;
         document.getElementById('anniversaryDays').style.color = color;
@@ -4816,15 +4905,9 @@
         const d = appData.anniversary.date || '2024-01-01';
         const title = appData.anniversary.title || '我与你相恋已经';
         document.getElementById('anniversaryTitle').textContent = title;
-        const target = new Date(d);
-        const today = new Date();
-        target.setHours(0,0,0,0);
-        today.setHours(0,0,0,0);
-        const diffTime = Math.abs(today.getTime() - target.getTime());
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = calcAnniversaryDays(d);
         document.getElementById('anniversaryDays').textContent = diffDays + ' Days';
-        const week = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
-        document.getElementById('anniversaryDate').textContent = d + ' ' + week[target.getDay()];
+        document.getElementById('anniversaryDate').textContent = d + ' ' + calcWeekDay(d);
         if (appData.colors.anniversaryText) {
             document.getElementById('anniversaryTitle').style.color = appData.colors.anniversaryText;
             document.getElementById('anniversaryDays').style.color = appData.colors.anniversaryText;
@@ -5154,6 +5237,7 @@
         document.documentElement.style.setProperty('--other-bubble-text', s.otherBubbleText);
         document.documentElement.style.setProperty('--other-bubble-border', s.otherBubbleBorder);
         applyBubbleRadiusVars(s);
+        applyTransferStyleVars(s);
         applyBubbleFont();
         
         if (s.chatWallpaper) {
@@ -5230,6 +5314,15 @@
         document.getElementById('myMsg1Radius').value = s.myMsg1Radius >= 0 ? s.myMsg1Radius : s.bubbleRadius;
         document.getElementById('myMsg2Radius').value = s.myMsg2Radius >= 0 ? s.myMsg2Radius : s.bubbleRadius;
         document.getElementById('myMsg3Radius').value = s.myMsg3Radius >= 0 ? s.myMsg3Radius : s.bubbleRadius;
+        // 转账样式
+        document.getElementById('transferBgColor').value = s.transferBgColor || '#E8913A';
+        document.getElementById('transferTextColor').value = s.transferTextColor || '#ffffff';
+        document.getElementById('transferRemarkColor').value = s.transferRemarkColor || '#ffffff';
+        document.getElementById('transferBgClaimed').value = s.transferBgClaimed || '#999999';
+        document.getElementById('transferTextClaimed').value = s.transferTextClaimed || '#ffffff';
+        document.getElementById('transferRemarkClaimed').value = s.transferRemarkClaimed || '#ffffff';
+        document.getElementById('transferRadius').value = s.transferRadius !== undefined ? s.transferRadius : 8;
+        const _trVal = document.getElementById('transferRadiusVal'); if (_trVal) _trVal.textContent = s.transferRadius !== undefined ? s.transferRadius : 8;
         const _oVal = document.getElementById('otherBubbleRadiusVal'); if (_oVal) _oVal.textContent = (s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius) + ' px';
         const _mVal = document.getElementById('myBubbleRadiusVal'); if (_mVal) _mVal.textContent = (s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius) + ' px';
         document.getElementById('avatarPosition').value = s.avatarPosition;
@@ -5290,12 +5383,38 @@
             }
         }
     }
-    function renderMessages() {
+    function renderMessages(onlyNew) {
         const container = document.getElementById('chatMessages');
-        container.innerHTML = '';
         const history = appData.chatHistory;
         const s = appData.chatSettings;
         
+        // 如果只需要渲染新增消息且容器已有内容，采用增量渲染
+        if (onlyNew && container.children.length > 0 && container._renderedCount) {
+            const startIdx = Math.min(container._renderedCount, history.length);
+            const prevMsg = startIdx > 0 ? history[startIdx - 1] : null;
+            let lastSender = prevMsg ? prevMsg.sender : null;
+            // 重新计算连续消息数（从已渲染的最后一条开始）
+            let otherMsgCount = 0, myMsgCount = 0;
+            for (let i = 0; i < startIdx; i++) {
+                if (history[i].sender === 'other') otherMsgCount++;
+                else if (history[i].sender === 'mine') myMsgCount++;
+            }
+            for (let i = startIdx; i < history.length; i++) {
+                const msg = history[i];
+                const isFirst = msg.sender !== lastSender;
+                lastSender = msg.sender;
+                if (msg.sender === 'other') otherMsgCount++;
+                else if (msg.sender === 'mine') myMsgCount++;
+                const isLast = i === history.length - 1 || (history[i + 1] && history[i + 1].sender !== msg.sender);
+                container.appendChild(buildMessageRow(msg, i, isFirst, isLast, otherMsgCount, myMsgCount, s));
+            }
+            container._renderedCount = history.length;
+            return;
+        }
+        
+        // 全量渲染
+        container.innerHTML = '';
+        container._renderedCount = history.length;
         let lastSender = null;
         let otherMsgCount = 0, myMsgCount = 0;
         
@@ -5306,35 +5425,39 @@
             if (msg.sender === 'other') otherMsgCount++;
             else if (msg.sender === 'mine') myMsgCount++;
             
-            if (msg.type === 'system') {
-                const row = document.createElement('div');
-                row.className = 'system-msg';
-                row.dataset.id = msg.id;
-                row.innerHTML = `<span>${msg.content}</span>`;
-                row.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    showMsgOpsMenu(e, msg.id);
-                });
-                row.addEventListener('touchstart', (e) => {
-                    let timer = setTimeout(() => showMsgOpsMenu(e, msg.id), 600);
-                    const end = () => { clearTimeout(timer); };
-                    e.target.addEventListener('touchend', end, {once: true});
-                    e.target.addEventListener('touchmove', end, {once: true});
-                });
-                container.appendChild(row);
-                return;
-            }
-            
+            container.appendChild(buildMessageRow(msg, index, isFirst, isLast, otherMsgCount, myMsgCount, s));
+        });
+    }
+    
+    function buildMessageRow(msg, index, isFirst, isLast, otherMsgCount, myMsgCount, s) {
+        if (msg.type === 'system') {
             const row = document.createElement('div');
-            row.className = `msg-row ${msg.sender === 'mine' ? 'mine' : 'other'} ${s.avatarPosition !== 'middle' ? 'avatar-' + s.avatarPosition : ''} ${isMultiDeleteMode ? 'multi-select-mode' : ''}`;
+            row.className = 'system-msg';
             row.dataset.id = msg.id;
+            row.innerHTML = `<span>${msg.content}</span>`;
+            row.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showMsgOpsMenu(e, msg.id);
+            });
+            row.addEventListener('touchstart', (e) => {
+                let timer = setTimeout(() => showMsgOpsMenu(e, msg.id), 600);
+                const end = () => { clearTimeout(timer); };
+                e.target.addEventListener('touchend', end, {once: true});
+                e.target.addEventListener('touchmove', end, {once: true});
+            });
+            return row;
+        }
+            
+        const row = document.createElement('div');
+        row.className = `msg-row ${msg.sender === 'mine' ? 'mine' : 'other'} ${s.avatarPosition !== 'middle' ? 'avatar-' + s.avatarPosition : ''} ${isMultiDeleteMode ? 'multi-select-mode' : ''}`;
+        row.dataset.id = msg.id;
 
-            if (isMultiDeleteMode && msg.type !== 'system') {
-                const chk = document.createElement('div');
-                chk.className = 'multi-check';
-                chk.onclick = (e) => { e.stopPropagation(); toggleMultiSelect(msg.id); };
-                row.appendChild(chk);
-            }
+        if (isMultiDeleteMode && msg.type !== 'system') {
+            const chk = document.createElement('div');
+            chk.className = 'multi-check';
+            chk.onclick = (e) => { e.stopPropagation(); toggleMultiSelect(msg.id); };
+            row.appendChild(chk);
+        }
 
             const showAvatar = !s.hideAvatar && (!s.onlyFirstAvatar || isFirst) && (!s.onlyLastAvatar || isLast);
             const isVerticalAvatar = s.avatarPosition === 'top' || s.avatarPosition === 'bottom';
@@ -5407,6 +5530,10 @@
                     <div class="transfer-desc">${msg.remark || '转账'}</div>
                     <div class="transfer-status">转账（${statusText}）</div>
                 `;
+                // 转账形状独立于气泡圆角设置，强制使用转账自己的border-radius
+                const _tr = appData.chatSettings.transferRadius !== undefined ? appData.chatSettings.transferRadius : 8;
+                bubble.style.borderRadius = _tr + 'px';
+                bubble.style.setProperty('border-radius', _tr + 'px', 'important');
                 // status class already applied
                 bubble.onclick = () => handleTransferClick(msg);
             } else if (msg.type === 'survey') {
@@ -5426,8 +5553,9 @@
             // 分条气泡圆角：根据消息序号覆盖圆角
             // 仅当开启分条气泡圆角时生效；关闭则不影响气泡（沿用对应方CSS变量）
             // -1 表示沿用对应方的CSS变量（含四角圆角），>=0 时用具体值覆盖
+            // 转账消息形状独立，跳过分条圆角逻辑
             var _msgR = -1;
-            if (s.msgRadiusEnabled) {
+            if (s.msgRadiusEnabled && msg.type !== 'transfer') {
                 if (msg.sender === 'other') {
                     _msgR = otherMsgCount === 1 ? s.otherMsg1Radius : (otherMsgCount === 2 ? s.otherMsg2Radius : s.otherMsg3Radius);
                 } else {
@@ -5530,8 +5658,7 @@
                 e.target.addEventListener('touchmove', end, {once: true});
             });
             
-            container.appendChild(row);
-        });
+            return row;
     }
     function createAvatarElement(type) {
         const s = appData.chatSettings;
@@ -5592,8 +5719,12 @@
     function addMessage(msg) {
         appData.chatHistory.push(msg);
         saveData();
-        renderMessages();
+        renderMessages(true);
         scrollToBottom();
+        // 触发站内消息通知（仅对方发来的消息）
+        if (msg.sender === 'other') {
+            showChatNotification(msg);
+        }
     }
     function triggerReceive() {
         if (replyTimer) clearTimeout(replyTimer);
@@ -5756,7 +5887,30 @@
         list.forEach((src, index) => {
             const item = document.createElement('div');
             item.className = 'emoji-item';
+            item.style.position = 'relative';
             item.innerHTML = `<img src="${src}" alt="">`;
+            // 删除按钮（右上角小×号）
+            const delBtn = document.createElement('div');
+            delBtn.style.cssText = 'position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:rgba(255,0,0,0.7);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#fff;line-height:1;z-index:2;opacity:0;transition:opacity 0.2s;';
+            delBtn.textContent = '×';
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (confirm('确定删除这个表情包吗？')) {
+                    appData.emojis[type].splice(index, 1);
+                    saveData();
+                    renderEmojis();
+                }
+            });
+            item.appendChild(delBtn);
+            // 鼠标悬停/触摸时显示删除按钮
+            item.addEventListener('mouseenter', function() { delBtn.style.opacity = '1'; });
+            item.addEventListener('mouseleave', function() { delBtn.style.opacity = '0'; });
+            let showDelTimer = null;
+            item.addEventListener('touchstart', function(e) {
+                showDelTimer = setTimeout(function() { delBtn.style.opacity = '1'; }, 400);
+            }, { passive: true });
+            item.addEventListener('touchend', function() { clearTimeout(showDelTimer); });
+            item.addEventListener('touchmove', function() { clearTimeout(showDelTimer); });
             item.onclick = () => sendEmoji(type, src);
             grid.insertBefore(item, addBtn);
         });
@@ -5951,6 +6105,18 @@
             `;
             container.appendChild(item);
         });
+        // 搜索结果提示
+        if (keyword && visibleCount === 0) {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'text-align:center;padding:20px;color:#999;font-size:13px;font-family:var(--font-family);';
+            hint.textContent = '没有找到匹配的字卡';
+            container.appendChild(hint);
+        } else if (keyword) {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'text-align:center;padding:8px;color:#999;font-size:12px;font-family:var(--font-family);';
+            hint.textContent = '找到 ' + visibleCount + ' 条匹配结果';
+            container.appendChild(hint);
+        }
     }
     function editNudgeCard(index) {
         const newText = prompt('修改拍一拍内容', appData.specialCards.nudge[index].text);
@@ -6044,13 +6210,24 @@
         
         if (currentEditType === 'emoji') {
             const type = currentEditTarget;
+            const totalFiles = files.length;
+            let processedCount = 0;
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    appData.emojis[type].push(ev.target.result);
-                    saveData();
-                    renderEmojis();
+                    try {
+                        appData.emojis[type].push(ev.target.result);
+                    } catch(e) {
+                        console.error('表情包添加失败:', e);
+                    }
+                    processedCount++;
+                    if (processedCount === totalFiles) {
+                        // 全部文件读取完毕后，统一保存和渲染一次
+                        saveData();
+                        renderEmojis();
+                    }
                 };
+                reader.onerror = function() { processedCount++; };
                 reader.readAsDataURL(file);
             });
         } else if (currentEditType === 'chatImage') {
@@ -6499,6 +6676,37 @@
         document.documentElement.style.setProperty('--other-bubble-radius', oR);
         document.documentElement.style.setProperty('--my-bubble-radius', mR);
     }
+    function applyTransferStyleVars(s) {
+        const root = document.documentElement.style;
+        root.setProperty('--transfer-bg', s.transferBgColor || '#E8913A');
+        root.setProperty('--transfer-text-color', s.transferTextColor || '#fff');
+        root.setProperty('--transfer-remark-color', s.transferRemarkColor || 'rgba(255,255,255,0.85)');
+        root.setProperty('--transfer-bg-claimed', s.transferBgClaimed || '#999');
+        root.setProperty('--transfer-text-color-claimed', s.transferTextClaimed || '#fff');
+        root.setProperty('--transfer-remark-color-claimed', s.transferRemarkClaimed || 'rgba(255,255,255,0.85)');
+        root.setProperty('--transfer-radius', (s.transferRadius !== undefined ? s.transferRadius : 8) + 'px');
+    }
+    function resetTransferStyle() {
+        const s = appData.chatSettings;
+        s.transferBgColor = '#E8913A';
+        s.transferTextColor = '#ffffff';
+        s.transferRemarkColor = '#ffffff';
+        s.transferBgClaimed = '#999999';
+        s.transferTextClaimed = '#ffffff';
+        s.transferRemarkClaimed = '#ffffff';
+        s.transferRadius = 8;
+        document.getElementById('transferBgColor').value = '#E8913A';
+        document.getElementById('transferTextColor').value = '#ffffff';
+        document.getElementById('transferRemarkColor').value = '#ffffff';
+        document.getElementById('transferBgClaimed').value = '#999999';
+        document.getElementById('transferTextClaimed').value = '#ffffff';
+        document.getElementById('transferRemarkClaimed').value = '#ffffff';
+        document.getElementById('transferRadius').value = 8;
+        document.getElementById('transferRadiusVal').textContent = '8';
+        saveData();
+        applyTransferStyleVars(s);
+        renderMessages();
+    }
     function updateBubbleStyle() {
         const s = appData.chatSettings;
         s.myBubbleBg = document.getElementById('myBubbleBg').value;
@@ -6557,6 +6765,14 @@
         s.myMsg1Radius = (parseInt(document.getElementById('myMsg1Radius').value) === mmR) ? -1 : parseInt(document.getElementById('myMsg1Radius').value);
         s.myMsg2Radius = (parseInt(document.getElementById('myMsg2Radius').value) === mmR) ? -1 : parseInt(document.getElementById('myMsg2Radius').value);
         s.myMsg3Radius = (parseInt(document.getElementById('myMsg3Radius').value) === mmR) ? -1 : parseInt(document.getElementById('myMsg3Radius').value);
+        // 转账样式
+        s.transferBgColor = document.getElementById('transferBgColor').value;
+        s.transferTextColor = document.getElementById('transferTextColor').value;
+        s.transferRemarkColor = document.getElementById('transferRemarkColor').value;
+        s.transferBgClaimed = document.getElementById('transferBgClaimed').value;
+        s.transferTextClaimed = document.getElementById('transferTextClaimed').value;
+        s.transferRemarkClaimed = document.getElementById('transferRemarkClaimed').value;
+        s.transferRadius = parseInt(document.getElementById('transferRadius').value);
         
         document.documentElement.style.setProperty('--bubble-radius', s.bubbleRadius + 'px');
         document.documentElement.style.setProperty('--bubble-font-size', s.bubbleFontSize + 'px');
@@ -6572,7 +6788,8 @@
         document.documentElement.style.setProperty('--other-bubble-text', s.otherBubbleText);
         document.documentElement.style.setProperty('--other-bubble-border', s.otherBubbleBorder);
         applyBubbleRadiusVars(s);
-        // 各圆角面板显隐 + 数值提示
+        // 应用转账样式CSS变量
+        applyTransferStyleVars(s);
         const _dbr2 = document.getElementById('dualBubbleRadiusGrid');
         if (_dbr2) _dbr2.style.display = s.dualBubbleRadiusEnabled ? 'grid' : 'none';
         const _ocg2 = document.getElementById('otherCornersGrid');
@@ -6796,6 +7013,9 @@
     // ========== 字卡APP ==========
     function openWordCard() {
         document.getElementById('wordcardPage').style.display = 'flex';
+        // 清空搜索框
+        const si = document.getElementById('wordcardSearchInput');
+        if (si) si.value = '';
         renderWordGroups();
         renderWordCardList();
         renderSpecialSettings();
@@ -6839,6 +7059,9 @@
     function switchWordGroup(group) {
         appData.currentGroup = group;
         appData.selectedCards = [];
+        // 清空搜索框
+        const si = document.getElementById('wordcardSearchInput');
+        if (si) si.value = '';
         saveData();
         renderWordGroups();
         renderWordCardList();
@@ -6876,9 +7099,17 @@
         const group = appData.currentGroup;
         const cards = appData.wordCards[group] || [];
         
+        // 获取搜索关键词
+        const searchInput = document.getElementById('wordcardSearchInput');
+        const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        
         container.innerHTML = '';
         
+        let visibleCount = 0;
         cards.forEach((card, index) => {
+            // 搜索过滤
+            if (keyword && !card.text.toLowerCase().includes(keyword)) return;
+            visibleCount++;
             const item = document.createElement('div');
             item.className = 'wordcard-item' + (card.hidden ? ' hidden-card' : '');
             
@@ -6886,6 +7117,8 @@
             checkbox.type = 'checkbox';
             checkbox.className = 'wordcard-checkbox';
             checkbox.checked = appData.selectedCards.includes(index);
+            // 搜索过滤时禁用checkbox避免批量操作错误卡片
+            if (keyword) checkbox.disabled = true;
             checkbox.onchange = () => {
                 if (checkbox.checked) {
                     appData.selectedCards.push(index);
@@ -8627,10 +8860,14 @@
             document.documentElement.style.setProperty('--global-font-scale', scale);
             document.documentElement.style.fontSize = gs.globalFontSize + 'px';
             document.body.style.fontSize = gs.globalFontSize + 'px';
-            document.body.style.zoom = scale;
+            // 使用CSS transform代替zoom以减少重排开销
+            document.body.style.transformOrigin = 'top left';
+            document.body.style.transform = 'scale(' + scale + ')';
+            document.body.style.width = (100 / scale) + '%';
         } else {
             document.documentElement.style.setProperty('--global-font-scale', '1');
-            document.body.style.zoom = '1';
+            document.body.style.transform = 'none';
+            document.body.style.width = '';
         }
     }
 
@@ -8652,6 +8889,10 @@
         document.getElementById('globalFontColor').value = gs.fontColor || '#1a1a1a';
         document.getElementById('globalIconColor').value = gs.iconColor || '#999999';
         document.getElementById('globalFontSizeSlider').value = gs.globalFontSize || 14;
+        // 通知设置
+        document.getElementById('notificationToggle').checked = gs.notificationEnabled || false;
+        // 后台保活设置
+        document.getElementById('keepAliveToggle').checked = gs.keepAliveEnabled || false;
         // 壁纸预览
         const wpPreview = document.getElementById('globalWallpaperPreview');
         if (gs.chatWallpaper) {
@@ -8693,6 +8934,73 @@
         appData.globalSettings.globalFontSize = parseInt(v);
         saveData();
         applyGlobalSettings();
+    }
+    // ===== 消息通知 =====
+    function toggleNotification() {
+        appData.globalSettings.notificationEnabled = document.getElementById('notificationToggle').checked;
+        saveData();
+    }
+    // ===== 后台保活 =====
+    function toggleKeepAlive() {
+        appData.globalSettings.keepAliveEnabled = document.getElementById('keepAliveToggle').checked;
+        saveData();
+        if (appData.globalSettings.keepAliveEnabled) {
+            // 开启时：注册SW心跳，请求Wake Lock
+            requestWakeLock();
+        } else {
+            // 关闭时：释放Wake Lock，重置离开时间
+            if (_wakeLock) {
+                _wakeLock.release().catch(function(){});
+                _wakeLock = null;
+            }
+            _lastLeaveTime = null;
+        }
+    }
+    let _notifTimer = null;
+    function showChatNotification(msg) {
+        // 仅在通知开关开启且不在聊天界面时显示
+        if (!appData.globalSettings.notificationEnabled) return;
+        if (document.getElementById('chatPage').style.display === 'flex') return;
+        
+        const notifEl = document.getElementById('chatNotification');
+        const senderName = document.getElementById('notifSenderName');
+        const content = document.getElementById('notifContent');
+        
+        const name = appData.chatSettings.otherNickname || '对方';
+        senderName.textContent = name;
+        
+        if (msg.type === 'emoji') {
+            content.textContent = '[表情包]';
+        } else if (msg.type === 'image') {
+            content.textContent = '[图片]';
+        } else if (msg.type === 'transfer') {
+            content.textContent = '[转账] ¥' + msg.amount;
+        } else if (msg.type === 'survey') {
+            content.textContent = '[问卷] ' + msg.question;
+        } else {
+            content.textContent = msg.content || '[消息]';
+        }
+        
+        // 显示弹窗
+        notifEl.style.transform = 'translateX(-50%) translateY(0)';
+        notifEl.style.opacity = '1';
+        notifEl.style.pointerEvents = 'auto';
+        
+        // 3秒后自动隐藏
+        if (_notifTimer) clearTimeout(_notifTimer);
+        _notifTimer = setTimeout(() => {
+            notifEl.style.transform = 'translateX(-50%) translateY(-100px)';
+            notifEl.style.opacity = '0';
+            notifEl.style.pointerEvents = 'none';
+        }, 3000);
+    }
+    function openChatFromNotification() {
+        if (_notifTimer) clearTimeout(_notifTimer);
+        const notifEl = document.getElementById('chatNotification');
+        notifEl.style.transform = 'translateX(-50%) translateY(-100px)';
+        notifEl.style.opacity = '0';
+        notifEl.style.pointerEvents = 'none';
+        openChat();
     }
     function uploadGlobalWallpaper() {
         currentEditType = 'globalDesktopWallpaper';
@@ -11067,10 +11375,15 @@
         applyDesktopWallpaper();
         applyChatCSSVars(appData.chatSettings);
         applyBubbleRadiusVars(appData.chatSettings);
+        applyTransferStyleVars(appData.chatSettings);
         applyBubbleFont();
         restoreAppIcons();
         restoreWidgets();
         restoreWidgetOffsets();
+        // 恢复图标大小
+        if (appData.iconSize) {
+            document.documentElement.style.setProperty('--app-icon-size', appData.iconSize + 'px');
+        }
         initTimeWidgets();
         restoreWordCardStyle();
         initAnniversary();
@@ -11135,6 +11448,7 @@
         // 恢复聊天设置CSS变量（共享函数，避免与 reinitAfterIDBLoad 重复）
         applyChatCSSVars(appData.chatSettings);
         applyBubbleRadiusVars(appData.chatSettings);
+        applyTransferStyleVars(appData.chatSettings);
         applyBubbleFont();
         // 初始化气泡设置预览
         updateBubbleSettingsPreview();
@@ -11203,6 +11517,202 @@
     }
 
     init();
+
+    // ================================================================
+    // 后台保活系统：SW注册 + 离开补发 + Wake Lock + 系统通知
+    // ================================================================
+    let _lastVisibleTime = Date.now();   // 上次页面可见的时间戳
+    let _lastLeaveTime = null;           // 上次离开聊天的时间戳
+    let _wakeLock = null;                // Wake Lock 句柄
+    let _swReady = false;                // SW 是否就绪
+
+    // ===== 注册 Service Worker =====
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+                .then(function(reg) {
+                    _swReady = true;
+                    // 尝试注册 Periodic Sync（实验性，大部分浏览器不支持也不报错）
+                    if ('periodicSync' in reg) {
+                        reg.periodicSync.register('qianyi-periodic', {
+                            minInterval: 12 * 60 * 60 * 1000  // 最小12小时
+                        }).catch(function(){});
+                    }
+                    // 监听 SW 发来的消息
+                    navigator.serviceWorker.addEventListener('message', function(event) {
+                        var msg = event.data;
+                        if (!msg) return;
+                        // SW 唤醒：检查是否需要补发消息
+                        if (msg.type === 'WAKE_UP') {
+                            catchUpBackgroundMessages();
+                        }
+                        // 通知点击：打开聊天页
+                        if (msg.type === 'NOTIF_CLICK') {
+                            openChat();
+                        }
+                    });
+                })
+                .catch(function(err) {
+                    console.warn('[PWA] SW注册失败:', err);
+                });
+        });
+    }
+
+    // ===== 向 Service Worker 发送通知请求 =====
+    function sendSWNotification(title, body, tag) {
+        if (!_swReady || !navigator.serviceWorker.controller) return;
+        navigator.serviceWorker.controller.postMessage({
+            type: 'NOTIFY',
+            title: title,
+            body: body,
+            tag: tag || 'qianyi-msg'
+        });
+    }
+
+    // ===== 页面可见性变化：记录离开/返回时间 =====
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            // 页面被隐藏（切后台、最小化、锁屏）
+            if (appData.globalSettings && appData.globalSettings.keepAliveEnabled) {
+                _lastLeaveTime = Date.now();
+            }
+        } else {
+            // 页面重新可见
+            if (appData.globalSettings && appData.globalSettings.keepAliveEnabled) {
+                catchUpBackgroundMessages();
+                requestWakeLock();
+            }
+        }
+    });
+
+    // ===== 补发后台消息 =====
+    // 用户离开期间，如果开启了"对方主动发消息"，根据离开时长补发应产生的消息
+    function catchUpBackgroundMessages() {
+        // 后台保活开关未开启则不补发
+        if (!appData.globalSettings || !appData.globalSettings.keepAliveEnabled) return;
+        if (!_lastLeaveTime) {
+            _lastLeaveTime = _lastVisibleTime;
+        }
+        var now = Date.now();
+        var awayMs = now - _lastLeaveTime;
+        _lastVisibleTime = now;
+        _lastLeaveTime = null;
+
+        var s = appData.chatSettings;
+        // 仅在开启了主动发消息时才补发
+        if (!s.proactiveEnable) return;
+        // 离开不到30秒不补发
+        if (awayMs < 30000) return;
+
+        // 计算离开期间应产生多少条主动消息
+        var minMs = Math.max(1, s.proactiveMinSec || 30) * 1000;
+        var maxMs = Math.max(minMs, (s.proactiveMaxMin || 5) * 60 * 1000);
+        var avgInterval = (minMs + maxMs) / 2;
+        var catchUpCount = Math.min(Math.floor(awayMs / avgInterval), 5);  // 最多补5条
+
+        if (catchUpCount <= 0) return;
+
+        var allCards = getAllVisibleWordCards();
+        if (allCards.length === 0) return;
+
+        var otherName = s.otherNickname || '对方';
+        // 逐条补发，每条间隔一小段时间模拟真实节奏
+        for (var i = 0; i < catchUpCount; i++) {
+            (function(idx) {
+                setTimeout(function() {
+                    var text;
+                    if (s.enableSplice && Math.random() > 0.5) {
+                        var spliceCount = Math.min(Math.floor(Math.random() * 3) + 1, allCards.length);
+                        var shuffled = allCards.slice().sort(function() { return 0.5 - Math.random(); });
+                        text = shuffled.slice(0, spliceCount).join(' ');
+                    } else {
+                        text = allCards[Math.floor(Math.random() * allCards.length)];
+                    }
+                    addMessage({
+                        id: Date.now() + idx,
+                        sender: 'other',
+                        type: 'text',
+                        content: text
+                    });
+                }, idx * 800);
+            })(i);
+        }
+    }
+
+    // ===== Wake Lock：防止屏幕息屏（聊天页打开时） =====
+    async function requestWakeLock() {
+        // 后台保活开关未开启则不请求唤醒锁
+        if (!appData.globalSettings || !appData.globalSettings.keepAliveEnabled) return;
+        if (!('wakeLock' in navigator)) return;
+        // 仅在聊天页可见时才请求
+        var chatPage = document.getElementById('chatPage');
+        if (!chatPage || chatPage.style.display !== 'flex') return;
+        try {
+            _wakeLock = await navigator.wakeLock.request('screen');
+            // Wake Lock 释放后（如切换标签页），重新获取
+            _wakeLock.addEventListener('release', function() {
+                _wakeLock = null;
+            });
+        } catch (err) {
+            // 唤醒锁请求失败（用户未授权或浏览器不支持），静默处理
+        }
+    }
+
+    // 页面重新可见时重新获取 Wake Lock
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && _wakeLock === null && appData.globalSettings && appData.globalSettings.keepAliveEnabled) {
+            requestWakeLock();
+        }
+    });
+
+    // ===== 增强版站内通知：同时触发系统通知 =====
+    // 重写 showChatNotification，在原有站内弹窗基础上增加系统通知
+    var _originalShowChatNotification = showChatNotification;
+    showChatNotification = function(msg) {
+        // 调用原有站内弹窗逻辑
+        _originalShowChatNotification(msg);
+        // 如果页面在后台且开启了通知，通过 SW 发送系统通知
+        if (document.hidden && appData.globalSettings && appData.globalSettings.notificationEnabled) {
+            var name = appData.chatSettings.otherNickname || '对方';
+            var body = '';
+            if (msg.type === 'emoji') body = '[表情包]';
+            else if (msg.type === 'image') body = '[图片]';
+            else if (msg.type === 'transfer') body = '[转账] ¥' + msg.amount;
+            else if (msg.type === 'survey') body = '[问卷] ' + msg.question;
+            else body = msg.content || '[消息]';
+            sendSWNotification(name, body, 'qianyi-msg-' + msg.id);
+        }
+    };
+
+    // ===== 保活心跳：每30秒向 SW 发送心跳 =====
+    setInterval(function() {
+        if (_swReady && navigator.serviceWorker.controller && appData.globalSettings && appData.globalSettings.keepAliveEnabled) {
+            navigator.serviceWorker.controller.postMessage({ type: 'ALIVE' });
+        }
+    }, 30000);
+
+    // ===== 离开聊天页时释放 Wake Lock =====
+    var _originalCloseChat = closeChat;
+    if (typeof _originalCloseChat === 'function') {
+        closeChat = function() {
+            _originalCloseChat();
+            if (_wakeLock) {
+                _wakeLock.release().catch(function(){});
+                _wakeLock = null;
+            }
+        };
+    }
+
+    // ===== 打开聊天页时请求 Wake Lock =====
+    var _originalOpenChat = openChat;
+    if (typeof _originalOpenChat === 'function') {
+        openChat = function() {
+            _originalOpenChat();
+            if (appData.globalSettings && appData.globalSettings.keepAliveEnabled) {
+                requestWakeLock();
+            }
+        };
+    }
 </script>
 </body>
 </html>
