@@ -1,10 +1,9 @@
 // ================================================================
 // 迁逸 · 双屏 Service Worker
 // 功能：离线缓存 + 后台保活唤醒 + 消息通知
-// v2: 修复缓存不更新问题 —— 导航请求改为网络优先
 // ================================================================
 
-const CACHE_NAME = 'qianyi-v2';
+const CACHE_NAME = 'qianyi-v1';
 const APP_SHELL = [
     './',
     './index.html',
@@ -42,9 +41,7 @@ self.addEventListener('activate', function(event) {
     );
 });
 
-// ===== 缓存策略 =====
-// 导航请求(HTML页面)：网络优先，确保总是拿到最新页面；网络失败才回退缓存
-// 其他资源(GET)：缓存优先，网络兜底（stale-while-revalidate）
+// ===== 离线回退：缓存优先，网络兜底 =====
 self.addEventListener('fetch', function(event) {
     // 只处理GET请求
     if (event.request.method !== 'GET') return;
@@ -52,45 +49,9 @@ self.addEventListener('fetch', function(event) {
     const url = new URL(event.request.url);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-    // 导航请求：网络优先
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request).then(function(response) {
-                // 成功的响应才缓存
-                if (response && response.status === 200) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(function(cache) {
-                        cache.put(event.request, clone).catch(function(){});
-                        // 同步更新 ./ 和 ./index.html 的缓存
-                        cache.put('./index.html', clone.clone()).catch(function(){});
-                    });
-                }
-                return response;
-            }).catch(function() {
-                // 网络失败，回退到缓存的 index.html
-                return caches.match(event.request).then(function(cached) {
-                    return cached || caches.match('./index.html');
-                });
-            })
-        );
-        return;
-    }
-
-    // 其他资源：缓存优先，网络兜底
     event.respondWith(
         caches.match(event.request).then(function(cached) {
-            if (cached) {
-                // 后台静默更新缓存（stale-while-revalidate）
-                fetch(event.request).then(function(response) {
-                    if (response && response.status === 200 && response.type === 'basic') {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(function(cache) {
-                            cache.put(event.request, clone).catch(function(){});
-                        });
-                    }
-                }).catch(function(){});
-                return cached;
-            }
+            if (cached) return cached;
             return fetch(event.request).then(function(response) {
                 // 成功的响应才缓存
                 if (response && response.status === 200 && response.type === 'basic') {
@@ -144,11 +105,6 @@ self.addEventListener('message', function(event) {
                 event.source.postMessage({ type: 'CLIENTS_LIST', count: clientList.length });
             })
         );
-    }
-
-    // 手动触发立即更新
-    if (data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
     }
 });
 
