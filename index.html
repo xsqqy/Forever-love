@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="迁逸">
@@ -66,6 +66,68 @@
             --other-bubble-text: #000000;
             --other-bubble-border: #4a4a4a;
         }
+        /* ========== iPhone XR (414×896) 及相近小屏机型适配 ========== */
+        @media (max-width: 430px) {
+            :root {
+                --app-icon-size: 56px;       /* 62 -> 56，更紧凑 */
+                --widget-size: 132px;        /* 144 -> 132 */
+                --app-name-font-size: 11px;  /* 12 -> 11 */
+                --chat-header-height: 48px;
+                --chat-footer-height: 52px;
+            }
+            /* 方形 widget 缩小，避免横向溢出 */
+            .square-widget {
+                width: 168px;
+                height: 168px;
+            }
+            /* 纪念日 widget 高度收紧 */
+            .anniversary-widget {
+                height: 94px;
+                margin-top: -36px;
+            }
+            .anniversary-days {
+                font-size: 28px;
+            }
+            /* 图标网格间距收紧 */
+            .app-grid-left,
+            .app-grid-bottom,
+            .app-grid-2x2 {
+                gap: 14px 18px;
+                flex: 0 0 calc((var(--app-icon-size) * 2) + 18px);
+            }
+            /* dock 栏：缩小高度与内边距，贴合小屏 */
+            .dock-bar {
+                height: 74px;
+                padding: 0 22px;
+                max-width: 320px;
+                border-radius: 26px;
+            }
+            .dock-bar .app-name {
+                font-size: 10px;
+            }
+            /* 桌面页顶部留白：状态栏(44px) + 110px = 154px */
+            .desktop-page {
+                padding: 154px 14px 96px;
+            }
+            /* 页面指示器与 dock 的间距同步收紧 */
+            .page-indicator {
+                bottom: 80px;
+            }
+            .dock-bar {
+                bottom: 16px;
+            }
+            /* 聊天气泡内边距微调 */
+            .chat-header,
+            .settings-header,
+            .wordcard-header,
+            .page-header {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+            .chat-footer {
+                padding: 0 6px;
+            }
+        }
         html, body {
             width: 100%;
             height: 100%;
@@ -75,8 +137,8 @@
             color: var(--text-color);
             /* 不添加padding-top，让壁纸延伸到屏幕最顶部 */
             padding-top: 0;
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
+            padding-left: 0;
+            padding-right: 0;
         }
         .phone-container {
             width: 100%;
@@ -114,8 +176,8 @@
             width: 50%;
             height: 100%;
             position: relative;
-            /* 顶部留出状态栏安全区域 + 125px，让图标不被遮挡 */
-            padding: calc(125px + env(safe-area-inset-top, 44px)) 16px calc(100px + env(safe-area-inset-bottom, 0px));
+            /* 顶部留出状态栏区域 + 125px，让图标不被遮挡；移除安全区域预留 */
+            padding: 169px 16px 100px;
             overflow-y: auto;
             overflow-x: hidden;
             background: transparent !important;
@@ -669,10 +731,9 @@
             width: var(--app-icon-size);
             height: var(--app-icon-size);
         }
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .dock-bar { bottom: calc(20px + env(safe-area-inset-bottom)); }
-            .page-indicator { bottom: calc(85px + env(safe-area-inset-bottom)); }
-        }
+        /* 移除安全区域预留：iPhone XR 无底部安全区域 */
+        .dock-bar { bottom: 20px; }
+        .page-indicator { bottom: 85px; }
         /* ========== 聊天界面样式 ========== */
         .chat-page {
             width: 100%;
@@ -686,8 +747,8 @@
             flex-direction: column;
         }
         .chat-header {
-            height: calc(var(--chat-header-height) + env(safe-area-inset-top));
-            padding-top: env(safe-area-inset-top);
+            height: var(--chat-header-height);
+            padding-top: 0;
             background: #f0f0f0;
             border-bottom: none;
             display: flex;
@@ -918,8 +979,8 @@
         .word-group-tab{border-radius:0!important;}
         #wordcardPage .page-title{text-align:center;padding-left:40px;padding-right:40px;}
         .chat-footer {
-            height: calc(var(--chat-footer-height) + env(safe-area-inset-bottom));
-            padding-bottom: env(safe-area-inset-bottom);
+            height: var(--chat-footer-height);
+            padding-bottom: 0;
             background: #f0f0f0;
             /* removed */
             display: flex;
@@ -1078,8 +1139,8 @@
             flex-direction: column;
         }
         .settings-header, .wordcard-header, .page-header {
-            height: calc(50px + env(safe-area-inset-top));
-            padding-top: env(safe-area-inset-top);
+            height: 50px;
+            padding-top: 0;
             background: #f0f0f0;
             border-bottom: 1px solid #e0e0e0;
             display: flex;
@@ -1829,8 +1890,8 @@
 
         /* ========== 朋友圈样式 ========== */
         .moments-header {
-            height: calc(200px + env(safe-area-inset-top));
-            padding-top: env(safe-area-inset-top);
+            height: 200px;
+            padding-top: 0;
             background: var(--color-light-gray);
             position: relative;
             background-size: cover;
@@ -1838,7 +1899,7 @@
         }
         .moments-header .page-back, .moments-header .page-send {
             position: absolute;
-            top: calc(env(safe-area-inset-top) + 12px);
+            top: 12px;
             color: var(--color-white);
             font-size: 26px;
             cursor: pointer;
@@ -3741,7 +3802,7 @@
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
 <!-- 站内消息通知弹窗 - 微信风格 -->
-<div id="chatNotification" style="position:fixed;top:calc(env(safe-area-inset-top,12px) + 12px);left:12px;right:12px;z-index:9999;background:rgba(245,245,245,0.97);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.12);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease;opacity:0;pointer-events:none;overflow:hidden;max-width:calc(100% - 24px);font-family:var(--font-family);cursor:pointer;" onclick="openChatFromNotification()">
+<div id="chatNotification" style="position:fixed;top:12px;left:12px;right:12px;z-index:9999;background:rgba(245,245,245,0.97);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.12);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease;opacity:0;pointer-events:none;overflow:hidden;max-width:calc(100% - 24px);font-family:var(--font-family);cursor:pointer;" onclick="openChatFromNotification()">
     <div style="display:flex;align-items:center;padding:14px 16px;gap:12px;">
         <!-- 头像 -->
         <div id="notifAvatar" style="width:42px;height:42px;border-radius:6px;flex-shrink:0;overflow:hidden;background:#4a4a4a;display:flex;align-items:center;justify-content:center;">
