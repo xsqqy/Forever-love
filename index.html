@@ -369,7 +369,7 @@ img, video {
         }
         .dock-bar .app-name {
             display: block;
-            font-size: 11px;
+            font-size: calc(var(--app-name-font-size) - 1px);
         }
         .edit-menu {
             position: fixed;
@@ -1019,11 +1019,14 @@ img, video {
             display: flex;
             align-items: center;
             justify-content: center;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         .emoji-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            pointer-events: none;
         }
         .emoji-add {
             aspect-ratio: 1;
@@ -1533,6 +1536,35 @@ img, video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        .video-card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .video-card-item {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #f0f0f0;
+            position: relative;
+        }
+        .video-card-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-card-item .video-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            pointer-events: none;
         }
         .special-card-list {
             max-height: 120px;
@@ -2554,6 +2586,7 @@ img, video {
         html.dark-mode .special-header{color:#e0e0e0!important;}
         html.dark-mode .special-actions button{background:#333!important;color:#e0e0e0!important;border-color:#555!important;}
         html.dark-mode .image-card-item{background:#333!important;}
+        html.dark-mode .video-card-item{background:#333!important;}
         html.dark-mode .special-card-item{color:#e0e0e0!important;border-color:#444!important;}
         html.dark-mode .special-card-item .card-ops span{color:#aaa!important;border-color:#555!important;}
         html.dark-mode .emoji-item{background:#333!important;}
@@ -3388,6 +3421,16 @@ img, video {
                     </div>
                 </div>
                 <div class="image-card-grid" id="imageCardGrid"></div>
+            </div>
+            <div class="special-item">
+                <div class="special-header">
+                    <span>视频字卡（仅朋友圈）</span>
+                    <div class="special-actions">
+                        <button onclick="uploadVideoCards()">批量上传</button>
+                        <button onclick="dedupSpecialCards('video')">去重</button>
+                    </div>
+                </div>
+                <div class="video-card-grid" id="videoCardGrid"></div>
             </div>
         </div>
     </div>
@@ -4277,7 +4320,8 @@ img, video {
             nudge: [],
             emoji: [],
             kaomoji: [],
-            image: []
+            image: [],
+            video: []
         },
         specialSettings: {
             enableEmoji: false,
@@ -4704,8 +4748,8 @@ img, video {
     }
     function showMainEditMenu() { document.getElementById('overlay').classList.add('show'); document.getElementById('mainEditMenu').classList.add('show'); }
     function openSizeEditor() { document.getElementById('mainEditMenu').classList.remove('show'); document.getElementById('sizeEditor').classList.add('show'); }
-    function openNameColorEditor() { document.getElementById('mainEditMenu').classList.remove('show'); document.getElementById('nameColorEditor').classList.add('show'); }
-    function openAppNameSizeEditor() { document.getElementById('mainEditMenu').classList.remove('show'); document.getElementById('appNameSizeEditor').classList.add('show'); }
+    function openNameColorEditor() { document.getElementById('mainEditMenu').classList.remove('show'); const cp = document.getElementById('appNameColorPicker'); if (cp && appData.colors && appData.colors.appName) cp.value = appData.colors.appName; document.getElementById('nameColorEditor').classList.add('show'); }
+    function openAppNameSizeEditor() { document.getElementById('mainEditMenu').classList.remove('show'); const sl = document.getElementById('appNameSizeSlider'); if (sl) sl.value = appData.appNameSize || 12; document.getElementById('appNameSizeEditor').classList.add('show'); }
     function updateIconSize(v) {
         document.documentElement.style.setProperty('--app-icon-size', v + 'px');
         appData.iconSize = parseInt(v);
@@ -4717,6 +4761,15 @@ img, video {
         saveData();
     }
     function setAppNameColor(c) { document.documentElement.style.setProperty('--app-name-color', c); appData.colors.appName = c; saveData(); }
+    // 恢复应用名称大小与颜色：刷新后从存储重新应用到 CSS 变量，避免被默认值覆盖
+    function applyAppNameStyle() {
+        if (appData.appNameSize) {
+            document.documentElement.style.setProperty('--app-name-font-size', appData.appNameSize + 'px');
+        }
+        if (appData.colors && appData.colors.appName) {
+            document.documentElement.style.setProperty('--app-name-color', appData.colors.appName);
+        }
+    }
     function closeAllModals() {
         document.getElementById('overlay').classList.remove('show');
         document.querySelectorAll('.edit-menu, .upload-modal, .modal').forEach(el => el.classList.remove('show'));
@@ -5953,10 +6006,11 @@ img, video {
             item.innerHTML = `<img src="${src}" alt="">`;
             // 删除按钮（右上角小×号）
             const delBtn = document.createElement('div');
-            delBtn.style.cssText = 'position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:rgba(255,0,0,0.7);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#fff;line-height:1;z-index:2;opacity:0;transition:opacity 0.2s;';
+            delBtn.style.cssText = 'position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:rgba(255,0,0,0.7);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#fff;line-height:1;z-index:2;opacity:0;transition:opacity 0.2s;pointer-events:none;';
             delBtn.textContent = '×';
             delBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
+                e.preventDefault();
                 if (confirm('确定删除这个表情包吗？')) {
                     appData.emojis[type].splice(index, 1);
                     saveData();
@@ -5965,15 +6019,18 @@ img, video {
             });
             item.appendChild(delBtn);
             // 鼠标悬停/触摸时显示删除按钮
-            item.addEventListener('mouseenter', function() { delBtn.style.opacity = '1'; });
-            item.addEventListener('mouseleave', function() { delBtn.style.opacity = '0'; });
+            item.addEventListener('mouseenter', function() { delBtn.style.opacity = '1'; delBtn.style.pointerEvents = 'auto'; });
+            item.addEventListener('mouseleave', function() { delBtn.style.opacity = '0'; delBtn.style.pointerEvents = 'none'; });
             let showDelTimer = null;
             item.addEventListener('touchstart', function(e) {
-                showDelTimer = setTimeout(function() { delBtn.style.opacity = '1'; }, 400);
+                showDelTimer = setTimeout(function() { delBtn.style.opacity = '1'; delBtn.style.pointerEvents = 'auto'; }, 400);
             }, { passive: true });
             item.addEventListener('touchend', function() { clearTimeout(showDelTimer); });
             item.addEventListener('touchmove', function() { clearTimeout(showDelTimer); });
-            item.onclick = () => sendEmoji(type, src);
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                sendEmoji(type, src);
+            });
             grid.insertBefore(item, addBtn);
         });
     }
@@ -6174,18 +6231,6 @@ img, video {
             `;
             container.appendChild(item);
         });
-        // 搜索结果提示
-        if (keyword && visibleCount === 0) {
-            const hint = document.createElement('div');
-            hint.style.cssText = 'text-align:center;padding:20px;color:#999;font-size:13px;font-family:var(--font-family);';
-            hint.textContent = '没有找到匹配的字卡';
-            container.appendChild(hint);
-        } else if (keyword) {
-            const hint = document.createElement('div');
-            hint.style.cssText = 'text-align:center;padding:8px;color:#999;font-size:12px;font-family:var(--font-family);';
-            hint.textContent = '找到 ' + visibleCount + ' 条匹配结果';
-            container.appendChild(hint);
-        }
     }
     function editNudgeCard(index) {
         const newText = prompt('修改拍一拍内容', appData.specialCards.nudge[index].text);
@@ -6332,6 +6377,30 @@ img, video {
                         renderImageCards();
                         if (imgDupCount > 0) {
                             alert(`已添加 ${total - imgDupCount} 张，重复 ${imgDupCount} 张已自动去重`);
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        } else if (currentEditType === 'videoCard') {
+            let videoDupCount = 0;
+            let processed = 0;
+            const total = files.length;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const src = ev.target.result;
+                    if (appData.specialCards.video.includes(src)) {
+                        videoDupCount++;
+                    } else {
+                        appData.specialCards.video.push(src);
+                    }
+                    processed++;
+                    if (processed === total) {
+                        saveData();
+                        renderVideoCards();
+                        if (videoDupCount > 0) {
+                            alert(`已添加 ${total - videoDupCount} 个，重复 ${videoDupCount} 个已自动去重`);
                         }
                     }
                 };
@@ -7100,6 +7169,7 @@ img, video {
         renderEmojiCardList();
         renderKaomojiCardList();
         renderImageCards();
+        renderVideoCards();
     }
     function closeWordCard() {
         document.getElementById('wordcardPage').style.display = 'none';
@@ -7595,6 +7665,25 @@ img, video {
         saveData();
         renderImageCards();
     }
+    function uploadVideoCards() {
+        currentEditType = 'videoCard';
+        document.getElementById('multiFileInput').click();
+    }
+    function renderVideoCards() {
+        const grid = document.getElementById('videoCardGrid');
+        grid.innerHTML = '';
+        appData.specialCards.video.forEach((src, idx) => {
+            const item = document.createElement('div');
+            item.className = 'video-card-item';
+            item.innerHTML = `<video src="${src}" muted playsinline></video><div class="video-badge">视频</div><div class="publish-media-del" onclick="event.stopPropagation();deleteVideoCard(${idx})" style="position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(0,0,0,0.5);color:white;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;">×</div>`;
+            grid.appendChild(item);
+        });
+    }
+    function deleteVideoCard(idx) {
+        appData.specialCards.video.splice(idx, 1);
+        saveData();
+        renderVideoCards();
+    }
     // 特殊字卡手动去重：nudge/emoji/kaomoji 按 text 去重，image 按图片数据去重
     function dedupSpecialCards(type) {
         const list = appData.specialCards[type];
@@ -7602,7 +7691,7 @@ img, video {
         const seen = {};
         const unique = [];
         let dupCount = 0;
-        if (type === 'image') {
+        if (type === 'image' || type === 'video') {
             list.forEach(src => {
                 if (seen[src]) { dupCount++; }
                 else { seen[src] = true; unique.push(src); }
@@ -7621,6 +7710,7 @@ img, video {
         else if (type === 'emoji') renderEmojiCardList();
         else if (type === 'kaomoji') renderKaomojiCardList();
         else if (type === 'image') renderImageCards();
+        else if (type === 'video') renderVideoCards();
         alert(`已去重，删除重复 ${dupCount} 项`);
     }
 
@@ -7697,6 +7787,7 @@ img, video {
         const count = appData.chatSettings.momentCount;
         const allCards = getAllVisibleWordCards();
         const images = appData.specialCards.image;
+        const videos = appData.specialCards.video;
         
         for (let i = 0; i < count; i++) {
             let text = '';
@@ -7711,10 +7802,17 @@ img, video {
             }
             
             let media = [];
-            if (images.length > 0 && Math.random() > 0.5) {
-                const imgCount = Math.min(Math.floor(Math.random() * 9) + 1, images.length);
-                const shuffled = [...images].sort(() => 0.5 - Math.random());
-                media = shuffled.slice(0, imgCount).map(src => ({type: 'image', src: src}));
+            const hasMedia = Math.random() > 0.5;
+            if (hasMedia) {
+                const useVideo = videos.length > 0 && Math.random() > 0.6;
+                if (useVideo) {
+                    const video = videos[Math.floor(Math.random() * videos.length)];
+                    media = [{type: 'video', src: video}];
+                } else if (images.length > 0) {
+                    const imgCount = Math.min(Math.floor(Math.random() * 9) + 1, images.length);
+                    const shuffled = [...images].sort(() => 0.5 - Math.random());
+                    media = shuffled.slice(0, imgCount).map(src => ({type: 'image', src: src}));
+                }
             }
             
             appData.moments.list.unshift({
@@ -7741,10 +7839,10 @@ img, video {
             if (Math.random() < 0.6 && !m.likes.find(l => l.nickname === otherNick)) {
                 m.likes.push({nickname: otherNick});
             }
-            if (Math.random() < 0.3 && allCards.length > 0 && !m.comments.find(c => c.nickname === otherNick)) {
+            if (Math.random() < 0.3 && !m.comments.find(c => c.nickname === otherNick)) {
                 m.comments.push({
                     nickname: otherNick,
-                    content: allCards[Math.floor(Math.random() * allCards.length)],
+                    content: getReplyContent(),
                     time: Date.now()
                 });
             }
@@ -7930,6 +8028,20 @@ img, video {
         }
     }
 
+    // 默认评论回复语，当没有字卡时使用
+    const defaultCommentReplies = [
+        '嗯嗯～', '哈哈', '好呀', '我也觉得', '是吗', ' wow ', '真的吗', '好可爱',
+        '想你啦', '嘿嘿', '么么', '收到啦', '好哒', '爱你', '在呢', '嘻嘻',
+        '我也想你了', '今天怎么样', '抱抱', '开心'
+    ];
+    function getReplyContent() {
+        const allCards = getAllVisibleWordCards();
+        if (allCards.length > 0 && Math.random() < 0.6) {
+            return allCards[Math.floor(Math.random() * allCards.length)];
+        }
+        return defaultCommentReplies[Math.floor(Math.random() * defaultCommentReplies.length)];
+    }
+
     function submitComment(id) {
         const input = document.getElementById('commentInputVal_' + id);
         const text = input.value.trim();
@@ -7944,43 +8056,19 @@ img, video {
             time: Date.now()
         });
         
-        // 对方50%概率评论我的朋友圈，100%回复我的评论
-        if (moment.sender === 'mine') {
-            if (Math.random() < 0.5) {
-                setTimeout(() => {
-                    const m = appData.moments.list.find(x => x.id === id);
-                    if (m) {
-                        const allCards = getAllVisibleWordCards();
-                        if (allCards.length > 0) {
-                            m.comments.push({
-                                nickname: appData.chatSettings.otherNickname,
-                                content: allCards[Math.floor(Math.random() * allCards.length)],
-                                time: Date.now()
-                            });
-                            saveData();
-                            renderMomentsList();
-                        }
-                    }
-                }, Math.random() * 600000 + 600000); // 10-20分钟回复
+        // 对方100%回复我的评论（我的朋友圈和对方的朋友圈都回复）
+        setTimeout(() => {
+            const m = appData.moments.list.find(x => x.id === id);
+            if (m) {
+                m.comments.push({
+                    nickname: appData.chatSettings.otherNickname,
+                    content: getReplyContent(),
+                    time: Date.now()
+                });
+                saveData();
+                renderMomentsList();
             }
-        } else {
-            // 评论对方的朋友圈，对方100%回复
-            setTimeout(() => {
-                const m = appData.moments.list.find(x => x.id === id);
-                if (m) {
-                    const allCards = getAllVisibleWordCards();
-                    if (allCards.length > 0) {
-                        m.comments.push({
-                            nickname: appData.chatSettings.otherNickname,
-                            content: allCards[Math.floor(Math.random() * allCards.length)],
-                            time: Date.now()
-                        });
-                        saveData();
-                        renderMomentsList();
-                    }
-                }
-            }, Math.random() * 600000 + 600000);
-        }
+        }, Math.random() * 3000 + 2000); // 2-5秒回复
         
         input.value = '';
         saveData();
@@ -9246,7 +9334,7 @@ img, video {
         URL.revokeObjectURL(url);
     }
     function exportWordCardsOnly() {
-        const blob = new Blob([JSON.stringify({wordCards: appData.wordCards, specialCards: appData.specialCards}, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify({wordCards: appData.wordCards, specialCards: appData.specialCards, wordGroups: appData.wordGroups, currentGroup: appData.currentGroup}, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -9300,33 +9388,54 @@ img, video {
                         alert('聊天记录导入成功');
                         renderMessages();
                     } else if (type === 'wordcards') {
+                        if (!appData.wordCards) appData.wordCards = { default: [] };
+                        if (!Array.isArray(appData.wordGroups)) appData.wordGroups = ['default'];
+                        if (!appData.specialCards) appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [], video: [] };
+                        // 导入分组定义，确保自定义分组能在界面中显示
+                        if (Array.isArray(data.wordGroups)) {
+                            data.wordGroups.forEach(g => {
+                                if (g && !appData.wordGroups.includes(g)) appData.wordGroups.push(g);
+                            });
+                        }
                         if (data.wordCards) {
                             Object.keys(data.wordCards).forEach(group => {
                                 if (!appData.wordCards[group]) appData.wordCards[group] = [];
-                                data.wordCards[group].forEach(card => {
-                                    if (!appData.wordCards[group].find(c => c.text === card.text)) {
-                                        appData.wordCards[group].push(card);
-                                    }
-                                });
-                            });
-                        }
-                        if (data.specialCards) {
-                            Object.keys(data.specialCards).forEach(type => {
-                                if (Array.isArray(data.specialCards[type])) {
-                                    data.specialCards[type].forEach(card => {
-                                        if (typeof card === 'string') {
-                                            if (!appData.specialCards[type].find(c => c.text === card)) {
-                                                appData.specialCards[type].push({text: card, hidden: false});
-                                            }
-                                        } else if (!appData.specialCards[type].find(c => c.text === card.text)) {
-                                            appData.specialCards[type].push(card);
+                                // 同步将该分组加入分组列表，否则分组内字卡无法显示
+                                if (!appData.wordGroups.includes(group)) appData.wordGroups.push(group);
+                                const list = data.wordCards[group];
+                                if (Array.isArray(list)) {
+                                    list.forEach(card => {
+                                        if (!appData.wordCards[group].find(c => c.text === card.text)) {
+                                            appData.wordCards[group].push(card);
                                         }
                                     });
                                 }
                             });
                         }
+                        if (data.specialCards) {
+                            Object.keys(data.specialCards).forEach(sType => {
+                                if (Array.isArray(data.specialCards[sType])) {
+                                    // 防止特殊字卡类型缺失导致 find 崩溃、导入中断
+                                    if (!appData.specialCards[sType]) appData.specialCards[sType] = [];
+                                    data.specialCards[sType].forEach(card => {
+                                        if (typeof card === 'string') {
+                                            if (!appData.specialCards[sType].find(c => c.text === card)) {
+                                                appData.specialCards[sType].push({text: card, hidden: false});
+                                            }
+                                        } else if (!appData.specialCards[sType].find(c => c.text === card.text)) {
+                                            appData.specialCards[sType].push(card);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        // 跳转到备份时的分组，便于立即看到导入的字卡
+                        if (data.currentGroup && appData.wordGroups.includes(data.currentGroup)) {
+                            appData.currentGroup = data.currentGroup;
+                        }
                         saveData();
                         alert('字卡导入成功');
+                        if (typeof renderWordGroups === 'function') renderWordGroups();
                         renderWordCardList();
                     }
                 } catch (err) {
@@ -9706,7 +9815,7 @@ img, video {
     }
     function clearStorageData(key) {
         if (key === 'chatHistory') appData.chatHistory = [];
-        else if (key === 'wordCards') { appData.wordCards = { default: [] }; appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [] }; }
+        else if (key === 'wordCards') { appData.wordCards = { default: [] }; appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [], video: [] }; }
         else if (key === 'diary') appData.diary = { singleList: [], doubleList: [], currentTab: 'single', settings: appData.diary.settings };
         else if (key === 'letter') appData.letter = { currentTab: 'inbox', inbox: [], reply: [], sent: [], favorite: [], settings: appData.letter.settings };
         else if (key === 'moments') appData.moments = { list: [], wallpaper: '', lastDailyDate: '' };
@@ -11540,6 +11649,8 @@ img, video {
         if (appData.iconSize) {
             document.documentElement.style.setProperty('--app-icon-size', appData.iconSize + 'px');
         }
+        // 恢复应用名称大小与颜色
+        applyAppNameStyle();
         initTimeWidgets();
         restoreWordCardStyle();
         initAnniversary();
@@ -11596,6 +11707,7 @@ img, video {
         restoreAppIcons();
         restoreWidgets();
         restoreWidgetOffsets();
+        applyAppNameStyle();
         setupLongPressForElements();
         setupVideoLongPress();
         initTimeWidgets();
