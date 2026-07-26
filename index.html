@@ -39,6 +39,18 @@ img, video {
             user-select: text;
             -webkit-user-select: text;
         }
+        /* 强化 img/video 长按阻止：防止 iOS 长按图片弹出保存菜单导致渲染崩溃 */
+        img, video {
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-user-drag: none !important;
+        }
+        /* 防止 iOS 多指缩放导致页面渲染崩溃 */
+        html, body {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
         :root {
             --color-deep-black: #1a1a1a;
             --color-light-black: #2d2d2d;
@@ -498,11 +510,14 @@ img, video {
         }
         .editing-mode .app-icon,
         .editing-mode .square-widget {
-            animation: shake 0.3s infinite;
+            animation: shake 0.35s infinite;
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
         @keyframes shake {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(1deg); }
+            0%, 100% { transform: translateZ(0) rotate(-1deg); }
+            50% { transform: translateZ(0) rotate(1deg); }
         }
         .color-input-row {
             display: flex;
@@ -742,6 +757,8 @@ img, video {
             display: flex;
             margin-bottom: 12px;
             align-items: flex-start;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
         .msg-row.mine {
             justify-content: flex-end;
@@ -889,6 +906,8 @@ img, video {
         .system-msg {
             text-align: center;
             margin: 12px 0;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
         .system-msg span{display:inline-block;padding:4px 12px;background:rgba(255,255,255,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(0,0,0,0.06);border-radius:0;font-size:12px;color:#aaa;}
         /* 转账样式：使用更高优先级选择器，覆盖 .msg-row.xxx .msg-bubble 的背景/文字/边框 */
@@ -2534,6 +2553,19 @@ img, video {
         html.dark-mode .plus-item{background:#333!important;}
         html.dark-mode .export-checkbox{accent-color:#e0e0e0!important;}
         html.dark-mode .subsection-title{color:#999!important;}
+        /* 聊天界面独立暗黑模式 */
+        .chat-dark-mode .chat-header{background:#1a1a1a!important;color:#e0e0e0!important;border-color:transparent!important;}
+        .chat-dark-mode .chat-footer{background:#2d2d2d!important;}
+        .chat-dark-mode .chat-input{background:#333!important;color:#e0e0e0!important;}
+        .chat-dark-mode .chat-messages{background:rgba(0,0,0,0.3)!important;}
+        .chat-dark-mode .emoji-panel,.chat-dark-mode .plus-panel{background:#2d2d2d!important;border-color:#444!important;}
+        .chat-dark-mode .emoji-tab{color:#aaa!important;}
+        .chat-dark-mode .emoji-tab.active{color:#fff!important;border-bottom-color:#fff!important;}
+        .chat-dark-mode .plus-item{background:#333!important;}
+        .chat-dark-mode .plus-item span{color:#e0e0e0!important;}
+        .chat-dark-mode .chat-btn{color:#aaa!important;}
+        .chat-dark-mode .chat-btn svg{stroke:#aaa!important;}
+        .chat-dark-mode .msg-quote{background:rgba(255,255,255,0.1)!important;color:#ccc!important;border-left-color:#666!important;}
         /* 暗黑模式 - 桌面小组件和日历不受影响但其他全部覆盖 */
         html.dark-mode .anniversary-widget{background:var(--glass-bg)!important;border-color:rgba(255,255,255,0.15)!important;}
         html.dark-mode .period-calendar{background:var(--glass-bg)!important;border-color:rgba(255,255,255,0.15)!important;}
@@ -3164,8 +3196,16 @@ img, video {
             <div class="settings-section">
                 <div class="section-title">显示设置</div>
                 <div class="settings-row">
-                    <label>头像位置</label>
-                    <select id="avatarPosition" onchange="updateDisplaySettings()">
+                    <label>对方头像位置</label>
+                    <select id="otherAvatarPosition" onchange="updateDisplaySettings()">
+                        <option value="top">顶部</option>
+                        <option value="middle" selected>中部</option>
+                        <option value="bottom">底部</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <label>我方头像位置</label>
+                    <select id="myAvatarPosition" onchange="updateDisplaySettings()">
                         <option value="top">顶部</option>
                         <option value="middle" selected>中部</option>
                         <option value="bottom">底部</option>
@@ -3183,6 +3223,18 @@ img, video {
                     <label>仅显示最后一条消息头像</label>
                     <input type="checkbox" id="onlyLastAvatar" onchange="updateDisplaySettings()">
                 </div>
+                <div class="settings-row">
+                    <label>聊天界面暗黑模式</label>
+                    <input type="checkbox" id="chatDarkMode" onchange="toggleChatDarkMode()">
+                </div>
+                <div class="settings-row"><label>输入框圆方程度</label><div style="display:flex;align-items:center;gap:6px;flex:1;"><input type="range" id="inputBorderRadius" min="0" max="20" value="0" step="1" oninput="updateInputBorderRadius(this.value)" style="flex:1;"><span id="inputBorderRadiusVal" style="font-size:11px;color:#999;min-width:28px;">0px</span></div></div>
+                <div class="settings-row"><label>输入框颜色</label><input type="color" id="inputBgColor" value="#ffffff" oninput="updateInputBgColor(this.value)"><button onclick="resetInputBgColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
+                <div class="settings-row">
+                    <label>关闭底部背景</label>
+                    <input type="checkbox" id="hideFooterBg" onchange="toggleFooterBg()">
+                </div>
+                <div class="settings-row"><label>顶部备注颜色</label><input type="color" id="headerTitleColor" value="#1a1a1a" oninput="updateHeaderTitleColor(this.value)"><button onclick="resetHeaderTitleColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
+                <div class="settings-row"><label>页面清晰度</label><div style="display:flex;align-items:center;gap:6px;flex:1;"><input type="range" id="claritySlider" min="0.5" max="2" value="1" step="0.1" oninput="updateClarity(this.value)" style="flex:1;"><span id="clarityVal" style="font-size:11px;color:#999;min-width:28px;">1.0</span></div></div>
             </div>
             <div class="settings-section">
                 <div class="section-title">美化设置</div>
@@ -3531,12 +3583,12 @@ img, video {
                     <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
                 </div>
                 <div class="settings-row">
-                    <label>全局字体</label>
+                    <label>上传字体</label>
                     <div class="btn-group">
-                        <button onclick="uploadGlobalFont()">上传TTF</button>
-                        <button onclick="resetGlobalFont()">重置</button>
+                        <button onclick="uploadCustomFont('global')">上传TTF</button>
                     </div>
                 </div>
+                <div id="customFontList_global" style="margin:4px 0 8px;"></div>
                 <div id="globalFontPreview" style="font-size:12px;color:#999999;margin-left:12px;">跟随系统</div>
                 <div class="settings-row">
                     <label>全局字体颜色</label>
@@ -4125,6 +4177,15 @@ img, video {
 <input type="file" class="hidden-input" id="fontFileInput" accept=".ttf,.otf" onchange="handleFontUpload(event)">
 
 <script>
+    // ===== 全局错误捕获：防止未处理异常导致页面白屏崩溃 =====
+    window.addEventListener('error', function(e) {
+        console.error('全局错误捕获:', e.message, e.error);
+        e.preventDefault();
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('未处理的 Promise 错误:', e.reason);
+        e.preventDefault();
+    });
     // ===== 阻止浏览器长按复制/蓝色选区 =====
     document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     document.addEventListener('selectstart', function(e) {
@@ -4132,6 +4193,9 @@ img, video {
         e.preventDefault();
     });
     document.addEventListener('dragstart', function(e) { e.preventDefault(); });
+    // 阻止 iOS 多指手势缩放，防止渲染崩溃白屏
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
 
     // ===== 全局状态 & 存储 =====
     let currentEditTarget = null;
@@ -4274,6 +4338,8 @@ img, video {
             myMsg2Radius: -1,
             myMsg3Radius: -1,
             avatarPosition: 'middle',
+            otherAvatarPosition: 'middle',
+            myAvatarPosition: 'middle',
             hideAvatar: false,
             onlyFirstAvatar: false,
             onlyLastAvatar: false,
@@ -4528,22 +4594,27 @@ img, video {
 
     // ===== 页面滑动 =====
     document.querySelector('.phone-container').addEventListener('touchstart', function(e) {
-        if (e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
-            e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
-            e.target.closest('.modal') || e.target.closest('.moments-page') || e.target.closest('.diary-page') ||
-            e.target.closest('.letter-page') || e.target.closest('.video-call-page') || e.target.closest('.sv-float') ||
-            e.target.closest('.app-item') || e.target.closest('.square-widget') || e.target.closest('.dock-bar') ||
-            e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
-            e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.page-dot')) return;
-        startX = e.touches[0].clientX; isDragging = true;
+        try {
+            if (!e.target || !e.target.closest) return;
+            if (e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
+                e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
+                e.target.closest('.modal') || e.target.closest('.moments-page') || e.target.closest('.diary-page') ||
+                e.target.closest('.letter-page') || e.target.closest('.video-call-page') || e.target.closest('.sv-float') ||
+                e.target.closest('.app-item') || e.target.closest('.square-widget') || e.target.closest('.dock-bar') ||
+                e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+                e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.page-dot')) return;
+            startX = e.touches[0].clientX; isDragging = true;
+        } catch(err) { /* 忽略滑动检测错误 */ }
     }, { passive: true });
     document.querySelector('.phone-container').addEventListener('touchend', function(e) {
-        if (!isDragging) return; isDragging = false;
-        const endX = e.changedTouches[0].clientX; const diff = startX - endX;
-        if (Math.abs(diff) > 50) {
-            if (diff > 0 && currentPage < 1) currentPage++; else if (diff < 0 && currentPage > 0) currentPage--;
-            updatePage();
-        }
+        try {
+            if (!isDragging) return; isDragging = false;
+            const endX = e.changedTouches[0].clientX; const diff = startX - endX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0 && currentPage < 1) currentPage++; else if (diff < 0 && currentPage > 0) currentPage--;
+                updatePage();
+            }
+        } catch(err) { isDragging = false; }
     });
     function updatePage() {
         desktopWrapper.style.transform = `translateX(-${currentPage * 50}%)`;
@@ -4553,28 +4624,34 @@ img, video {
     // ===== 长按编辑 =====
     const container = document.getElementById('phoneContainer');
     function startLongPress(e) {
-        if (e.target.closest('.app-item') || e.target.closest('.square-widget') ||
-            e.target.closest('.dock-bar') || e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
-            e.target.closest('.time-widget') ||
-            e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
-            e.target.closest('.moments-page') || e.target.closest('.diary-page') || e.target.closest('.letter-page') ||
-            e.target.closest('.beautify-page') || e.target.closest('.storage-page') || e.target.closest('.his-phone-page') ||
-            e.target.closest('.survey-app-page') || e.target.closest('.flip-app-page') || e.target.closest('.goban-app-page') ||
-            e.target.closest('.challenge-app-page') || e.target.closest('.balance-app-page') ||
-            e.target.closest('.video-call-page') || e.target.closest('.sv-float') ||
-            e.target.closest('.modal') || e.target.closest('.emoji-panel') || e.target.closest('.plus-panel') ||
-            e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
-            e.target.closest('.word-card')) {
-            return;
-        }
+        try {
+            if (!e.target || !e.target.closest) return;
+            if (e.target.closest('.app-item') || e.target.closest('.square-widget') ||
+                e.target.closest('.dock-bar') || e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
+                e.target.closest('.time-widget') ||
+                e.target.closest('.chat-page') || e.target.closest('.settings-page') || e.target.closest('.wordcard-page') ||
+                e.target.closest('.moments-page') || e.target.closest('.diary-page') || e.target.closest('.letter-page') ||
+                e.target.closest('.beautify-page') || e.target.closest('.storage-page') || e.target.closest('.his-phone-page') ||
+                e.target.closest('.survey-app-page') || e.target.closest('.flip-app-page') || e.target.closest('.goban-app-page') ||
+                e.target.closest('.challenge-app-page') || e.target.closest('.balance-app-page') ||
+                e.target.closest('.video-call-page') || e.target.closest('.sv-float') ||
+                e.target.closest('.modal') || e.target.closest('.emoji-panel') || e.target.closest('.plus-panel') ||
+                e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+                e.target.closest('img') || e.target.closest('video') ||
+                e.target.closest('.word-card')) {
+                return;
+            }
+        } catch(err) { return; }
         longPressTimer = setTimeout(() => {
-            showMainEditMenu();
-            document.body.classList.add('editing-mode');
+            try {
+                showMainEditMenu();
+                document.body.classList.add('editing-mode');
+            } catch(err) { console.error('长按编辑失败:', err); }
         }, 800);
     }
-    container.addEventListener('touchstart', startLongPress);
-    container.addEventListener('touchend', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} });
-    container.addEventListener('touchmove', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} });
+    container.addEventListener('touchstart', startLongPress, { passive: true });
+    container.addEventListener('touchend', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} }, { passive: true });
+    container.addEventListener('touchmove', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} }, { passive: true });
     container.addEventListener('mousedown', startLongPress);
     container.addEventListener('mouseup', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} });
     container.addEventListener('mouseleave', () => { if(longPressTimer){clearTimeout(longPressTimer); longPressTimer=null;} });
@@ -4696,28 +4773,33 @@ img, video {
 
     // 阻止iOS长按弹出菜单/复制气泡
     document.addEventListener('touchstart', function(e) {
-        if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('[contenteditable="true"]')) return;
-        // 不对可交互元素阻止默认行为，否则click事件无法触发
-        if (e.target.closest('.app-item') || e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
-            e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.square-widget') ||
-            e.target.closest('.page-dot') || e.target.closest('button') || e.target.closest('a') ||
-            e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
-            e.target.closest('.modal') || e.target.closest('.chat-page') || e.target.closest('.settings-page') ||
-            e.target.closest('.wordcard-page') || e.target.closest('.moments-page') || e.target.closest('.diary-page') ||
-            e.target.closest('.letter-page') || e.target.closest('.dock-bar') || e.target.closest('.emoji-panel') ||
-            e.target.closest('.plus-panel') || e.target.closest('.beautify-page') || e.target.closest('.storage-page') ||
-            e.target.closest('.his-phone-page') || e.target.closest('.sv-float') || e.target.closest('.video-call-page') ||
-            e.target.closest('.settings-content') || e.target.closest('.settings-header') ||
-            e.target.closest('.wordcard-header') || e.target.closest('.wordcard-tabs') ||
-            e.target.closest('.wordcard-actions') || e.target.closest('.special-section') ||
-            e.target.closest('.wordcard-list') || e.target.closest('.special-card-list') ||
-            e.target.closest('.batch-upload-modal') || e.target.closest('.transferModal') ||
-            e.target.closest('.flip-app-page') || e.target.closest('.goban-app-page') ||
-            e.target.closest('.challenge-app-page') || e.target.closest('.balance-app-page') ||
-            e.target.closest('.survey-app-page')) return;
-        if (e.target.closest('.desktop-page') || e.target.closest('.phone-container')) {
-            e.preventDefault();
-        }
+        try {
+            if (!e.target || !e.target.closest) return;
+            if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('[contenteditable="true"]')) return;
+            // 不对可交互元素阻止默认行为，否则click事件无法触发
+            if (e.target.closest('.app-item') || e.target.closest('.anniversary-widget') || e.target.closest('.period-calendar') ||
+                e.target.closest('.word-card') || e.target.closest('.time-widget') || e.target.closest('.square-widget') ||
+                e.target.closest('.page-dot') || e.target.closest('button') || e.target.closest('a') ||
+                e.target.closest('.edit-menu') || e.target.closest('.upload-modal') || e.target.closest('.overlay') ||
+                e.target.closest('.modal') || e.target.closest('.chat-page') || e.target.closest('.settings-page') ||
+                e.target.closest('.wordcard-page') || e.target.closest('.moments-page') || e.target.closest('.diary-page') ||
+                e.target.closest('.letter-page') || e.target.closest('.dock-bar') || e.target.closest('.emoji-panel') ||
+                e.target.closest('.plus-panel') || e.target.closest('.beautify-page') || e.target.closest('.storage-page') ||
+                e.target.closest('.his-phone-page') || e.target.closest('.sv-float') || e.target.closest('.video-call-page') ||
+                e.target.closest('.settings-content') || e.target.closest('.settings-header') ||
+                e.target.closest('.wordcard-header') || e.target.closest('.wordcard-tabs') ||
+                e.target.closest('.wordcard-actions') || e.target.closest('.special-section') ||
+                e.target.closest('.wordcard-list') || e.target.closest('.special-card-list') ||
+                e.target.closest('.batch-upload-modal') || e.target.closest('.transferModal') ||
+                e.target.closest('.flip-app-page') || e.target.closest('.goban-app-page') ||
+                e.target.closest('.challenge-app-page') || e.target.closest('.balance-app-page') ||
+                e.target.closest('.survey-app-page')) return;
+            // 对桌面区域及 img/video 元素阻止默认行为，防止 iOS 长按弹出保存菜单
+            if (e.target.closest('.desktop-page') || e.target.closest('.phone-container') ||
+                e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.closest('img') || e.target.closest('video')) {
+                e.preventDefault();
+            }
+        } catch(err) { /* 忽略事件处理错误，防止崩溃 */ }
     }, { passive: false });
 
     function setupLongPressForElements() {
@@ -4726,15 +4808,20 @@ img, video {
             let timer = null;
             const start = (e) => {
                 timer = setTimeout(() => {
-                    if (el.classList.contains('app-icon')) {
-                        currentEditTarget = el;
-                        currentEditType = 'appIcon';
-                    } else if (el.classList.contains('square-widget')) {
-                        currentEditTarget = el;
-                        currentEditType = 'widget';
-                    }
-                    document.getElementById('overlay').classList.add('show');
-                    document.getElementById('uploadModal').classList.add('show');
+                    if (!el || !el.isConnected) return;
+                    try {
+                        if (el.classList.contains('app-icon')) {
+                            currentEditTarget = el;
+                            currentEditType = 'appIcon';
+                        } else if (el.classList.contains('square-widget')) {
+                            currentEditTarget = el;
+                            currentEditType = 'widget';
+                        }
+                        const ov = document.getElementById('overlay');
+                        const um = document.getElementById('uploadModal');
+                        if (ov) ov.classList.add('show');
+                        if (um) um.classList.add('show');
+                    } catch(err) { console.error('上传菜单失败:', err); }
                 }, 600);
             };
             const end = () => { if(timer){ clearTimeout(timer); timer=null; } };
@@ -5440,7 +5527,8 @@ img, video {
         const _trVal = document.getElementById('transferRadiusVal'); if (_trVal) _trVal.textContent = s.transferRadius !== undefined ? s.transferRadius : 8;
         const _oVal = document.getElementById('otherBubbleRadiusVal'); if (_oVal) _oVal.textContent = (s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius) + ' px';
         const _mVal = document.getElementById('myBubbleRadiusVal'); if (_mVal) _mVal.textContent = (s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius) + ' px';
-        document.getElementById('avatarPosition').value = s.avatarPosition;
+        document.getElementById('otherAvatarPosition').value = s.otherAvatarPosition || s.avatarPosition || 'middle';
+        document.getElementById('myAvatarPosition').value = s.myAvatarPosition || s.avatarPosition || 'middle';
         document.getElementById('hideAvatar').checked = s.hideAvatar;
         document.getElementById('onlyFirstAvatar').checked = s.onlyFirstAvatar;
         document.getElementById('onlyLastAvatar').checked = s.onlyLastAvatar;
@@ -5502,7 +5590,14 @@ img, video {
         const container = document.getElementById('chatMessages');
         const history = appData.chatHistory;
         const s = appData.chatSettings;
-        
+
+        // 修复：开启"仅显示最后/第一条消息头像"时，新增消息需要全量重渲染，
+        // 因为增量渲染只追加新消息，不会更新已渲染消息的头像显示状态，
+        // 导致旧消息和新消息同时显示头像。
+        if (onlyNew && (s.onlyLastAvatar || s.onlyFirstAvatar)) {
+            onlyNew = false;
+        }
+
         // 如果只需要渲染新增消息且容器已有内容，采用增量渲染
         if (onlyNew && container.children.length > 0 && container._renderedCount) {
             const startIdx = Math.min(container._renderedCount, history.length);
@@ -5555,16 +5650,21 @@ img, video {
                 showMsgOpsMenu(e, msg.id);
             });
             row.addEventListener('touchstart', (e) => {
-                let timer = setTimeout(() => showMsgOpsMenu(e, msg.id), 600);
+                const rowEl = e.currentTarget;
+                let timer = setTimeout(() => {
+                    if (!rowEl || !rowEl.isConnected) return;
+                    try { showMsgOpsMenu(e, msg.id, rowEl); } catch(err) { console.error('消息菜单失败:', err); }
+                }, 600);
                 const end = () => { clearTimeout(timer); };
-                e.target.addEventListener('touchend', end, {once: true});
-                e.target.addEventListener('touchmove', end, {once: true});
-            });
+                rowEl.addEventListener('touchend', end, {once: true});
+                rowEl.addEventListener('touchmove', end, {once: true});
+            }, { passive: true });
             return row;
         }
             
         const row = document.createElement('div');
-        row.className = `msg-row ${msg.sender === 'mine' ? 'mine' : 'other'} ${s.avatarPosition !== 'middle' ? 'avatar-' + s.avatarPosition : ''} ${isMultiDeleteMode ? 'multi-select-mode' : ''}`;
+        const _avatarPos = msg.sender === 'mine' ? (s.myAvatarPosition || s.avatarPosition) : (s.otherAvatarPosition || s.avatarPosition);
+        row.className = `msg-row ${msg.sender === 'mine' ? 'mine' : 'other'} ${_avatarPos !== 'middle' ? 'avatar-' + _avatarPos : ''} ${isMultiDeleteMode ? 'multi-select-mode' : ''}`;
         row.dataset.id = msg.id;
 
         if (isMultiDeleteMode && msg.type !== 'system') {
@@ -5575,7 +5675,7 @@ img, video {
         }
 
             const showAvatar = !s.hideAvatar && (!s.onlyFirstAvatar || isFirst) && (!s.onlyLastAvatar || isLast);
-            const isVerticalAvatar = s.avatarPosition === 'top' || s.avatarPosition === 'bottom';
+            const isVerticalAvatar = _avatarPos === 'top' || _avatarPos === 'bottom';
             if (msg.sender === 'other') {
                 if (showAvatar) {
                     if (s.showNicknames && isVerticalAvatar) {
@@ -5767,11 +5867,15 @@ img, video {
                 showMsgOpsMenu(e, msg.id);
             });
             row.addEventListener('touchstart', (e) => {
-                let timer = setTimeout(() => showMsgOpsMenu(e, msg.id), 600);
+                const rowEl = e.currentTarget;
+                let timer = setTimeout(() => {
+                    if (!rowEl || !rowEl.isConnected) return;
+                    try { showMsgOpsMenu(e, msg.id, rowEl); } catch(err) { console.error('消息菜单失败:', err); }
+                }, 600);
                 const end = () => { clearTimeout(timer); };
-                e.target.addEventListener('touchend', end, {once: true});
-                e.target.addEventListener('touchmove', end, {once: true});
-            });
+                rowEl.addEventListener('touchend', end, {once: true});
+                rowEl.addEventListener('touchmove', end, {once: true});
+            }, { passive: true });
             
             return row;
     }
@@ -6025,8 +6129,8 @@ img, video {
             item.addEventListener('touchstart', function(e) {
                 showDelTimer = setTimeout(function() { delBtn.style.opacity = '1'; delBtn.style.pointerEvents = 'auto'; }, 400);
             }, { passive: true });
-            item.addEventListener('touchend', function() { clearTimeout(showDelTimer); });
-            item.addEventListener('touchmove', function() { clearTimeout(showDelTimer); });
+            item.addEventListener('touchend', function() { clearTimeout(showDelTimer); }, { passive: true });
+            item.addEventListener('touchmove', function() { clearTimeout(showDelTimer); }, { passive: true });
             item.addEventListener('click', function(e) {
                 e.preventDefault();
                 sendEmoji(type, src);
@@ -6451,21 +6555,31 @@ img, video {
     function setupVideoLongPress() {
         const container = document.getElementById('videoContainer');
         container.addEventListener('touchstart', function(e) {
-            if (e.target.closest('.video-btn') || e.target.closest('.video-minimize')) return;
+            try {
+                if (!e.target || !e.target.closest) return;
+                if (e.target.closest('.video-btn') || e.target.closest('.video-minimize')) return;
+            } catch(err) { return; }
             videoLongPressTimer = setTimeout(() => {
-                document.getElementById('videoBgMenu').classList.toggle('show');
+                try {
+                    const menu = document.getElementById('videoBgMenu');
+                    if (menu) menu.classList.toggle('show');
+                } catch(err) { console.error('视频菜单失败:', err); }
             }, 600);
-        });
+        }, { passive: true });
         container.addEventListener('touchend', () => {
             if (videoLongPressTimer) { clearTimeout(videoLongPressTimer); videoLongPressTimer = null; }
-        });
+        }, { passive: true });
         container.addEventListener('touchmove', () => {
             if (videoLongPressTimer) { clearTimeout(videoLongPressTimer); videoLongPressTimer = null; }
-        });
+        }, { passive: true });
         container.addEventListener('mousedown', function(e) {
+            if (!e.target || !e.target.closest) return;
             if (e.target.closest('.video-btn') || e.target.closest('.video-minimize')) return;
             videoLongPressTimer = setTimeout(() => {
-                document.getElementById('videoBgMenu').classList.toggle('show');
+                try {
+                    const menu = document.getElementById('videoBgMenu');
+                    if (menu) menu.classList.toggle('show');
+                } catch(err) { console.error('视频菜单失败:', err); }
             }, 600);
         });
         container.addEventListener('mouseup', () => {
@@ -6573,15 +6687,25 @@ img, video {
     }
 
     // ===== 消息操作菜单 =====
-    function showMsgOpsMenu(e, msgId) {
+    function showMsgOpsMenu(e, msgId, targetEl) {
         currentOpsMsgId = msgId;
-        e.stopPropagation();
+        try { e.stopPropagation(); } catch(err) {}
         const menu = document.getElementById('msgOpsMenu');
-        const rect = e.target.getBoundingClientRect();
-        menu.style.left = Math.min(rect.left, window.innerWidth - 120) + 'px';
-        menu.style.top = Math.max(10, rect.top - 10) + 'px';
+        // 优先使用传入的 targetEl（解决 setTimeout 中 e.target 已失效的问题），否则回退到 e.target
+        const target = (targetEl && targetEl.isConnected) ? targetEl : (e.target && e.target.isConnected ? e.target : null);
+        let left = 0, top = 0;
+        if (target) {
+            try {
+                const rect = target.getBoundingClientRect();
+                left = rect.left; top = rect.top;
+            } catch(err) {}
+        }
+        menu.style.left = Math.min(left, window.innerWidth - 120) + 'px';
+        menu.style.top = Math.max(10, top - 10) + 'px';
         menu.classList.add('show');
         
+        // 移除上一次的 click 监听器，防止多次调用导致监听器累积
+        document.removeEventListener('click', closeMsgOpsMenu);
         setTimeout(() => {
             document.addEventListener('click', closeMsgOpsMenu, {once: true});
         }, 0);
@@ -6905,6 +7029,15 @@ img, video {
         s.msgRadiusEnabled = document.getElementById('msgRadiusEnabled').checked;
         const omR = s.otherBubbleRadius >= 0 ? s.otherBubbleRadius : s.bubbleRadius;
         const mmR = s.myBubbleRadius >= 0 ? s.myBubbleRadius : s.bubbleRadius;
+        // 修复：在读取分条滑块值前，先将存储值为 -1（沿用基础圆角）的滑块显示同步为新的基础圆角值，
+        // 否则当用户调节基础圆角时，旧滑块显示值会与新的 omR/mmR 不匹配，导致 -1 被错误地存为旧值，
+        // 进而用 inline style 覆盖掉新的基础圆角，使气泡看起来无变化。
+        if (s.otherMsg1Radius === -1) document.getElementById('otherMsg1Radius').value = omR;
+        if (s.otherMsg2Radius === -1) document.getElementById('otherMsg2Radius').value = omR;
+        if (s.otherMsg3Radius === -1) document.getElementById('otherMsg3Radius').value = omR;
+        if (s.myMsg1Radius === -1) document.getElementById('myMsg1Radius').value = mmR;
+        if (s.myMsg2Radius === -1) document.getElementById('myMsg2Radius').value = mmR;
+        if (s.myMsg3Radius === -1) document.getElementById('myMsg3Radius').value = mmR;
         s.otherMsg1Radius = (parseInt(document.getElementById('otherMsg1Radius').value) === omR) ? -1 : parseInt(document.getElementById('otherMsg1Radius').value);
         s.otherMsg2Radius = (parseInt(document.getElementById('otherMsg2Radius').value) === omR) ? -1 : parseInt(document.getElementById('otherMsg2Radius').value);
         s.otherMsg3Radius = (parseInt(document.getElementById('otherMsg3Radius').value) === omR) ? -1 : parseInt(document.getElementById('otherMsg3Radius').value);
@@ -7009,7 +7142,9 @@ img, video {
     }
     function updateDisplaySettings() {
         const s = appData.chatSettings;
-        s.avatarPosition = document.getElementById('avatarPosition').value;
+        s.otherAvatarPosition = document.getElementById('otherAvatarPosition').value;
+        s.myAvatarPosition = document.getElementById('myAvatarPosition').value;
+        s.avatarPosition = s.otherAvatarPosition; // 保持兼容
         s.hideAvatar = document.getElementById('hideAvatar').checked;
         s.onlyFirstAvatar = document.getElementById('onlyFirstAvatar').checked;
         s.onlyLastAvatar = document.getElementById('onlyLastAvatar').checked;
@@ -8666,6 +8801,12 @@ img, video {
     function handleFontUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
+        // 如果是自定义字体管理上传
+        if (currentEditType && currentEditType.startsWith('customFont_')) {
+            const target = currentEditType.replace('customFont_', '');
+            handleCustomFontUpload(event, target);
+            return;
+        }
         const reader = new FileReader();
         reader.onload = function(ev) {
             const base64 = ev.target.result;
@@ -9076,6 +9217,7 @@ img, video {
     function openGlobalSettings() {
         document.getElementById('globalSettingsPage').style.display = 'flex';
         initGlobalSettingsPage();
+        renderCustomFontList('global');
     }
     function closeGlobalSettings() {
         document.getElementById('globalSettingsPage').style.display = 'none';
@@ -11608,6 +11750,15 @@ img, video {
         if (appData.globalSettings && appData.globalSettings.fontData && appData.globalSettings.fontFamily) {
             applyFontFace('globalFontStyle', appData.globalSettings.fontFamily, appData.globalSettings.fontData);
         }
+        // 恢复自定义字体列表
+        if (appData.customFonts && appData.customFonts.length > 0) {
+            appData.customFonts.forEach(function(f) {
+                applyFontFace('customFont_' + f.id, f.id, f.data);
+            });
+            ['global','diary','letter'].forEach(function(t) {
+                renderCustomFontList(t);
+            });
+        }
     }
 
     // ========== IndexedDB 加载后重新初始化 ==========
@@ -12059,6 +12210,90 @@ img, video {
         saveData();
     }
 
+    // ===== 聊天显示设置：聊天界面暗黑模式 =====
+    function toggleChatDarkMode() {
+        const on = document.getElementById('chatDarkMode').checked;
+        appData.chatSettings.chatDarkMode = on;
+        const chatPage = document.getElementById('chatPage');
+        if (on) { chatPage.classList.add('chat-dark-mode'); } else { chatPage.classList.remove('chat-dark-mode'); }
+        saveData();
+    }
+
+    // ===== 聊天显示设置：输入框圆方程度 =====
+    function updateInputBorderRadius(val) {
+        val = parseInt(val);
+        appData.chatSettings.inputBorderRadius = val;
+        document.getElementById('inputBorderRadiusVal').textContent = val + 'px';
+        const input = document.querySelector('.chat-input');
+        if (input) input.style.borderRadius = val + 'px';
+        saveData();
+    }
+
+    // ===== 聊天显示设置：输入框颜色 =====
+    function updateInputBgColor(color) {
+        appData.chatSettings.inputBgColor = color;
+        const input = document.querySelector('.chat-input');
+        if (input) input.style.backgroundColor = color;
+        saveData();
+    }
+    function resetInputBgColor() {
+        appData.chatSettings.inputBgColor = '#ffffff';
+        document.getElementById('inputBgColor').value = '#ffffff';
+        const input = document.querySelector('.chat-input');
+        if (input) input.style.backgroundColor = '#ffffff';
+        saveData();
+    }
+
+    // ===== 聊天显示设置：关闭底部背景 =====
+    function toggleFooterBg() {
+        const hide = document.getElementById('hideFooterBg').checked;
+        appData.chatSettings.hideFooterBg = hide;
+        const footer = document.querySelector('.chat-footer');
+        if (footer) {
+            if (hide) {
+                footer.style.background = 'transparent';
+                footer.style.backgroundImage = 'none';
+            } else {
+                footer.style.background = '';
+                footer.style.backgroundImage = '';
+                // 恢复颜色和图片
+                footer.style.backgroundColor = appData.chatSettings.bottomBgColor || '#f0f0f0';
+                if (appData.chatSettings.bottomBgImage) {
+                    footer.style.backgroundImage = 'url(' + appData.chatSettings.bottomBgImage + ')';
+                    footer.style.backgroundSize = 'cover';
+                }
+            }
+        }
+        saveData();
+    }
+
+    // ===== 聊天显示设置：顶部备注颜色 =====
+    function updateHeaderTitleColor(color) {
+        appData.chatSettings.headerTitleColor = color;
+        const title = document.getElementById('chatTitle');
+        if (title) title.style.color = color;
+        saveData();
+    }
+    function resetHeaderTitleColor() {
+        appData.chatSettings.headerTitleColor = '#1a1a1a';
+        document.getElementById('headerTitleColor').value = '#1a1a1a';
+        const title = document.getElementById('chatTitle');
+        if (title) title.style.color = '#1a1a1a';
+        saveData();
+    }
+
+    // ===== 聊天显示设置：清晰度调节 =====
+    function updateClarity(val) {
+        val = parseFloat(val);
+        appData.chatSettings.clarity = val;
+        document.getElementById('clarityVal').textContent = val.toFixed(1);
+        document.getElementById('chatPage').style.transform = 'scale(' + val + ')';
+        document.getElementById('chatPage').style.transformOrigin = 'top left';
+        document.getElementById('chatPage').style.width = (100 / val) + '%';
+        document.getElementById('chatPage').style.height = (100 / val) + '%';
+        saveData();
+    }
+
     // ===== 朋友圈图片点击查看 =====
     function viewMomentImage(src) {
         let viewer = document.getElementById('momentImageViewer');
@@ -12089,6 +12324,149 @@ img, video {
             const el = document.getElementById('footerPosOffset'); if (el) el.value = s.footerPosOffset;
             const v = document.getElementById('footerPosVal'); if (v) v.textContent = s.footerPosOffset + '%';
         }
+        // 恢复聊天界面暗黑模式
+        if (s.chatDarkMode) {
+            document.getElementById('chatDarkMode').checked = true;
+            document.getElementById('chatPage').classList.add('chat-dark-mode');
+        }
+        // 恢复输入框圆方程度
+        if (s.inputBorderRadius) {
+            document.getElementById('inputBorderRadius').value = s.inputBorderRadius;
+            document.getElementById('inputBorderRadiusVal').textContent = s.inputBorderRadius + 'px';
+            const inp = document.querySelector('.chat-input');
+            if (inp) inp.style.borderRadius = s.inputBorderRadius + 'px';
+        }
+        // 恢复输入框颜色
+        if (s.inputBgColor) {
+            document.getElementById('inputBgColor').value = s.inputBgColor;
+            const inp = document.querySelector('.chat-input');
+            if (inp) inp.style.backgroundColor = s.inputBgColor;
+        }
+        // 恢复关闭底部背景
+        if (s.hideFooterBg) {
+            document.getElementById('hideFooterBg').checked = true;
+            const ft = document.querySelector('.chat-footer');
+            if (ft) { ft.style.background = 'transparent'; ft.style.backgroundImage = 'none'; }
+        }
+        // 恢复顶部备注颜色
+        if (s.headerTitleColor) {
+            document.getElementById('headerTitleColor').value = s.headerTitleColor;
+            const ttl = document.getElementById('chatTitle');
+            if (ttl) ttl.style.color = s.headerTitleColor;
+        }
+        // 恢复清晰度
+        if (s.clarity && s.clarity !== 1) {
+            document.getElementById('claritySlider').value = s.clarity;
+            document.getElementById('clarityVal').textContent = s.clarity.toFixed(1);
+            document.getElementById('chatPage').style.transform = 'scale(' + s.clarity + ')';
+            document.getElementById('chatPage').style.transformOrigin = 'top left';
+            document.getElementById('chatPage').style.width = (100 / s.clarity) + '%';
+            document.getElementById('chatPage').style.height = (100 / s.clarity) + '%';
+        }
+    }
+
+    // ===== 自定义字体管理 =====
+    if (!appData.customFonts) { appData.customFonts = []; }
+    
+    function uploadCustomFont(target) {
+        currentEditType = 'customFont_' + target;
+        document.getElementById('fontFileInput').click();
+    }
+    
+    function handleCustomFontUpload(event, target) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const base64 = ev.target.result;
+            const fontName = 'customFont_' + Date.now();
+            const fontRecord = {
+                id: fontName,
+                name: file.name,
+                data: base64,
+                target: target
+            };
+            // 检查是否超过10个字体
+            if (appData.customFonts.length >= 10) {
+                alert('最多保存10个字体，请先删除不需要的字体');
+                return;
+            }
+            appData.customFonts.push(fontRecord);
+            applyFontFace('customFont_' + fontName, fontName, base64);
+            // 自动应用最新的字体到对应目标
+            applyCustomFontToTarget(target, fontName);
+            saveData();
+            renderCustomFontList(target);
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+    
+    function applyCustomFontToTarget(target, fontName) {
+        const font = appData.customFonts.find(f => f.id === fontName);
+        if (!font) return;
+        if (target === 'global') {
+            appData.globalSettings.fontFamily = fontName;
+            appData.globalSettings.fontData = font.data;
+            applyFontFace('globalFontStyle', fontName, font.data);
+            applyGlobalSettings();
+            const preview = document.getElementById('globalFontPreview');
+            if (preview) preview.textContent = font.name;
+        } else if (target === 'diary') {
+            appData.diary.settings.fontFamily = fontName;
+            appData.diary.settings.fontData = font.data;
+            applyFontFace('diaryFontStyle', fontName, font.data);
+            renderDiaryList();
+        } else if (target === 'letter') {
+            appData.letter.settings.fontFamily = fontName;
+            appData.letter.settings.fontData = font.data;
+            applyFontFace('letterFontStyle', fontName, font.data);
+            renderLetterList();
+        }
+        saveData();
+    }
+    
+    function deleteCustomFont(fontId, target) {
+        const idx = appData.customFonts.findIndex(f => f.id === fontId);
+        if (idx === -1) return;
+        const font = appData.customFonts[idx];
+        // 如果当前正在使用该字体，重置为默认
+        if (target === 'global' && appData.globalSettings.fontFamily === fontId) {
+            resetGlobalFont();
+        } else if (target === 'diary' && appData.diary.settings.fontFamily === fontId) {
+            resetDiaryFont();
+        } else if (target === 'letter' && appData.letter.settings.fontFamily === fontId) {
+            resetLetterFont();
+        }
+        // 移除 font-face 样式
+        const styleEl = document.getElementById('customFont_' + fontId);
+        if (styleEl) styleEl.remove();
+        appData.customFonts.splice(idx, 1);
+        saveData();
+        renderCustomFontList(target);
+    }
+    
+    function renderCustomFontList(target) {
+        const container = document.getElementById('customFontList_' + target);
+        if (!container) return;
+        const fonts = appData.customFonts.filter(f => f.target === target);
+        if (fonts.length === 0) { container.innerHTML = ''; return; }
+        let html = '<div style="display:flex;flex-direction:column;gap:4px;">';
+        fonts.forEach(f => {
+            const isCurrent = (target === 'global' && appData.globalSettings.fontFamily === f.id) ||
+                               (target === 'diary' && appData.diary.settings.fontFamily === f.id) ||
+                               (target === 'letter' && appData.letter.settings.fontFamily === f.id);
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:#f8f8f8;border-radius:6px;font-size:12px;">';
+            html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' + (isCurrent ? 'color:#1a1a1a;font-weight:bold;' : 'color:#666;') + '">' + f.name + (isCurrent ? ' (使用中)' : '') + '</span>';
+            html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
+            if (!isCurrent) {
+                html += '<button onclick="applyCustomFontToTarget(\'' + target + '\',\'' + f.id + '\')" style="padding:2px 8px;background:#e0e0e0;border:none;border-radius:4px;font-size:11px;cursor:pointer;">使用</button>';
+            }
+            html += '<button onclick="deleteCustomFont(\'' + f.id + '\',\'' + target + '\')" style="padding:2px 8px;background:#ffe0e0;border:none;border-radius:4px;font-size:11px;cursor:pointer;color:#d00;">删除</button>';
+            html += '</div></div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
     }
 
 </script>
