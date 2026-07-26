@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=auto">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="迁逸">
@@ -1896,7 +1896,20 @@
             position: relative;
             background-size: cover;
             background-position: center;
+            overflow: hidden;
         }
+        .moments-bg-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+            display: none;
+            pointer-events: none;
+        }
+        .moments-bg-video.show { display: block; }
         .moments-header .page-back, .moments-header .page-send {
             position: absolute;
             top: 12px;
@@ -2696,6 +2709,125 @@
         .bal-side .lbl{font-size:12px;color:#666;margin-bottom:4px;}
         .bal-side .val{font-size:26px;font-weight:600;color:var(--text-color);}
         .bal-rec{font-size:13px;color:#4a4a4a;padding:6px 0;border-bottom:1px solid #f0f0f0;}
+
+        /* ===== 安全区适配 =====
+           添加到主屏幕(standalone)后，状态栏覆盖顶部、Home指示条覆盖底部。
+           viewport-fit=cover 时 env(safe-area-inset-*) 返回真实留白；普通浏览器标签页下 env()=0，无任何影响。
+           以下规则置于样式末尾，同等优先级下后声明生效，确保各页面顶部/底部内容不被遮挡。 */
+        .chat-header {
+            height: calc(var(--chat-header-height) + env(safe-area-inset-top) + var(--chat-top-padding, 0px));
+            padding-top: env(safe-area-inset-top);
+        }
+        .settings-header, .wordcard-header, .page-header {
+            height: calc(50px + env(safe-area-inset-top));
+            padding-top: env(safe-area-inset-top);
+        }
+        .chat-footer {
+            height: calc(var(--chat-footer-height) + env(safe-area-inset-bottom) + var(--chat-bottom-padding, 0px));
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .moments-header .page-back, .moments-header .page-send {
+            top: calc(12px + env(safe-area-inset-top));
+        }
+        .dock-bar {
+            bottom: calc(20px + env(safe-area-inset-bottom));
+        }
+        .page-indicator {
+            bottom: calc(85px + env(safe-area-inset-bottom));
+        }
+        /* ===== 通用底部操作表（朋友圈封面等）===== */
+        .action-sheet {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f7f7f7;
+            z-index: 1200;
+            padding-bottom: env(safe-area-inset-bottom);
+            transform: translateY(100%);
+            transition: transform 0.25s ease;
+            display: none;
+        }
+        .action-sheet.show { display: block; transform: translateY(0); }
+        .action-sheet-item {
+            text-align: center;
+            font-size: 16px;
+            padding: 15px 0;
+            background: #ffffff;
+            color: var(--color-deep-black);
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .action-sheet-item:active { background: #f0f0f0; }
+        .action-sheet-item.danger { color: #ff3b30; }
+        .action-sheet-item.cancel { font-size: 16px; }
+        .action-sheet-gap { height: 8px; background: #f7f7f7; }
+
+        /* ========== 朋友圈全屏图片查看器 ========== */
+        .moments-img-viewer {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .moments-img-viewer.show { display: flex; }
+        .moments-img-viewer-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        .moments-img-viewer-close {
+            position: absolute;
+            top: calc(12px + env(safe-area-inset-top));
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .moments-img-viewer-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .moments-img-viewer-nav.prev { left: 12px; }
+        .moments-img-viewer-nav.next { right: 12px; }
+        .moments-img-viewer-nav.hide { display: none; }
+        .moments-img-viewer-counter {
+            position: absolute;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            color: #fff;
+            font-size: 14px;
+            background: rgba(0,0,0,0.4);
+            padding: 4px 14px;
+            border-radius: 14px;
+        }
     </style>
 </head>
 <body>
@@ -3198,6 +3330,22 @@
                     <label>仅显示最后一条消息头像</label>
                     <input type="checkbox" id="onlyLastAvatar" onchange="updateDisplaySettings()">
                 </div>
+                <div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div>
+                <div class="settings-row">
+                    <label>顶部背景内边距</label>
+                    <input type="range" id="topPaddingSlider" min="0" max="50" value="0" step="1" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('topPaddingVal').textContent=this.value;updateChatLayout()">
+                    <span id="topPaddingVal">0</span>
+                </div>
+                <div class="settings-row">
+                    <label>底部背景内边距</label>
+                    <input type="range" id="bottomPaddingSlider" min="0" max="50" value="0" step="1" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('bottomPaddingVal').textContent=this.value;updateChatLayout()">
+                    <span id="bottomPaddingVal">0</span>
+                </div>
+                <div class="settings-row">
+                    <label>底部输入框位置</label>
+                    <input type="range" id="footerOffsetSlider" min="0" max="50" value="0" step="1" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('footerOffsetVal').textContent=this.value;updateChatLayout()">
+                    <span id="footerOffsetVal">0</span>
+                </div>
             </div>
             <div class="settings-section">
                 <div class="section-title">美化设置</div>
@@ -3439,7 +3587,8 @@
 
     <!-- 朋友圈界面 -->
     <div class="moments-page" id="momentsPage">
-        <div class="moments-header" id="momentsHeader" onclick="changeMomentsWallpaper()">
+        <div class="moments-header" id="momentsHeader" onclick="openMomentsBgMenu()">
+            <video class="moments-bg-video" id="momentsBgVideo" muted loop playsinline webkit-playsinline preload="metadata"></video>
             <div class="page-back" onclick="event.stopPropagation();closeMoments()">‹</div>
             <div class="page-send" onclick="event.stopPropagation();openPublishMoment()">发送</div>
             <div class="moments-user-info">
@@ -3462,7 +3611,7 @@
             <div class="diary-tab" data-tab="double" onclick="switchDiaryTab('double')">双人日记</div>
         </div>
         <div class="diary-list" id="diaryList"></div>
-        <div style="position: fixed; bottom: 30px; right: 20px; z-index: 10;">
+        <div style="position: fixed; bottom: calc(30px + env(safe-area-inset-bottom)); right: 20px; z-index: 10;">
             <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--color-deep-black); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" onclick="openWriteDiary()">+</div>
         </div>
     </div>
@@ -3481,7 +3630,7 @@
             <div class="letter-tab" data-tab="favorite" onclick="switchLetterTab('favorite')">收藏</div>
         </div>
         <div class="letter-list" id="letterList"></div>
-        <div style="position: fixed; bottom: 30px; right: 20px; z-index: 10;">
+        <div style="position: fixed; bottom: calc(30px + env(safe-area-inset-bottom)); right: 20px; z-index: 10;">
             <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--color-deep-black); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" onclick="openSendLetter()"><svg viewBox="0 0 24 24" width="24" height="24" stroke="white" fill="none" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
         </div>
     </div>
@@ -3802,7 +3951,7 @@
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
 
 <!-- 站内消息通知弹窗 - 微信风格 -->
-<div id="chatNotification" style="position:fixed;top:12px;left:12px;right:12px;z-index:9999;background:rgba(245,245,245,0.97);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.12);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease;opacity:0;pointer-events:none;overflow:hidden;max-width:calc(100% - 24px);font-family:var(--font-family);cursor:pointer;" onclick="openChatFromNotification()">
+<div id="chatNotification" style="position:fixed;top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;z-index:9999;background:rgba(245,245,245,0.97);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.12);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease;opacity:0;pointer-events:none;overflow:hidden;max-width:calc(100% - 24px);font-family:var(--font-family);cursor:pointer;" onclick="openChatFromNotification()">
     <div style="display:flex;align-items:center;padding:14px 16px;gap:12px;">
         <!-- 头像 -->
         <div id="notifAvatar" style="width:42px;height:42px;border-radius:6px;flex-shrink:0;overflow:hidden;background:#4a4a4a;display:flex;align-items:center;justify-content:center;">
@@ -3821,11 +3970,12 @@
 </div>
 
 <!-- 桌面编辑面板 -->
-<div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div style="font-size:13px;color:#999;margin-bottom:8px;font-family:var(--font-family);">组件位置调节（滑动调整）</div><div class="edit-option" onclick="openWidgetPosEditor('anniversary','纪念日组件',1)">第一页 · 纪念日组件</div><div class="edit-option" onclick="openWidgetPosEditor('appSection','聊天/日记/朋友圈/信封',1)">第一页 · 聊天日记朋友圈信封</div><div class="edit-option" onclick="openWidgetPosEditor('appSectionBottom','美化/字卡/调查问卷/他的手机',1)">第一页 · 美化字卡调查问卷</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openWidgetPosEditor('period','生理期组件',2)">第二页 · 生理期组件</div><div class="edit-option" onclick="openWidgetPosEditor('wordCard','Ta今天想对你说的话',2)">第二页 · Ta想对你说的话</div><div class="edit-option" onclick="openWidgetPosEditor('thirdRow','时间/默契挑战/五子棋等',2)">第二页 · 时间和游戏行</div></div>
+<div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div><div class="edit-option" onclick="openDockPosEditor()">调整底栏位置</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div style="font-size:13px;color:#999;margin-bottom:8px;font-family:var(--font-family);">组件位置调节（滑动调整）</div><div class="edit-option" onclick="openWidgetPosEditor('anniversary','纪念日组件',1)">第一页 · 纪念日组件</div><div class="edit-option" onclick="openWidgetPosEditor('appSection','聊天/日记/朋友圈/信封',1)">第一页 · 聊天日记朋友圈信封</div><div class="edit-option" onclick="openWidgetPosEditor('appSectionBottom','美化/字卡/调查问卷/他的手机',1)">第一页 · 美化字卡调查问卷</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openWidgetPosEditor('period','生理期组件',2)">第二页 · 生理期组件</div><div class="edit-option" onclick="openWidgetPosEditor('wordCard','Ta今天想对你说的话',2)">第二页 · Ta想对你说的话</div><div class="edit-option" onclick="openWidgetPosEditor('thirdRow','时间/默契挑战/五子棋等',2)">第二页 · 时间和游戏行</div></div>
 <div class="edit-menu" id="sizeEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>图标大小</h3><div class="size-slider"><input type="range" id="iconSizeSlider" min="40" max="80" value="62" oninput="updateIconSize(this.value)"></div></div>
 <div class="edit-menu" id="nameColorEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>应用名称颜色</h3><div class="color-input-row"><label>选择颜色</label><input type="color" id="appNameColorPicker" value="#1a1a1a" oninput="setAppNameColor(this.value)"></div></div>
 <div class="edit-menu" id="appNameSizeEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>应用名称大小</h3><div class="size-slider"><input type="range" id="appNameSizeSlider" min="10" max="18" value="12" step="0.5" oninput="updateAppNameSize(this.value)"></div></div>
 <div class="edit-menu" id="widgetPosEditor"><span class="edit-menu-close" onclick="closeWidgetPosEditor()">×</span><h3 id="widgetPosTitle">组件位置</h3><div style="font-size:12px;color:#999;margin-bottom:6px;font-family:var(--font-family);" id="widgetPosHint">滑动调节组件垂直位置</div><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:12px;color:#666;white-space:nowrap;font-family:var(--font-family);">上移</span><div class="size-slider" style="flex:1;margin:0;"><input type="range" id="widgetPosSlider" min="0" max="100" value="50" step="1" oninput="applyWidgetPosSlider(this.value)"></div><span style="font-size:12px;color:#666;white-space:nowrap;font-family:var(--font-family);">下移</span></div><div style="text-align:center;font-size:11px;color:#bbb;font-family:var(--font-family);" id="widgetPosValue">偏移: 0px</div></div>
+<div class="edit-menu" id="dockPosEditor"><span class="edit-menu-close" onclick="closeDockPosEditor()">×</span><h3>底栏位置</h3><div style="font-size:12px;color:#999;margin-bottom:6px;font-family:var(--font-family);">滑动调节底栏垂直位置</div><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span style="font-size:12px;color:#666;white-space:nowrap;font-family:var(--font-family);">上移</span><div class="size-slider" style="flex:1;margin:0;"><input type="range" id="dockPosSlider" min="0" max="300" value="0" step="1" oninput="applyDockPosSlider(this.value)"></div><span style="font-size:12px;color:#666;white-space:nowrap;font-family:var(--font-family);">底部</span></div><div style="text-align:center;font-size:11px;color:#bbb;font-family:var(--font-family);" id="dockPosValue">偏移: 0px</div></div>
 <div class="upload-modal" id="uploadModal"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>选择图片</h3><div class="upload-option" onclick="triggerUpload()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>从相册选择</div><div class="upload-option" onclick="resetWidgetImage()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>重置为初始</div></div>
 <div class="edit-menu" id="anniversaryEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>编辑纪念日</h3><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">第一行文字</label><input type="text" class="edit-input" id="editTitle" placeholder="输入标题"></div><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">日期</label><input type="date" class="edit-input" id="editDate"></div><div class="color-input-row"><label>字体颜色</label><input type="color" id="anniColorPicker" value="#1a1a1a" oninput="setAnniversaryColor(this.value)"></div><div class="edit-option" style="margin-top:12px;" onclick="openAnniversaryBgUpload()">更换背景图片</div><div class="edit-option" onclick="saveAnniversary()">保存</div></div>
 <div class="edit-menu" id="periodEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>日历设置</h3><div class="edit-option" onclick="openPeriodBgUpload()">更换背景图片</div><div class="edit-option" onclick="resetPeriodBg()">重置背景</div><div class="color-input-row"><label>字体颜色</label><input type="color" id="periodColorPicker" value="#1a1a1a" oninput="setPeriodColor(this.value)"></div></div>
@@ -3909,6 +4059,24 @@
             <div class="modal-btn confirm" onclick="publishMoment()">发表</div>
         </div>
     </div>
+</div>
+
+<!-- 朋友圈封面操作表 -->
+<div class="action-sheet" id="momentsBgSheet">
+    <div class="action-sheet-item" onclick="uploadMomentsBgImage()">上传图片</div>
+    <div class="action-sheet-item" onclick="uploadMomentsBgVideo()">上传视频</div>
+    <div class="action-sheet-item danger" onclick="resetMomentsBg()">恢复默认</div>
+    <div class="action-sheet-gap"></div>
+    <div class="action-sheet-item cancel" onclick="closeMomentsBgSheet()">取消</div>
+</div>
+
+<!-- 朋友圈全屏图片查看器 -->
+<div class="moments-img-viewer" id="momentsImgViewer" onclick="if(event.target===this)closeMomentsImgViewer()">
+    <div class="moments-img-viewer-close" onclick="closeMomentsImgViewer()">×</div>
+    <div class="moments-img-viewer-nav prev" id="momentsImgPrev" onclick="momentsImgNav(-1)">‹</div>
+    <img class="moments-img-viewer-img" id="momentsImgMain" src="" alt="">
+    <div class="moments-img-viewer-nav next" id="momentsImgNext" onclick="momentsImgNav(1)">›</div>
+    <div class="moments-img-viewer-counter" id="momentsImgCounter"></div>
 </div>
 
 <!-- 写日记模态框 -->
@@ -4125,6 +4293,8 @@
 <input type="file" class="hidden-input" id="videoInput" accept="video/*" onchange="handleVideoUpload(event)">
 <input type="file" class="hidden-input" id="textFileInput" accept=".txt" onchange="handleTextFileUpload(event)">
 <input type="file" class="hidden-input" id="fontFileInput" accept=".ttf,.otf" onchange="handleFontUpload(event)">
+<input type="file" class="hidden-input" id="momentsBgImgInput" accept="image/*" onchange="handleMomentsBgImageUpload(event)">
+<input type="file" class="hidden-input" id="momentsBgVideoInput" accept="video/*" onchange="handleMomentsBgVideoUpload(event)">
 
 <script>
     // ===== 阻止浏览器长按复制/蓝色选区 =====
@@ -4340,6 +4510,7 @@
         moments: {
             list: [],
             wallpaper: '',
+            wallpaperVideo: '',
             lastDailyDate: '',
             todayCount: 0,
             lastMomentDate: ''
@@ -4395,6 +4566,14 @@
             period: 0,           // 第二页：生理期组件
             wordCard: 0,         // 第二页：Ta今天想对你说的话组件
             thirdRow: 0          // 第二页：时间组件+默契挑战五子棋恋爱翻翻乐余额行
+        },
+        // 底栏(dock-bar)距底部偏移：0=默认位置(20px)，正值=上移
+        dockBottomOffset: 0,
+        // 聊天界面布局微调
+        chatLayout: {
+            topPadding: 0,     // 顶部背景额外内边距(px)，0=默认，正值增大高度
+            bottomPadding: 0,  // 底部背景额外内边距(px)，0=默认，正值增大高度
+            footerOffset: 0    // 底部输入框整体下移(px)，0=默认，正值下移（靠近底部）
         }
     };
     let appData = loadData();
@@ -4659,6 +4838,51 @@
         currentWidgetPosKey = null;
     }
 
+    // ===== 底栏位置调节 =====
+    function openDockPosEditor() {
+        document.getElementById('mainEditMenu').classList.remove('show');
+        // 滑块范围：0=底部(紧靠底部)，值越大越上移；最大上移 300px
+        const slider = document.getElementById('dockPosSlider');
+        slider.min = 0;
+        slider.max = 300;
+        slider.step = 1;
+        slider.value = appData.dockBottomOffset || 0;
+        updateDockPosDisplay();
+        document.getElementById('dockPosEditor').classList.add('show');
+    }
+    function applyDockPosSlider(val) {
+        const offset = parseInt(val);
+        appData.dockBottomOffset = offset;
+        applyDockPosition();
+        updateDockPosDisplay();
+        saveData();
+    }
+    function updateDockPosDisplay() {
+        const offset = appData.dockBottomOffset || 0;
+        const display = document.getElementById('dockPosValue');
+        if (offset === 0) {
+            display.textContent = '位置: 紧靠底部';
+        } else {
+            display.textContent = '距底部: ' + offset + 'px';
+        }
+    }
+    function closeDockPosEditor() {
+        document.getElementById('dockPosEditor').classList.remove('show');
+        document.getElementById('mainEditMenu').classList.add('show');
+    }
+    function applyDockPosition() {
+        const offset = appData.dockBottomOffset || 0;
+        const dockBar = document.querySelector('.dock-bar');
+        const pageIndicator = document.querySelector('.page-indicator');
+        if (dockBar) {
+            dockBar.style.bottom = 'calc(' + offset + 'px + env(safe-area-inset-bottom))';
+        }
+        if (pageIndicator) {
+            // page-indicator 始终在 dock-bar 上方约 65px
+            pageIndicator.style.bottom = 'calc(' + (offset + 65) + 'px + env(safe-area-inset-bottom))';
+        }
+    }
+
     function restoreWidgetOffsets() {
         if (!appData.widgetOffsets) return;
         const groups = document.querySelectorAll('.draggable-group');
@@ -4761,7 +4985,9 @@
     function setAppNameColor(c) { document.documentElement.style.setProperty('--app-name-color', c); appData.colors.appName = c; saveData(); }
     function closeAllModals() {
         document.getElementById('overlay').classList.remove('show');
-        document.querySelectorAll('.edit-menu, .upload-modal, .modal').forEach(el => el.classList.remove('show'));
+        document.querySelectorAll('.edit-menu, .upload-modal, .modal, .action-sheet').forEach(el => el.classList.remove('show'));
+        var imgViewer = document.getElementById('momentsImgViewer');
+        if (imgViewer) imgViewer.classList.remove('show');
         document.body.classList.remove('editing-mode');
         currentWidgetPosKey = null;
         currentEditTarget = null; currentEditType = null;
@@ -5320,6 +5546,7 @@
         applyBubbleRadiusVars(s);
         applyTransferStyleVars(s);
         applyBubbleFont();
+        applyChatLayout();
         
         if (s.chatWallpaper) {
             document.querySelector('.chat-messages').style.backgroundImage = `url(${s.chatWallpaper})`;
@@ -6573,6 +6800,7 @@
     // ===== 聊天设置 =====
     function openChatSettings() {
         document.getElementById('settingsPage').style.display = 'flex';
+        initChatLayoutSliders();
     }
     function closeChatSettings() {
         document.getElementById('settingsPage').style.display = 'none';
@@ -6950,6 +7178,36 @@
         s.onlyLastAvatar = document.getElementById('onlyLastAvatar').checked;
         saveData();
         renderMessages();
+    }
+    // ===== 聊天界面布局微调（顶部/底部内边距、输入框位置）=====
+    function updateChatLayout() {
+        if (!appData.chatLayout) appData.chatLayout = { topPadding: 0, bottomPadding: 0, footerOffset: 0 };
+        appData.chatLayout.topPadding = parseInt(document.getElementById('topPaddingSlider').value);
+        appData.chatLayout.bottomPadding = parseInt(document.getElementById('bottomPaddingSlider').value);
+        appData.chatLayout.footerOffset = parseInt(document.getElementById('footerOffsetSlider').value);
+        applyChatLayout();
+        saveData();
+    }
+    function applyChatLayout() {
+        const layout = appData.chatLayout || { topPadding: 0, bottomPadding: 0, footerOffset: 0 };
+        // 顶部背景额外高度：通过 CSS 变量增大 chat-header 高度，背景区域向下延伸
+        document.documentElement.style.setProperty('--chat-top-padding', layout.topPadding + 'px');
+        // 底部背景额外高度：通过 CSS 变量增大 chat-footer 高度，背景区域向上延伸
+        document.documentElement.style.setProperty('--chat-bottom-padding', layout.bottomPadding + 'px');
+        // 底部输入框整体下移：正值=向下移靠近底部（通过负 margin-bottom 实现）
+        const chatFooter = document.querySelector('.chat-footer');
+        if (chatFooter) {
+            chatFooter.style.marginBottom = (-layout.footerOffset) + 'px';
+        }
+    }
+    function initChatLayoutSliders() {
+        const layout = appData.chatLayout || { topPadding: 0, bottomPadding: 0, footerOffset: 0 };
+        document.getElementById('topPaddingSlider').value = layout.topPadding;
+        document.getElementById('topPaddingVal').textContent = layout.topPadding;
+        document.getElementById('bottomPaddingSlider').value = layout.bottomPadding;
+        document.getElementById('bottomPaddingVal').textContent = layout.bottomPadding;
+        document.getElementById('footerOffsetSlider').value = layout.footerOffset;
+        document.getElementById('footerOffsetVal').textContent = layout.footerOffset;
     }
     function changeChatWallpaper() {
         currentEditType = 'chatWallpaper';
@@ -7644,9 +7902,7 @@
         if (s.myAvatar) {
             avatarEl.innerHTML = `<img src="${s.myAvatar}" alt="">`;
         }
-        if (appData.moments.wallpaper) {
-            document.getElementById('momentsHeader').style.backgroundImage = `url(${appData.moments.wallpaper})`;
-        }
+        applyMomentsBg();
         checkDailyMoments();
         renderMomentsList();
     }
@@ -7659,6 +7915,84 @@
             saveData();
             document.getElementById('momentsHeader').style.backgroundImage = '';
             document.getElementById('momentsHeader').style.backgroundColor = 'var(--color-light-gray)';
+        }
+    }
+
+    // ===== 朋友圈封面操作（图片/视频/恢复默认）=====
+    function openMomentsBgMenu() {
+        document.getElementById('overlay').classList.add('show');
+        document.getElementById('momentsBgSheet').classList.add('show');
+    }
+    function closeMomentsBgSheet() {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('momentsBgSheet').classList.remove('show');
+    }
+    function uploadMomentsBgImage() {
+        closeMomentsBgSheet();
+        document.getElementById('momentsBgImgInput').click();
+    }
+    function uploadMomentsBgVideo() {
+        closeMomentsBgSheet();
+        document.getElementById('momentsBgVideoInput').click();
+    }
+    function resetMomentsBg() {
+        closeMomentsBgSheet();
+        appData.moments.wallpaper = '';
+        appData.moments.wallpaperVideo = '';
+        saveData();
+        applyMomentsBg();
+    }
+    function handleMomentsBgImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            appData.moments.wallpaper = ev.target.result;
+            appData.moments.wallpaperVideo = ''; // 图片优先，清除视频
+            saveData();
+            applyMomentsBg();
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+    function handleMomentsBgVideoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        // 限制视频大小（20MB），避免 localStorage 溢出
+        if (file.size > 20 * 1024 * 1024) {
+            alert('视频文件过大，请选择 20MB 以内的视频');
+            event.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            appData.moments.wallpaperVideo = ev.target.result;
+            saveData();
+            applyMomentsBg();
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+    function applyMomentsBg() {
+        const header = document.getElementById('momentsHeader');
+        const video = document.getElementById('momentsBgVideo');
+        if (appData.moments.wallpaperVideo) {
+            // 视频背景
+            header.style.backgroundImage = '';
+            video.src = appData.moments.wallpaperVideo;
+            video.classList.add('show');
+            video.play().catch(function(){});
+        } else {
+            // 图片背景
+            video.classList.remove('show');
+            video.pause();
+            video.src = '';
+            if (appData.moments.wallpaper) {
+                header.style.backgroundImage = `url(${appData.moments.wallpaper})`;
+            } else {
+                header.style.backgroundImage = '';
+                header.style.backgroundColor = 'var(--color-light-gray)';
+            }
         }
     }
 
@@ -7760,9 +8094,16 @@
             if (moment.media && moment.media.length > 0) {
                 const imgWrap = document.createElement('div');
                 imgWrap.className = 'moment-images' + (moment.media.length === 1 ? ' single' : '');
+                // 收集该条朋友圈所有图片，供全屏查看器使用
+                const imageList = moment.media.filter(m => m.type === 'image').map(m => m.src);
+                if (imageList.length > 0) {
+                    momentsImageCache[moment.id] = imageList;
+                }
+                let imgIdx = 0;
                 moment.media.forEach(m => {
                     if (m.type === 'image') {
-                        imgWrap.innerHTML += `<img src="${m.src}" alt="">`;
+                        const curIdx = imgIdx++;
+                        imgWrap.innerHTML += `<img src="${m.src}" alt="" onclick="openMomentsImgViewer(${moment.id}, ${curIdx})">`;
                     } else {
                         imgWrap.innerHTML += `<video src="${m.src}" controls></video>`;
                     }
@@ -7839,6 +8180,58 @@
             container.appendChild(item);
         });
     }
+
+    // ===== 朋友圈全屏图片查看器 =====
+    var momentsImageCache = {}; // { momentId: [src, src, ...] }
+    var momentsViewerState = { list: [], index: 0 };
+
+    function openMomentsImgViewer(momentId, index) {
+        const list = momentsImageCache[momentId];
+        if (!list || list.length === 0) return;
+        momentsViewerState.list = list;
+        momentsViewerState.index = Math.max(0, Math.min(index, list.length - 1));
+        updateMomentsImgViewer();
+        document.getElementById('momentsImgViewer').classList.add('show');
+    }
+    function closeMomentsImgViewer() {
+        document.getElementById('momentsImgViewer').classList.remove('show');
+    }
+    function momentsImgNav(dir) {
+        const next = momentsViewerState.index + dir;
+        if (next < 0 || next >= momentsViewerState.list.length) return;
+        momentsViewerState.index = next;
+        updateMomentsImgViewer();
+    }
+    function updateMomentsImgViewer() {
+        const s = momentsViewerState;
+        document.getElementById('momentsImgMain').src = s.list[s.index];
+        document.getElementById('momentsImgCounter').textContent = (s.index + 1) + ' / ' + s.list.length;
+        document.getElementById('momentsImgPrev').classList.toggle('hide', s.list.length <= 1 || s.index === 0);
+        document.getElementById('momentsImgNext').classList.toggle('hide', s.list.length <= 1 || s.index === s.list.length - 1);
+    }
+    // 触摸滑动翻页
+    (function() {
+        let touchStartX = 0, touchStartY = 0;
+        const viewer = document.getElementById('momentsImgViewer');
+        viewer.addEventListener('touchstart', function(e) {
+            if (e.touches.length !== 1) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        viewer.addEventListener('touchend', function(e) {
+            if (e.changedTouches.length !== 1) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            // 水平滑动距离大于垂直且超过阈值 → 翻页
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+                momentsImgNav(dx > 0 ? -1 : 1);
+            }
+            // 向下滑动关闭
+            if (dy > 80 && Math.abs(dy) > Math.abs(dx)) {
+                closeMomentsImgViewer();
+            }
+        }, { passive: true });
+    })();
 
     function formatTime(timestamp) {
         const date = new Date(timestamp);
@@ -8941,14 +9334,20 @@
             document.documentElement.style.setProperty('--global-font-scale', scale);
             document.documentElement.style.fontSize = gs.globalFontSize + 'px';
             document.body.style.fontSize = gs.globalFontSize + 'px';
-            // 使用CSS transform代替zoom以减少重排开销
-            document.body.style.transformOrigin = 'top left';
-            document.body.style.transform = 'scale(' + scale + ')';
+            // 使用 CSS zoom 代替 transform: scale —— transform 会把内容当作位图缩放，
+            // 导致文字/图片在部分浏览器（尤其 Safari）中发虚模糊；zoom 触发真实重排，渲染清晰。
+            // 同时按比例缩小 body 尺寸，使缩放后仍恰好填满视口，避免底部被 overflow:hidden 裁切。
+            document.body.style.transformOrigin = '';
+            document.body.style.transform = '';
+            document.body.style.zoom = scale;
             document.body.style.width = (100 / scale) + '%';
+            document.body.style.height = (100 / scale) + '%';
         } else {
             document.documentElement.style.setProperty('--global-font-scale', '1');
+            document.body.style.zoom = '';
             document.body.style.transform = 'none';
             document.body.style.width = '';
+            document.body.style.height = '';
         }
     }
 
@@ -9162,7 +9561,7 @@
             'periodData','wordCardText','timeOffset','anniversary','dailyWordUpdate',
             'wordGroups','currentGroup','specialSettings','nudgeCards','selectedCards',
             'appNames','widgetImages','appIconImages','colors','appNameSize','videoBg',
-            'beautifyPresets','widgetOffsets',
+            'beautifyPresets','widgetOffsets','dockBottomOffset','chatLayout',
             'chatSettings','chatHistory','emojis',
             'wordCards','specialCards',
             'moments','diary','letter',
@@ -9676,7 +10075,7 @@
         else if (key === 'wordCards') { appData.wordCards = { default: [] }; appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [] }; }
         else if (key === 'diary') appData.diary = { singleList: [], doubleList: [], currentTab: 'single', settings: appData.diary.settings };
         else if (key === 'letter') appData.letter = { currentTab: 'inbox', inbox: [], reply: [], sent: [], favorite: [], settings: appData.letter.settings };
-        else if (key === 'moments') appData.moments = { list: [], wallpaper: '', lastDailyDate: '' };
+        else if (key === 'moments') appData.moments = { list: [], wallpaper: '', wallpaperVideo: '', lastDailyDate: '' };
         else if (key === 'globalSettings') appData.globalSettings = { darkMode: false, fontFamily: '', fontColor: '#1a1a1a', iconColor: '#999999', globalFontSize: 14, chatWallpaper: '', topBgImage: '', bottomBgImage: '' };
         else if (key === 'beautifyPresets') appData.beautifyPresets = { chatGlobal: [], bubble: [], moments: [] };
         else if (key === 'surveyData') appData.surveyData = { myQuestions: [], otherQuestions: [], records: [], otherPendingQuestions: [], lastTriggerTime: 0 };
@@ -11503,6 +11902,7 @@
         restoreAppIcons();
         restoreWidgets();
         restoreWidgetOffsets();
+        applyDockPosition();
         // 恢复图标大小
         if (appData.iconSize) {
             document.documentElement.style.setProperty('--app-icon-size', appData.iconSize + 'px');
@@ -11563,6 +11963,7 @@
         restoreAppIcons();
         restoreWidgets();
         restoreWidgetOffsets();
+        applyDockPosition();
         setupLongPressForElements();
         setupVideoLongPress();
         initTimeWidgets();
