@@ -115,7 +115,7 @@
             height: 100%;
             position: relative;
             /* 顶部留出状态栏安全区域 + 125px，让图标不被遮挡 */
-            padding: calc(125px + env(safe-area-inset-top, 44px)) 16px 100px;
+            padding: calc(125px + env(safe-area-inset-top, 44px)) 16px calc(100px + env(safe-area-inset-bottom, 0px));
             overflow-y: auto;
             overflow-x: hidden;
             background: transparent !important;
@@ -669,7 +669,10 @@
             width: var(--app-icon-size);
             height: var(--app-icon-size);
         }
-
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .dock-bar { bottom: calc(20px + env(safe-area-inset-bottom)); }
+            .page-indicator { bottom: calc(85px + env(safe-area-inset-bottom)); }
+        }
         /* ========== 聊天界面样式 ========== */
         .chat-page {
             width: 100%;
@@ -5998,6 +6001,8 @@
         });
         
         closeTransferModal();
+        
+        // For "mine" transfers, auto-accept after a delay (simulates other party receiving)
         setTimeout(() => {
             const msg = appData.chatHistory.find(m => m.type === 'transfer' && m.sender === 'mine' && m.status === 'pending' && m.id === sentTransferId);
             if (msg) {
@@ -6426,7 +6431,7 @@
             addSystemMsg(`通话时长 ${durationText}`);
         }
     }
-    function makeVideoDraggable(el){if(!el||el._ds)return;el._ds=true;let sx,sy,ox,oy,rafId;function start(x,y){sx=x;sy=y;const r=el.getBoundingClientRect();ox=r.left;oy=r.top;}el.addEventListener('mousedown',e=>{e.preventDefault();start(e.clientX,e.clientY);const mv=e2=>{if(rafId)return;rafId=requestAnimationFrame(()=>{rafId=null;el.style.left=(ox+e2.clientX-sx)+'px';el.style.top=(oy+e2.clientY-sy)+'px';el.style.right='auto';el.style.bottom='auto';});};const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);if(rafId){cancelAnimationFrame(rafId);rafId=null;}};document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});el.addEventListener('touchstart',e=>{start(e.touches[0].clientX,e.touches[0].clientY);const mv=e2=>{if(rafId)return;rafId=requestAnimationFrame(()=>{rafId=null;el.style.left=(ox+e2.touches[0].clientX-sx)+'px';el.style.top=(oy+e2.touches[0].clientY-sy)+'px';el.style.right='auto';el.style.bottom='auto';});};const up=()=>{document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);if(rafId){cancelAnimationFrame(rafId);rafId=null;}};document.addEventListener('touchmove',mv);document.addEventListener('touchend',up);},{passive:false});}
+    function makeVideoDraggable(el){if(!el||el._ds)return;el._ds=true;let sx,sy,ox,oy,rafId=0;function start(x,y){sx=x;sy=y;const r=el.getBoundingClientRect();ox=r.left;oy=r.top;}el.addEventListener('mousedown',e=>{e.preventDefault();start(e.clientX,e.clientY);const mv=e2=>{cancelAnimationFrame(rafId);rafId=requestAnimationFrame(()=>{el.style.left=(ox+e2.clientX-sx)+'px';el.style.top=(oy+e2.clientY-sy)+'px';el.style.right='auto';el.style.bottom='auto';})};const up=()=>{cancelAnimationFrame(rafId);document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up)};document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)});el.addEventListener('touchstart',e=>{const t=e.touches[0];start(t.clientX,t.clientY);const mv=e2=>{e2.preventDefault();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(()=>{el.style.left=(ox+e2.touches[0].clientX-sx)+'px';el.style.top=(oy+e2.touches[0].clientY-sy)+'px';el.style.right='auto';el.style.bottom='auto';})};const up=()=>{cancelAnimationFrame(rafId);document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up)};document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',up)},{passive:false})}
     function toggleMinimizeVideo() {
         const container = document.getElementById('videoContainer');
         isMinimized = !isMinimized;
