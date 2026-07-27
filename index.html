@@ -172,8 +172,8 @@ img, video {
             width: 100%;
             height: 102px;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--color-border-white);
             border-radius: 16px;
             padding: 10px 14px;
@@ -267,8 +267,8 @@ img, video {
             width: 184px;
             height: 184px;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: none;
             border-radius: 14px;
             cursor: pointer;
@@ -313,8 +313,8 @@ img, video {
             width: var(--app-icon-size);
             height: var(--app-icon-size);
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--color-border-white);
             border-radius: 14px;
             display: flex;
@@ -366,8 +366,8 @@ img, video {
             max-width: 350px;
             height: 82px;
             background: var(--dock-glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             border: 1px solid var(--color-border-white);
             border-radius: 30px;
             display: flex;
@@ -542,8 +542,8 @@ img, video {
         .period-calendar {
             width: 100%;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--color-border-white);
             border-radius: 14px;
             padding: 12px 10px;
@@ -603,8 +603,8 @@ img, video {
         .word-card {
             width: 100%;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--color-border-white);
             border-radius: 14px;
             padding: 12px 14px;
@@ -648,8 +648,8 @@ img, video {
         .third-row .time-group .time-widget {
             flex: 1;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--color-border-white);
             border-radius: 14px;
             padding: 10px 8px;
@@ -696,10 +696,6 @@ img, video {
         .app-grid-2x2 .app-item .app-icon {
             width: var(--app-icon-size);
             height: var(--app-icon-size);
-        }
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .dock-bar { bottom: calc(20px + env(safe-area-inset-bottom)); }
-            .page-indicator { bottom: calc(85px + env(safe-area-inset-bottom)); }
         }
         /* ========== 聊天界面样式 ========== */
         .chat-page {
@@ -950,8 +946,8 @@ img, video {
         .word-group-tab{border-radius:0!important;}
         #wordcardPage .page-title{text-align:center;padding-left:40px;padding-right:40px;}
         .chat-footer {
-            height: calc(var(--chat-footer-height) + env(safe-area-inset-bottom));
-            padding-bottom: env(safe-area-inset-bottom);
+            height: var(--chat-footer-height);
+            padding-bottom: 0;
             background: #f0f0f0;
             /* removed */
             display: flex;
@@ -1639,8 +1635,8 @@ img, video {
             aspect-ratio: 3 / 4;
             border: 2px solid var(--color-deep-black);
             border-radius: 16px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             background: rgba(255,255,255,0.2);
             overflow: hidden;
             display: flex;
@@ -1914,7 +1910,7 @@ img, video {
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
         .moments-header .page-back { left: 16px; }
-        .moments-header .page-send { right: 16px; font-size: 15px; background: rgba(255,255,255,0.25); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 4px; padding: 4px 10px; }
+        .moments-header .page-send { right: 16px; font-size: 15px; background: rgba(255,255,255,0.25); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: 4px; padding: 4px 10px; }
         .moments-user-info {
             position: absolute;
             right: 20px;
@@ -3609,16 +3605,7 @@ img, video {
                     <input type="range" id="globalFontSizeSlider" min="12" max="20" value="14" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('globalFontSizeVal').textContent=this.value;updateGlobalFontSize(this.value)">
                     <span id="globalFontSizeVal">14</span>
                 </div>
-                <div class="settings-row">
-                    <label>当前清晰度</label>
-                    <select id="globalClaritySelect" onchange="updateGlobalClarity(this.value)" style="flex:1;max-width:150px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;background:#fff;color:#1a1a1a;outline:none;cursor:pointer;">
-                        <option value="0.7">标清</option>
-                        <option value="0.85">高清</option>
-                        <option value="1" selected>正常</option>
-                        <option value="1.2">超清</option>
-                        <option value="1.4">蓝光</option>
-                    </select>
-                </div>
+
             </div>
             <div class="settings-section">
                 <div class="section-title">消息通知</div>
@@ -4587,25 +4574,31 @@ img, video {
             runDailyChecks();
         }
     }
+    // saveData 防抖：避免频繁序列化大对象导致卡顿
+    let _saveDataTimer = null;
     function saveData() {
-        try {
-            const json = JSON.stringify(appData);
-            // 主存储：IndexedDB（支持30G大容量）—— 数据未加载完毕前不写入，防止默认数据覆盖真实数据
-            if (_idbReady) {
-                idbSet('appData', json);
-            }
-            // 备份：localStorage（小容量，可能失败，不影响主存储）
+        if (_saveDataTimer) clearTimeout(_saveDataTimer);
+        _saveDataTimer = setTimeout(() => {
+            _saveDataTimer = null;
             try {
-                localStorage.setItem(STORAGE_KEY, json);
-            } catch (e) {
-                // localStorage 空间不足时尝试压缩后备份
-                if (json.length > 3000000) {
-                    console.warn('localStorage空间不足，仅使用IndexedDB存储');
+                const json = JSON.stringify(appData);
+                // 主存储：IndexedDB（支持30G大容量）—— 数据未加载完毕前不写入，防止默认数据覆盖真实数据
+                if (_idbReady) {
+                    idbSet('appData', json);
                 }
+                // 备份：localStorage（小容量，可能失败，不影响主存储）
+                try {
+                    localStorage.setItem(STORAGE_KEY, json);
+                } catch (e) {
+                    // localStorage 空间不足时尝试压缩后备份
+                    if (json.length > 3000000) {
+                        console.warn('localStorage空间不足，仅使用IndexedDB存储');
+                    }
+                }
+            } catch (e) {
+                console.error('数据序列化失败:', e);
             }
-        } catch (e) {
-            console.error('数据序列化失败:', e);
-        }
+        }, 300);
     }
 
     // ===== 页面滑动 =====
@@ -5313,7 +5306,16 @@ img, video {
         const his = new Date(now.getTime() + timeOffset * 3600 * 1000);
         document.getElementById('hisTimeDisplay').textContent = his.toTimeString().slice(0,8);
     }
-    setInterval(updateTimes, 1000);
+    // 使用 Page Visibility API 优化定时器：页面不可见时暂停更新，减少卡顿
+    let _timesTimer = setInterval(updateTimes, 1000);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearInterval(_timesTimer);
+        } else {
+            updateTimes();
+            _timesTimer = setInterval(updateTimes, 1000);
+        }
+    });
     updateTimes();
     function openTimeEdit(el) {
         timeEditTarget = el;
@@ -5638,21 +5640,30 @@ img, video {
             return;
         }
         
-        // 全量渲染
+        // 全量渲染：限制最大渲染条数，防止大量消息导致卡顿
+        const MAX_RENDER = 100;
         container.innerHTML = '';
-        container._renderedCount = history.length;
         let lastSender = null;
         let otherMsgCount = 0, myMsgCount = 0;
+        const startIdx = Math.max(0, history.length - MAX_RENDER);
+        container._renderedCount = history.length;
         
-        history.forEach((msg, index) => {
+        for (let i = 0; i < history.length; i++) {
+            if (i < startIdx) {
+                // 跳过未渲染的消息，但计数仍需保持
+                if (history[i].sender === 'other') otherMsgCount++;
+                else if (history[i].sender === 'mine') myMsgCount++;
+                continue;
+            }
+            const msg = history[i];
             const isFirst = msg.sender !== lastSender;
-            const isLast = index === history.length - 1 || (history[index + 1] && history[index + 1].sender !== msg.sender);
+            const isLast = i === history.length - 1 || (history[i + 1] && history[i + 1].sender !== msg.sender);
             lastSender = msg.sender;
             if (msg.sender === 'other') otherMsgCount++;
             else if (msg.sender === 'mine') myMsgCount++;
             
-            container.appendChild(buildMessageRow(msg, index, isFirst, isLast, otherMsgCount, myMsgCount, s));
-        });
+            container.appendChild(buildMessageRow(msg, i, isFirst, isLast, otherMsgCount, myMsgCount, s));
+        }
     }
     
     function buildMessageRow(msg, index, isFirst, isLast, otherMsgCount, myMsgCount, s) {
@@ -5953,6 +5964,11 @@ img, video {
     }
     function addMessage(msg) {
         appData.chatHistory.push(msg);
+        // 限制消息历史数量，防止内存占用过大导致卡顿
+        const MAX_HISTORY = 500;
+        if (appData.chatHistory.length > MAX_HISTORY) {
+            appData.chatHistory = appData.chatHistory.slice(-MAX_HISTORY);
+        }
         saveData();
         renderMessages(true);
         scrollToBottom();
@@ -6427,6 +6443,26 @@ img, video {
         }, time * 1000);
     }
 
+    // ===== 图片压缩：减少 Base64 内存占用 =====
+    function compressImage(dataUrl, maxWidth, maxHeight, quality) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+                if (h > maxHeight) { w = w * maxHeight / h; h = maxHeight; }
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(w));
+                canvas.height = Math.max(1, Math.round(h));
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+        });
+    }
+
     // ===== 发送图片/视频 =====
     function sendImageMsg() {
         currentEditType = 'chatImage';
@@ -6467,12 +6503,14 @@ img, video {
         } else if (currentEditType === 'chatImage') {
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
-                reader.onload = (ev) => {
+                reader.onload = async (ev) => {
+                    // 压缩图片后再存储，减少内存占用
+                    const compressed = await compressImage(ev.target.result, 1200, 1200, 0.7);
                     addMessage({
                         id: Date.now() + Math.random(),
                         sender: 'mine',
                         type: 'image',
-                        content: ev.target.result
+                        content: compressed
                     });
                 };
                 reader.readAsDataURL(file);
@@ -9206,21 +9244,17 @@ img, video {
                 svg.style.stroke = gs.iconColor;
             });
         }
-        // 全局字体大小
+        // 全局字体大小：直接使用 font-size，避免 transform scale 导致模糊和性能问题
         if (gs.globalFontSize) {
             const baseSize = 14;
             const scale = gs.globalFontSize / baseSize;
             document.documentElement.style.setProperty('--global-font-scale', scale);
             document.documentElement.style.fontSize = gs.globalFontSize + 'px';
             document.body.style.fontSize = gs.globalFontSize + 'px';
-            // 使用CSS transform代替zoom以减少重排开销
-            document.body.style.transformOrigin = 'top left';
-            document.body.style.transform = 'scale(' + scale + ')';
-            document.body.style.width = (100 / scale) + '%';
         } else {
             document.documentElement.style.setProperty('--global-font-scale', '1');
-            document.body.style.transform = 'none';
-            document.body.style.width = '';
+            document.documentElement.style.fontSize = '';
+            document.body.style.fontSize = '';
         }
         // 底栏位置恢复
         const dock = document.querySelector('.dock-bar');
@@ -9249,9 +9283,7 @@ img, video {
         document.getElementById('globalFontColor').value = gs.fontColor || '#1a1a1a';
         document.getElementById('globalIconColor').value = gs.iconColor || '#999999';
         document.getElementById('globalFontSizeSlider').value = gs.globalFontSize || 14;
-        // 当前清晰度（保存在 chatSettings.clarity，正常=1 为网站自带清晰度）
-        const claritySel = document.getElementById('globalClaritySelect');
-        if (claritySel) claritySel.value = (appData.chatSettings && appData.chatSettings.clarity) ? appData.chatSettings.clarity : '1';
+
         // 通知设置
         document.getElementById('notificationToggle').checked = gs.notificationEnabled || false;
         // 后台保活设置
@@ -11858,7 +11890,7 @@ img, video {
             chatFooter.style.backgroundColor = cs.bottomBgColor;
             if (cs.bottomBgImage) { chatFooter.style.backgroundImage = 'url(' + cs.bottomBgImage + ')'; chatFooter.style.backgroundSize = 'cover'; }
         }
-        // 恢复聊天显示设置（当前清晰度 / 关闭底部背景 / 聊天暗黑模式等），保证刷新后依然生效
+        // 恢复聊天显示设置（关闭底部背景 / 聊天暗黑模式等），保证刷新后依然生效
         try { applyChatDisplaySettings(); } catch (e) { console.warn('applyChatDisplaySettings failed:', e); }
         if (document.getElementById('chatPage').style.display === 'flex') {
             initChatPage();
@@ -12310,27 +12342,7 @@ img, video {
         saveData();
     }
 
-    // ===== 系统设置：当前清晰度（标清/高清/正常/超清/蓝光）=====
-    // 正常 = 当前网站自带清晰度（scale 1，不做缩放）
-    function updateGlobalClarity(val) {
-        val = parseFloat(val);
-        appData.chatSettings.clarity = val;
-        const chatPage = document.getElementById('chatPage');
-        if (chatPage) {
-            if (val === 1) {
-                chatPage.style.transform = '';
-                chatPage.style.transformOrigin = '';
-                chatPage.style.width = '';
-                chatPage.style.height = '';
-            } else {
-                chatPage.style.transform = 'scale(' + val + ')';
-                chatPage.style.transformOrigin = 'top left';
-                chatPage.style.width = (100 / val) + '%';
-                chatPage.style.height = (100 / val) + '%';
-            }
-        }
-        saveData();
-    }
+
 
     // ===== 朋友圈图片点击查看 =====
     function viewMomentImage(src) {
@@ -12396,20 +12408,7 @@ img, video {
             const ttl = document.getElementById('chatTitle');
             if (ttl) ttl.style.color = s.headerTitleColor;
         }
-        // 恢复清晰度（由系统设置「当前清晰度」控制）
-        const claritySel = document.getElementById('globalClaritySelect');
-        if (s.clarity && s.clarity !== 1) {
-            if (claritySel) claritySel.value = s.clarity;
-            const cp = document.getElementById('chatPage');
-            if (cp) {
-                cp.style.transform = 'scale(' + s.clarity + ')';
-                cp.style.transformOrigin = 'top left';
-                cp.style.width = (100 / s.clarity) + '%';
-                cp.style.height = (100 / s.clarity) + '%';
-            }
-        } else {
-            if (claritySel) claritySel.value = '1';
-        }
+
     }
 
     // ===== 自定义字体管理 =====
