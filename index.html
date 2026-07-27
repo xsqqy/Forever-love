@@ -960,6 +960,10 @@ img, video {
             gap: 4px;
             flex-shrink: 0;
         }
+        /* 关闭底部背景：用类 + !important 覆盖暗黑模式等高优先级背景，使开关在任意模式下都生效 */
+        .chat-page.hide-footer-bg .chat-footer,
+        .chat-page.hide-footer-bg .emoji-panel,
+        .chat-page.hide-footer-bg .plus-panel { background: transparent !important; background-image: none !important; }
         .chat-btn {
             width: 32px;
             height: 32px;
@@ -2557,7 +2561,10 @@ img, video {
         .chat-dark-mode .chat-header{background:#1a1a1a!important;color:#e0e0e0!important;border-color:transparent!important;}
         .chat-dark-mode .chat-footer{background:#2d2d2d!important;}
         .chat-dark-mode .chat-input{background:#333!important;color:#e0e0e0!important;}
-        .chat-dark-mode .chat-messages{background:rgba(0,0,0,0.3)!important;}
+        /* 聊天界面暗黑模式：用半透明遮罩压暗壁纸，但保留壁纸可见（不再用 background 重置背景图） */
+        .chat-dark-mode .chat-messages{position:relative;}
+        .chat-dark-mode .chat-messages::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.35);pointer-events:none;z-index:0;}
+        .chat-dark-mode .chat-messages > *{position:relative;z-index:1;}
         .chat-dark-mode .emoji-panel,.chat-dark-mode .plus-panel{background:#2d2d2d!important;border-color:#444!important;}
         .chat-dark-mode .emoji-tab{color:#aaa!important;}
         .chat-dark-mode .emoji-tab.active{color:#fff!important;border-bottom-color:#fff!important;}
@@ -3234,7 +3241,6 @@ img, video {
                     <input type="checkbox" id="hideFooterBg" onchange="toggleFooterBg()">
                 </div>
                 <div class="settings-row"><label>顶部备注颜色</label><input type="color" id="headerTitleColor" value="#1a1a1a" oninput="updateHeaderTitleColor(this.value)"><button onclick="resetHeaderTitleColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
-                <div class="settings-row"><label>页面清晰度</label><div style="display:flex;align-items:center;gap:6px;flex:1;"><input type="range" id="claritySlider" min="0.5" max="2" value="1" step="0.1" oninput="updateClarity(this.value)" style="flex:1;"><span id="clarityVal" style="font-size:11px;color:#999;min-width:28px;">1.0</span></div></div>
             </div>
             <div class="settings-section">
                 <div class="section-title">美化设置</div>
@@ -3602,6 +3608,16 @@ img, video {
                     <label>全局字体大小</label>
                     <input type="range" id="globalFontSizeSlider" min="12" max="20" value="14" style="flex:1;margin:0 8px;accent-color:var(--color-deep-gray);" oninput="document.getElementById('globalFontSizeVal').textContent=this.value;updateGlobalFontSize(this.value)">
                     <span id="globalFontSizeVal">14</span>
+                </div>
+                <div class="settings-row">
+                    <label>当前清晰度</label>
+                    <select id="globalClaritySelect" onchange="updateGlobalClarity(this.value)" style="flex:1;max-width:150px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;background:#fff;color:#1a1a1a;outline:none;cursor:pointer;">
+                        <option value="0.7">标清</option>
+                        <option value="0.85">高清</option>
+                        <option value="1" selected>正常</option>
+                        <option value="1.2">超清</option>
+                        <option value="1.4">蓝光</option>
+                    </select>
                 </div>
             </div>
             <div class="settings-section">
@@ -9233,6 +9249,9 @@ img, video {
         document.getElementById('globalFontColor').value = gs.fontColor || '#1a1a1a';
         document.getElementById('globalIconColor').value = gs.iconColor || '#999999';
         document.getElementById('globalFontSizeSlider').value = gs.globalFontSize || 14;
+        // 当前清晰度（保存在 chatSettings.clarity，正常=1 为网站自带清晰度）
+        const claritySel = document.getElementById('globalClaritySelect');
+        if (claritySel) claritySel.value = (appData.chatSettings && appData.chatSettings.clarity) ? appData.chatSettings.clarity : '1';
         // 通知设置
         document.getElementById('notificationToggle').checked = gs.notificationEnabled || false;
         // 后台保活设置
@@ -11839,6 +11858,8 @@ img, video {
             chatFooter.style.backgroundColor = cs.bottomBgColor;
             if (cs.bottomBgImage) { chatFooter.style.backgroundImage = 'url(' + cs.bottomBgImage + ')'; chatFooter.style.backgroundSize = 'cover'; }
         }
+        // 恢复聊天显示设置（当前清晰度 / 关闭底部背景 / 聊天暗黑模式等），保证刷新后依然生效
+        try { applyChatDisplaySettings(); } catch (e) { console.warn('applyChatDisplaySettings failed:', e); }
         if (document.getElementById('chatPage').style.display === 'flex') {
             initChatPage();
             renderMessages();
@@ -12248,20 +12269,27 @@ img, video {
     function toggleFooterBg() {
         const hide = document.getElementById('hideFooterBg').checked;
         appData.chatSettings.hideFooterBg = hide;
-        const footer = document.querySelector('.chat-footer');
-        if (footer) {
+        const chatPage = document.getElementById('chatPage');
+        if (chatPage) {
             if (hide) {
-                footer.style.background = 'transparent';
-                footer.style.backgroundImage = 'none';
+                chatPage.classList.add('hide-footer-bg');
             } else {
-                footer.style.background = '';
-                footer.style.backgroundImage = '';
-                // 恢复颜色和图片
-                footer.style.backgroundColor = appData.chatSettings.bottomBgColor || '#f0f0f0';
-                if (appData.chatSettings.bottomBgImage) {
-                    footer.style.backgroundImage = 'url(' + appData.chatSettings.bottomBgImage + ')';
-                    footer.style.backgroundSize = 'cover';
+                chatPage.classList.remove('hide-footer-bg');
+                // 恢复底部颜色和图片
+                const footer = document.querySelector('.chat-footer');
+                if (footer) {
+                    footer.style.backgroundColor = appData.chatSettings.bottomBgColor || '#f0f0f0';
+                    if (appData.chatSettings.bottomBgImage) {
+                        footer.style.backgroundImage = 'url(' + appData.chatSettings.bottomBgImage + ')';
+                        footer.style.backgroundSize = 'cover';
+                    } else {
+                        footer.style.backgroundImage = '';
+                    }
                 }
+                const ep = document.querySelector('.emoji-panel');
+                const pp = document.querySelector('.plus-panel');
+                if (ep) ep.style.backgroundColor = appData.chatSettings.bottomBgColor || '#f0f0f0';
+                if (pp) pp.style.backgroundColor = appData.chatSettings.bottomBgColor || '#f0f0f0';
             }
         }
         saveData();
@@ -12282,15 +12310,25 @@ img, video {
         saveData();
     }
 
-    // ===== 聊天显示设置：清晰度调节 =====
-    function updateClarity(val) {
+    // ===== 系统设置：当前清晰度（标清/高清/正常/超清/蓝光）=====
+    // 正常 = 当前网站自带清晰度（scale 1，不做缩放）
+    function updateGlobalClarity(val) {
         val = parseFloat(val);
         appData.chatSettings.clarity = val;
-        document.getElementById('clarityVal').textContent = val.toFixed(1);
-        document.getElementById('chatPage').style.transform = 'scale(' + val + ')';
-        document.getElementById('chatPage').style.transformOrigin = 'top left';
-        document.getElementById('chatPage').style.width = (100 / val) + '%';
-        document.getElementById('chatPage').style.height = (100 / val) + '%';
+        const chatPage = document.getElementById('chatPage');
+        if (chatPage) {
+            if (val === 1) {
+                chatPage.style.transform = '';
+                chatPage.style.transformOrigin = '';
+                chatPage.style.width = '';
+                chatPage.style.height = '';
+            } else {
+                chatPage.style.transform = 'scale(' + val + ')';
+                chatPage.style.transformOrigin = 'top left';
+                chatPage.style.width = (100 / val) + '%';
+                chatPage.style.height = (100 / val) + '%';
+            }
+        }
         saveData();
     }
 
@@ -12343,10 +12381,14 @@ img, video {
             if (inp) inp.style.backgroundColor = s.inputBgColor;
         }
         // 恢复关闭底部背景
+        const hideFtBox = document.getElementById('hideFooterBg');
+        const chatPg = document.getElementById('chatPage');
         if (s.hideFooterBg) {
-            document.getElementById('hideFooterBg').checked = true;
-            const ft = document.querySelector('.chat-footer');
-            if (ft) { ft.style.background = 'transparent'; ft.style.backgroundImage = 'none'; }
+            if (hideFtBox) hideFtBox.checked = true;
+            if (chatPg) chatPg.classList.add('hide-footer-bg');
+        } else {
+            if (hideFtBox) hideFtBox.checked = false;
+            if (chatPg) chatPg.classList.remove('hide-footer-bg');
         }
         // 恢复顶部备注颜色
         if (s.headerTitleColor) {
@@ -12354,14 +12396,19 @@ img, video {
             const ttl = document.getElementById('chatTitle');
             if (ttl) ttl.style.color = s.headerTitleColor;
         }
-        // 恢复清晰度
+        // 恢复清晰度（由系统设置「当前清晰度」控制）
+        const claritySel = document.getElementById('globalClaritySelect');
         if (s.clarity && s.clarity !== 1) {
-            document.getElementById('claritySlider').value = s.clarity;
-            document.getElementById('clarityVal').textContent = s.clarity.toFixed(1);
-            document.getElementById('chatPage').style.transform = 'scale(' + s.clarity + ')';
-            document.getElementById('chatPage').style.transformOrigin = 'top left';
-            document.getElementById('chatPage').style.width = (100 / s.clarity) + '%';
-            document.getElementById('chatPage').style.height = (100 / s.clarity) + '%';
+            if (claritySel) claritySel.value = s.clarity;
+            const cp = document.getElementById('chatPage');
+            if (cp) {
+                cp.style.transform = 'scale(' + s.clarity + ')';
+                cp.style.transformOrigin = 'top left';
+                cp.style.width = (100 / s.clarity) + '%';
+                cp.style.height = (100 / s.clarity) + '%';
+            }
+        } else {
+            if (claritySel) claritySel.value = '1';
         }
     }
 
