@@ -4212,14 +4212,27 @@ img, video {
         console.error('未处理的 Promise 错误:', e.reason);
         e.preventDefault();
     });
-    // ===== iOS standalone PWA 视口修复：同步 visualViewport.height =====
+        // ===== iOS standalone PWA 视口修复：后台返回/冷启动时强制恢复全屏高度 =====
     (function() {
         function isStandalone() {
             return navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
         }
+        function isKeyboardOpen() {
+            if (!window.visualViewport) return false;
+            var screenH = window.screen.height;
+            var vvH = window.visualViewport.height;
+            return vvH < screenH * 0.85;
+        }
         function syncAppHeight() {
+            if (!isStandalone()) return;
+            // 没有键盘时，始终用 100vh，避免后台返回/冷启动拿到错误高度
+            if (!isKeyboardOpen()) {
+                document.documentElement.style.setProperty('--app-height', '100vh');
+                return;
+            }
+            // 键盘打开时，用 visualViewport 高度
             var h = window.visualViewport
-                ? Math.max(window.visualViewport.height, window.innerHeight)
+                ? window.visualViewport.height
                 : window.innerHeight;
             document.documentElement.style.setProperty('--app-height', h + 'px');
         }
@@ -4227,6 +4240,14 @@ img, video {
             if (window.scrollY !== 0) {
                 window.scrollTo(0, 0);
             }
+        }
+        function forceRecalc() {
+            // 强制触发 WebKit 重算视口
+            document.body.style.display = 'none';
+            document.body.offsetHeight;
+            document.body.style.display = '';
+            syncAppHeight();
+            resetScroll();
         }
         if (isStandalone()) {
             document.documentElement.style.setProperty('--app-height', '100vh');
@@ -4240,6 +4261,14 @@ img, video {
             window.addEventListener('focusin', function() { setTimeout(function() { resetScroll(); syncAppHeight(); }, 50); });
             window.addEventListener('focusout', function() { setTimeout(function() { resetScroll(); syncAppHeight(); }, 100); });
             window.addEventListener('pageshow', function() { syncAppHeight(); resetScroll(); });
+            // 关键：从后台切回前台时强制恢复
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    setTimeout(syncAppHeight, 50);
+                    setTimeout(forceRecalc, 100);
+                    setTimeout(resetScroll, 150);
+                }
+            });
             setInterval(syncAppHeight, 500);
         }
     })();
