@@ -1,0 +1,40 @@
+{
+    "name": "迁逸 · 双屏",
+    "short_name": "迁逸",
+    "description": "迁逸双屏 - 专属双人互动空间",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#f5f5f5",
+    "theme_color": "#f5f5f5",
+    "lang": "zh-CN",
+    "dir": "ltr",
+    "categories": ["social", "utilities"],
+    "icons": [
+        {
+            "src": "./icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "./icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
