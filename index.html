@@ -1021,8 +1021,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .msg-row.avatar-top .msg-bubble-wrap .msg-bubble,.msg-row.avatar-bottom .msg-bubble-wrap .msg-bubble{width:fit-content;}
         /* 转账消息在头像顶部/底部时保持固定宽度，不被fit-content覆盖 */
         .msg-row.avatar-top .msg-bubble-wrap .msg-bubble.transfer-msg,.msg-row.avatar-bottom .msg-bubble-wrap .msg-bubble.transfer-msg{width:200px;}
-        /* 问卷消息同理 */
-        .msg-row.avatar-top .msg-bubble-wrap .msg-bubble.survey-msg,.msg-row.avatar-bottom .msg-bubble-wrap .msg-bubble.survey-msg{width:220px;}
+        /* 盲选抽牌消息在头像顶部/底部时保持固定宽度 */
+        .msg-row.avatar-top .msg-bubble-wrap .msg-bubble.blind-card-msg,.msg-row.avatar-bottom .msg-bubble-wrap .msg-bubble.blind-card-msg{width:220px;}
         .msg-row.avatar-top.mine .msg-bubble-wrap .msg-bubble,.msg-row.avatar-bottom.mine .msg-bubble-wrap .msg-bubble{margin-left:auto;}
         .msg-bubble-wrap {
             max-width: 70%;
@@ -1161,25 +1161,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .transfer-msg.claimed .transfer-status,.transfer-msg.refunded .transfer-status{color:var(--transfer-remark-color-claimed,rgba(255,255,255,0.85));}
         .transfer-msg .transfer-amount{font-size:20px;font-weight:500;margin-bottom:4px;}
         /* 转账形状独立于气泡圆角设置，始终使用自己的border-radius */
-        .survey-msg {
-            width: 220px;
-            padding: 12px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 8px;
-        }
-        .survey-msg .survey-question {
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-        .survey-msg .survey-option {
-            padding: 6px 0;
-            font-size: 13px;
-            border-bottom: 1px solid #ddd;
-        }
-        .survey-msg .survey-option:last-child {
-            border-bottom: none;
-        }
-        .survey-msg .survey-answer{margin-top:8px;font-size:13px;color:var(--color-normal-gray);}
         .msg-row.multi-select-mode .multi-check{display:flex;}
         .multi-check{display:none;width:22px;height:22px;border:2px solid #ccc;border-radius:4px;align-items:center;justify-content:center;margin:0 4px;flex-shrink:0;cursor:pointer;font-size:14px;color:#fff;}
         .multi-check.checked{background:#1a1a1a;border-color:#1a1a1a;}
@@ -1353,6 +1334,419 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             font-size: 11px;
             color: var(--color-normal-gray);
         }
+        
+        /* ===== 盲选抽牌 可爱蓝白风 ===== */
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+
+        .blind-card-font {
+            font-family: 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', cursive;
+        }
+
+        /* 盲选抽牌消息气泡 */
+        .blind-card-msg {
+            width: 220px;
+            padding: 14px 16px;
+            background: linear-gradient(145deg, #F5FAFF 0%, #E8F4FF 100%);
+            border-radius: 16px;
+            cursor: pointer;
+            border: 1.5px solid rgba(184, 212, 232, 0.4);
+            box-shadow: 0 4px 12px rgba(123, 167, 204, 0.12);
+        }
+        .blind-card-msg .blind-card-question {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4A7BA7;
+            font-size: 15px;
+        }
+        .blind-card-msg .blind-card-tip {
+            font-size: 12px;
+            color: #7BA7CC;
+            margin-bottom: 12px;
+        }
+        .blind-card-msg .blind-card-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .blind-card-msg .blind-card-option-tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, rgba(168, 208, 240, 0.35) 0%, rgba(184, 212, 232, 0.25) 100%);
+            border-radius: 12px;
+            color: #5A8BB0;
+            border: 1px solid rgba(184, 212, 232, 0.3);
+        }
+        .blind-card-msg .blind-card-status {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #7BA7CC;
+        }
+        .blind-card-msg .blind-card-status.correct { color: #5AAD8C; }
+        .blind-card-msg .blind-card-status.wrong { color: #E08888; }
+        html.dark-mode .blind-card-msg {
+            background: linear-gradient(145deg, #2a3a4a 0%, #1e2a3a 100%) !important;
+            border-color: rgba(100, 140, 180, 0.3) !important;
+        }
+        html.dark-mode .blind-card-msg .blind-card-question { color: #A8D0F0 !important; }
+        html.dark-mode .blind-card-msg .blind-card-tip { color: #8BB0D0 !important; }
+        html.dark-mode .blind-card-msg .blind-card-option-tag {
+            background: rgba(100, 140, 180, 0.2) !important;
+            color: #A8D0F0 !important;
+        }
+
+        /* 盲选抽牌悬浮层 */
+        .blind-card-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(160deg, #E8F4FF 0%, #F5FAFF 50%, #E0EFF8 100%);
+            z-index: 400;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .blind-card-overlay.show { display: flex; }
+        .blind-card-countdown {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 28px;
+            color: #7BA7CC;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.7);
+            padding: 8px 24px;
+            border-radius: 20px;
+            border: 1.5px solid #B8D4E8;
+            box-shadow: 0 3px 10px rgba(123,167,204,0.15);
+        }
+        .blind-card-title {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 22px;
+            color: #4A7BA7;
+            margin-bottom: 8px;
+            text-align: center;
+            max-width: 85%;
+            line-height: 1.4;
+        }
+        .blind-card-tip {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 15px;
+            color: #7BA7CC;
+            margin-bottom: 20px;
+            text-align: center;
+            min-height: 22px;
+        }
+        .blind-card-grid {
+            display: grid;
+            gap: 14px;
+            margin-bottom: 24px;
+            justify-content: center;
+            align-content: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 20px;
+            border: 1.5px solid rgba(184, 212, 232, 0.4);
+        }
+        .blind-card {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            perspective: 800px;
+            transition: transform 0.25s ease, filter 0.25s ease;
+        }
+        .blind-card.selected {
+            transform: translateY(-10px) scale(1.12);
+            filter: drop-shadow(0 0 12px rgba(123,167,204,0.8));
+        }
+        .blind-card.flipped .blind-card-inner {
+            transform: rotateY(180deg);
+        }
+        .blind-card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .blind-card-back, .blind-card-front {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .blind-card-back {
+            background: linear-gradient(145deg, #E8F4FF 0%, #C8E2F7 100%);
+            border: 2px solid #fff;
+            box-shadow: 0 4px 12px rgba(123,167,204,0.2), inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+        .blind-card-back svg {
+            width: 32px;
+            height: 32px;
+            color: #B8D4E8;
+        }
+        .blind-card-back::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1.5px dashed rgba(184, 212, 232, 0.6);
+            border-radius: 10px;
+        }
+        .blind-card-front {
+            background: #fff;
+            border: 2px solid #B8D4E8;
+            transform: rotateY(180deg);
+            color: #6A8CA8;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            padding: 10px;
+            line-height: 1.35;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            box-shadow: 0 4px 12px rgba(123,167,204,0.15);
+        }
+        .blind-card-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .blind-card-btn-cancel, .blind-card-btn-confirm {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 16px;
+            padding: 12px 36px;
+            border-radius: 24px;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .blind-card-btn-cancel {
+            background: rgba(255,255,255,0.9);
+            border: 1.5px solid #B8D4E8;
+            color: #7BA7CC;
+        }
+        .blind-card-btn-cancel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(123,167,204,0.2);
+        }
+        .blind-card-btn-cancel:active {
+            transform: scale(0.96);
+        }
+        .blind-card-btn-confirm {
+            background: linear-gradient(135deg, #A8D0F0 0%, #7BA7CC 100%);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(123,167,204,0.4);
+        }
+        .blind-card-btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(123,167,204,0.5);
+        }
+        .blind-card-btn-confirm:active {
+            transform: scale(0.96);
+        }
+        .blind-card-btn-confirm:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .blind-card-result-tip {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 16px 28px;
+            border-radius: 16px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 15px;
+            color: #4A7BA7;
+            box-shadow: 0 8px 32px rgba(123,167,204,0.3);
+            z-index: 500;
+            display: none;
+            text-align: center;
+            line-height: 1.5;
+            border: 1.5px solid #B8D4E8;
+            max-width: 80%;
+        }
+        .blind-card-result-tip.show { display: block; animation: bc-tip-pop 0.3s ease; }
+        @keyframes bc-tip-pop {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* 盲选抽牌创建模态框 可爱蓝白风 */
+        #blindCardModal .modal-content {
+            max-width: 440px;
+            width: 94%;
+            background: linear-gradient(160deg, #F5FAFF 0%, #E8F4FF 100%);
+            border-radius: 20px;
+            border: 2px solid #B8D4E8;
+            box-shadow: 0 8px 32px rgba(123,167,204,0.25);
+        }
+        #blindCardModal .modal-title {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            color: #4A7BA7;
+            font-size: 20px;
+        }
+        #blindCardModal .modal-input {
+            background: #fff;
+            border: 1.5px solid #B8D4E8;
+            border-radius: 12px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        #blindCardModal .modal-input:focus {
+            border-color: #7BA7CC;
+            box-shadow: 0 0 0 3px rgba(123,167,204,0.15);
+        }
+        #blindCardModal .modal-input::placeholder {
+            color: #B0C4D8;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        .blind-card-opt-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 12px;
+            border: 1px solid rgba(184,212,232,0.3);
+        }
+        .blind-card-opt-row input[type="text"] {
+            flex: 1;
+            border: 1.5px solid #D0E4F0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            background: #fff;
+            color: #4A7BA7;
+            outline: none;
+        }
+        .blind-card-opt-row input[type="text"]:focus {
+            border-color: #7BA7CC;
+            box-shadow: 0 0 0 2px rgba(123,167,204,0.15);
+        }
+        .blind-card-opt-row input[type="text"]::placeholder {
+            color: #B0C4D8;
+        }
+        .blind-card-del-btn {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #A0B8C8;
+            border-radius: 50%;
+            background: rgba(184,212,232,0.15);
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .blind-card-del-btn:hover {
+            background: rgba(184,212,232,0.3);
+            color: #7BA7CC;
+        }
+        .blind-card-del-btn:active {
+            transform: scale(0.9);
+        }
+        .blind-card-cb {
+            width: 20px;
+            height: 20px;
+            accent-color: #7BA7CC;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .blind-card-add-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #7BA7CC;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 12px 0 14px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 12px;
+            border: 1px dashed #B8D4E8;
+            transition: all 0.2s;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        .blind-card-add-btn:hover {
+            background: rgba(184,212,232,0.2);
+            border-color: #7BA7CC;
+        }
+        .blind-card-mode-hint {
+            font-size: 12px;
+            color: #8BAABF;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(184,212,232,0.3);
+            line-height: 1.6;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        .blind-card-countdown-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 12px;
+            border: 1px solid rgba(184,212,232,0.3);
+        }
+        .blind-card-countdown-row span {
+            font-family: 'ZCOOL KuaiLe', cursive;
+            font-size: 14px;
+            color: #7BA7CC;
+            white-space: nowrap;
+        }
+        .blind-card-countdown-row input[type="number"] {
+            width: 70px;
+            padding: 8px 10px;
+            border: 1.5px solid #D0E4F0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            background: #fff;
+            color: #4A7BA7;
+            outline: none;
+            text-align: center;
+        }
+        .blind-card-countdown-row input[type="number"]:focus {
+            border-color: #7BA7CC;
+        }
+        #blindCardModal .modal-btns {
+            margin-top: 16px;
+        }
+        #blindCardModal .modal-btn.cancel {
+            background: rgba(255,255,255,0.9);
+            border: 1.5px solid #B8D4E8;
+            color: #7BA7CC;
+            border-radius: 20px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        #blindCardModal .modal-btn.cancel:hover {
+            background: rgba(184,212,232,0.2);
+        }
+        #blindCardModal .modal-btn.confirm {
+            background: linear-gradient(135deg, #A8D0F0 0%, #7BA7CC 100%);
+            border: none;
+            color: #fff;
+            border-radius: 20px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            box-shadow: 0 4px 12px rgba(123,167,204,0.3);
+        }
+        #blindCardModal .modal-btn.confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(123,167,204,0.4);
+        }
+
         /* ========== 设置页面通用样式 ========== */
             .settings-page, .wordcard-page, .moments-page, .diary-page, .letter-page {
             position: fixed;
@@ -3301,7 +3695,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode .frame-item{border-color:#555!important;}
         html.dark-mode .beautify-main-tab{color:#aaa!important;background:#2d2d2d!important;}
         html.dark-mode .beautify-main-tab.active{color:#fff!important;border-bottom-color:#fff!important;}
-        html.dark-mode .survey-msg{background:#333!important;color:#e0e0e0!important;}
         html.dark-mode .msg-quote{background:rgba(255,255,255,0.1)!important;color:#ccc!important;border-left-color:#666!important;}
         html.dark-mode .msg-row.other .msg-bubble{background:#fff!important;border-color:#fff!important;color:#000!important;}
         html.dark-mode .msg-row.mine .msg-bubble{background:#333!important;border-color:#333!important;color:#fff!important;}
@@ -3403,8 +3796,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode .system-msg span{background:rgba(45,45,45,.6)!important;color:#aaa!important;border-color:rgba(255,255,255,.1)!important;}
         html.dark-mode .msg-row .msg-bubble.transfer-msg{background:var(--transfer-bg,#E8913A)!important;}
         html.dark-mode .msg-row .msg-bubble.transfer-msg.claimed,html.dark-mode .msg-row .msg-bubble.transfer-msg.refunded{background:var(--transfer-bg-claimed,#666)!important;}
-        html.dark-mode .survey-msg .survey-option{color:#e0e0e0!important;border-color:#555!important;}
-        html.dark-mode .survey-msg .survey-answer{color:#aaa!important;}
         html.dark-mode .bubble-preview{background:#2d2d2d!important;}
         html.dark-mode .icon-item{background:#333!important;}
         html.dark-mode .icon-item svg{stroke:#e0e0e0!important;}
@@ -4747,9 +5138,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 #albumPage .xcyj-header {
   display: flex;
   align-items: center;
-  height: 52px;
+  height: calc(52px + env(safe-area-inset-top, 0px));
+  min-height: calc(52px + env(safe-area-inset-top, 0px));
   padding: 0 8px;
-  padding-top: env(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top, 0px);
   background: #FAFAFA;
   border-bottom: 1px solid #E4E4E7;
   flex-shrink: 0;
@@ -5396,11 +5788,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <span>拍一拍</span>
 </div>
-<div class="plus-item" onclick="openSurveyModal()">
+<div class="plus-item" onclick="openBlindCardModal()">
 <div class="plus-icon">
-<svg viewbox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>
+<svg viewbox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 9l2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="8" cy="12" r="1" fill="currentColor"></circle><circle cx="16" cy="12" r="1" fill="currentColor"></circle></svg>
 </div>
-<span>调查问卷</span>
+<span>盲选抽牌</span>
 </div>
 <div class="plus-item" onclick="sendImageMsg()">
 <div class="plus-icon">
@@ -5892,9 +6284,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <svg viewbox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7 3 9 3 14h6c0-5 3-7 3-14z"></path><line x1="12" x2="12" y1="2" y2="3"></line></svg>
 <span>拍一拍</span>
 </div>
-<div class="icon-item" onclick="customizeIcon('survey')">
-<svg viewbox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>
-<span>问卷</span>
+<div class="icon-item" onclick="customizeIcon('blindCard')">
+<svg viewbox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></rect><path d="M12 9l2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="8" cy="12" r="1" fill="currentColor"></circle><circle cx="16" cy="12" r="1" fill="currentColor"></circle></svg>
+<span>盲选抽牌</span>
 </div>
 </div>
 <div class="settings-row" style="margin-top:12px;">
@@ -6816,7 +7208,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 </div>
 <!-- 桌面编辑面板 -->
-<div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div style="font-size:13px;color:#999;margin-bottom:8px;font-family:var(--font-family);">组件位置调节（滑动调整）</div><div class="edit-option" onclick="openWidgetPosEditor('anniversary','纪念日组件',1)">第一页 · 纪念日组件</div><div class="edit-option" onclick="openWidgetPosEditor('appSection','聊天/日记/朋友圈/信封',1)">第一页 · 聊天日记朋友圈信封</div><div class="edit-option" onclick="openWidgetPosEditor('appSectionBottom','美化/字卡/调查问卷/他的手机',1)">第一页 · 美化字卡调查问卷</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openWidgetPosEditor('period','生理期组件',2)">第二页 · 生理期组件</div><div class="edit-option" onclick="openWidgetPosEditor('wordCard','Ta今天想对你说的话',2)">第二页 · Ta想对你说的话</div><div class="edit-option" onclick="openWidgetPosEditor('thirdRow','时间/默契挑战/五子棋等',2)">第二页 · 时间和游戏行</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openDockPosEditor()">移动底栏位置</div></div>
+<div class="edit-menu" id="mainEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>桌面编辑</h3><div class="edit-option" onclick="openSizeEditor()">调整应用图标大小</div><div class="edit-option" onclick="openNameColorEditor()">修改应用名称颜色</div><div class="edit-option" onclick="openAppNameSizeEditor()">调整应用名称大小</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div style="font-size:13px;color:#999;margin-bottom:8px;font-family:var(--font-family);">组件位置调节（滑动调整）</div><div class="edit-option" onclick="openWidgetPosEditor('anniversary','纪念日组件',1)">第一页 · 纪念日组件</div><div class="edit-option" onclick="openWidgetPosEditor('appSection','聊天/日记/朋友圈/信封',1)">第一页 · 聊天日记朋友圈信封</div><div class="edit-option" onclick="openWidgetPosEditor('appSectionBottom','美化/字卡/盲选抽牌/他的手机',1)">第一页 · 美化字卡盲选抽牌</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openWidgetPosEditor('period','生理期组件',2)">第二页 · 生理期组件</div><div class="edit-option" onclick="openWidgetPosEditor('wordCard','Ta今天想对你说的话',2)">第二页 · Ta想对你说的话</div><div class="edit-option" onclick="openWidgetPosEditor('thirdRow','时间/默契挑战/五子棋等',2)">第二页 · 时间和游戏行</div><div style="border-top:1px solid #f0f0f0;margin:8px 0;"></div><div class="edit-option" onclick="openDockPosEditor()">移动底栏位置</div></div>
 <div class="edit-menu" id="sizeEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>图标大小</h3><div class="size-slider"><input id="iconSizeSlider" max="80" min="40" oninput="updateIconSize(this.value)" type="range" value="62"/></div></div>
 <div class="edit-menu" id="nameColorEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>应用名称颜色</h3><div class="color-input-row"><label>选择颜色</label><input id="appNameColorPicker" oninput="setAppNameColor(this.value)" type="color" value="#1a1a1a"/></div></div>
 <div class="edit-menu" id="appNameSizeEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>应用名称大小</h3><div class="size-slider"><input id="appNameSizeSlider" max="18" min="10" oninput="updateAppNameSize(this.value)" step="0.5" type="range" value="12"/></div></div>
@@ -6871,19 +7263,35 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 </div>
 </div>
-<!-- 调查问卷创建模态框 -->
-<div class="modal" id="surveyModal">
+<!-- 盲选抽牌创建模态框 -->
+<div class="modal" id="blindCardModal">
 <div class="modal-content">
-<div class="modal-title">创建调查问卷</div>
-<input class="modal-input" id="surveyQuestion" placeholder="输入问题" type="text"/>
-<textarea class="modal-textarea" id="surveyOptions" placeholder="选项，一行一个"></textarea>
-<input class="modal-input" id="surveyTime" placeholder="回复时间（秒）" type="number" value="10"/>
+<div class="modal-title">盲选抽牌</div>
+<input class="modal-input" id="blindCardQuestion" placeholder="输入问题，例如：今晚吃什么？" type="text"/>
+<div id="blindCardOptionsWrap" style="max-height:36vh;overflow-y:auto;padding-right:4px;margin-bottom:10px;"></div>
+<div class="blind-card-countdown-row">
+<span>倒计时</span>
+<input type="number" id="bcCountdownInput" value="30" min="5" max="300"/>
+<span>秒</span>
+</div>
 <div class="modal-btns">
-<div class="modal-btn cancel" onclick="closeSurveyModal()">取消</div>
-<div class="modal-btn confirm" onclick="sendSurvey()">发送</div>
+<div class="modal-btn cancel" onclick="closeBlindCardModal()">取消</div>
+<div class="modal-btn confirm" onclick="sendBlindCard()">发送</div>
 </div>
 </div>
 </div>
+<!-- 盲选抽牌答题悬浮层 -->
+<div class="blind-card-overlay" id="blindCardOverlay">
+<div class="blind-card-countdown" id="blindCardCountdown">30</div>
+<div class="blind-card-title" id="blindCardOverlayTitle"></div>
+<div class="blind-card-tip" id="blindCardOverlayTip"></div>
+<div class="blind-card-grid" id="blindCardGrid"></div>
+<div class="blind-card-actions">
+<button class="blind-card-btn-cancel" onclick="closeBlindCardOverlay()">取消</button>
+<button class="blind-card-btn-confirm" id="blindCardConfirmBtn" onclick="confirmBlindCard()">确定</button>
+</div>
+</div>
+<div class="blind-card-result-tip" id="blindCardResultTip"></div>
 <!-- 发朋友圈模态框 -->
 <div class="modal publish-moment-modal" id="publishMomentModal">
 <div class="modal-content">
@@ -9375,18 +9783,26 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 bubble.style.setProperty('width', '200px', 'important');
                 // status class already applied
                 bubble.onclick = () => handleTransferClick(msg);
-            } else if (msg.type === 'survey') {
-                bubble.className += ' survey-msg';
-                let optionsHtml = msg.options.map((opt, i) => 
-                    `<div class="survey-option">${String.fromCharCode(65+i)}. ${opt}</div>`
+            } else if (msg.type === 'blindCard') {
+                bubble.className += ' blind-card-msg';
+                let modeText = '';
+                if (msg.correctIndexes && msg.correctIndexes.length === 1) modeText = '单选 · 选 1 张';
+                else if (msg.correctIndexes && msg.correctIndexes.length > 1) modeText = '多选 · 选 ' + msg.correctIndexes.length + ' 张';
+                else modeText = '自由选择';
+                let optionsHtml = msg.options.map((opt, i) =>
+                    `<span class="blind-card-option-tag">${String.fromCharCode(65+i)}. ${opt}</span>`
                 ).join('');
-                let answerHtml = msg.answer ? `<div class="survey-answer">对方选择：${msg.answer}</div>` : '';
+                let statusHtml = '';
+                if (msg.result) {
+                    statusHtml = `<div class="blind-card-status">对方选择：${msg.result.selectedLabels || ''} · ${msg.result.statusText || ''}</div>`;
+                }
                 bubble.innerHTML = `
-                    <div class="survey-question">${msg.question}</div>
-                    ${optionsHtml}
-                    ${answerHtml}
+                    <div class="blind-card-question">${msg.question}</div>
+                    <div class="blind-card-tip">${modeText}</div>
+                    <div class="blind-card-options">${optionsHtml}</div>
+                    ${statusHtml}
                 `;
-                if (!msg.answer && msg.sender === 'mine' && !msg._replyScheduled) { msg._replyScheduled = true; const _s = appData.chatSettings; const _delay = (Math.floor(Math.random() * (_s.replyTimeMax - _s.replyTimeMin + 1)) + _s.replyTimeMin) * 1000; setTimeout(() => { if (!msg.answer) { msg.answer = msg.options[Math.floor(Math.random() * msg.options.length)]; saveData(); renderMessages(); } }, _delay); }
+                bubble.onclick = () => openBcPlay(msg.id);
             }
             
             // 分条气泡圆角：根据消息序号覆盖圆角
@@ -10122,47 +10538,420 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('textFileInput').click();
     }
 
-    // ===== 调查问卷 =====
-    function openSurveyModal() {
-        document.getElementById('surveyModal').classList.add('show');
+    // ===== 盲选抽牌 =====
+    var _blindCardState = {
+        msgId: null,
+        options: [],
+        correctIndexes: [],
+        selected: [],
+        mode: 'single',
+        countdown: 30,
+        timer: null,
+        flipped: false,
+        otherSelected: false,
+        otherSelection: [],
+        otherSelectTimer: null,
+        expired: false
+    };
+
+    function openBlindCardModal() {
+        document.getElementById('blindCardModal').classList.add('show');
         document.getElementById('overlay').classList.add('show');
         document.getElementById('plusPanel').classList.remove('show');
+        renderBlindCardEditor();
+        setTimeout(() => document.getElementById('blindCardQuestion').focus(), 100);
     }
-    function closeSurveyModal() {
-        document.getElementById('surveyModal').classList.remove('show');
+
+    function closeBlindCardModal() {
+        document.getElementById('blindCardModal').classList.remove('show');
         document.getElementById('overlay').classList.remove('show');
     }
-    function sendSurvey() {
-        const question = document.getElementById('surveyQuestion').value.trim();
-        const optionsText = document.getElementById('surveyOptions').value;
-        const time = parseInt(document.getElementById('surveyTime').value) || 10;
-        
-        if (!question || !optionsText) return;
-        
-        const options = optionsText.split('\n').map(l => l.trim()).filter(l => l);
-        if (options.length < 2) return;
-        
-        addMessage({
-            id: Date.now(),
-            sender: 'mine',
-            type: 'survey',
-            question: question,
-            options: options,
-            answer: null,
-            replyTime: time
+
+    function renderBlindCardEditor() {
+        const wrap = document.getElementById('blindCardOptionsWrap');
+        let html = '';
+        const defaultOpts = ['', '', ''];
+        defaultOpts.forEach((text, idx) => {
+            html += blindCardOptionRowHtml(idx, text);
         });
-        
-        closeSurveyModal();
-        
-        setTimeout(() => {
-            const msg = appData.chatHistory[appData.chatHistory.length - 1];
-            if (msg && msg.type === 'survey') {
-                const answerIndex = Math.floor(Math.random() * options.length);
-                msg.answer = `${String.fromCharCode(65+answerIndex)}. ${options[answerIndex]}`;
-                saveData();
-                renderMessages();
+        html += `<div onclick="addBlindCardOption()" style="display:flex;align-items:center;gap:6px;color:#7BA7CC;font-size:13px;cursor:pointer;margin:8px 0 12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>添加选项</div>`;
+        html += `<div style="font-size:12px;color:#999;margin-bottom:6px;">勾选正确答案；勾1个为单选，勾多个为多选，不勾为自由选择</div>`;
+        wrap.innerHTML = html;
+    }
+
+    function blindCardOptionRowHtml(idx, text) {
+        return `<div class="blind-card-opt-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;" data-idx="${idx}">
+            <input type="text" class="modal-input" id="blindCardOpt${idx}" placeholder="选项 ${String.fromCharCode(65+idx)}" value="${text}" style="flex:1;margin-bottom:0;">
+            <div onclick="removeBlindCardOption(${idx})" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#999;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+            <input type="checkbox" class="blind-card-cb wordcard-checkbox" id="blindCardCb${idx}" title="设为正确答案" style="flex-shrink:0;">
+        </div>`;
+    }
+
+    function addBlindCardOption() {
+        const wrap = document.getElementById('blindCardOptionsWrap');
+        const rows = wrap.querySelectorAll('.blind-card-opt-row');
+        if (rows.length >= 16) { alert('最多16个选项'); return; }
+        const idx = rows.length;
+        const div = document.createElement('div');
+        div.innerHTML = blindCardOptionRowHtml(idx, '');
+        const addBtn = wrap.querySelector('[onclick="addBlindCardOption()"]');
+        wrap.insertBefore(div.firstElementChild, addBtn);
+    }
+
+    function removeBlindCardOption(idx) {
+        const wrap = document.getElementById('blindCardOptionsWrap');
+        const rows = Array.from(wrap.querySelectorAll('.blind-card-opt-row'));
+        if (rows.length <= 2) { alert('至少保留2个选项'); return; }
+        const target = rows.find(r => parseInt(r.dataset.idx) === idx);
+        if (target) target.remove();
+        const remaining = Array.from(wrap.querySelectorAll('.blind-card-opt-row'));
+        remaining.forEach((r, i) => {
+            r.dataset.idx = i;
+            const cb = r.querySelector('.blind-card-cb');
+            const inp = r.querySelector('input[type="text"]');
+            const del = r.querySelector('div[onclick^="removeBlindCardOption"]');
+            cb.id = 'blindCardCb' + i;
+            inp.id = 'blindCardOpt' + i;
+            inp.placeholder = '选项 ' + String.fromCharCode(65 + i);
+            del.setAttribute('onclick', 'removeBlindCardOption(' + i + ')');
+        });
+    }
+
+    function collectBlindCardData() {
+        const question = document.getElementById('blindCardQuestion').value.trim();
+        const wrap = document.getElementById('blindCardOptionsWrap');
+        const rows = Array.from(wrap.querySelectorAll('.blind-card-opt-row'));
+        const options = [];
+        const correctIndexes = [];
+        rows.forEach((r, i) => {
+            const text = r.querySelector('input[type="text"]').value.trim();
+            if (text) {
+                const realIdx = options.length;
+                options.push(text);
+                if (r.querySelector('.blind-card-cb').checked) correctIndexes.push(realIdx);
             }
-        }, time * 1000);
+        });
+        const countdown = parseInt(document.getElementById('bcCountdownInput').value) || 30;
+        return { question, options, correctIndexes, countdown };
+    }
+
+    function sendBlindCard() {
+        const data = collectBlindCardData();
+        if (!data.question) { alert('请输入问题'); return; }
+        if (data.options.length < 2) { alert('请至少填写2个选项'); return; }
+        const msgId = Date.now();
+        // 先关闭创建模态框
+        closeBlindCardModal();
+        // 添加消息到历史（不立即渲染聊天，避免显示多余的界面）
+        appData.chatHistory.push({
+            id: msgId,
+            sender: 'mine',
+            type: 'blindCard',
+            question: data.question,
+            options: data.options,
+            correctIndexes: data.correctIndexes,
+            countdown: data.countdown,
+            result: null
+        });
+        saveData();
+        // 直接打开抽牌界面（图二）
+        openBcPlay(msgId);
+    }
+
+    function getBlindCardGridClass(count) {
+        if (count <= 2) return 'grid-template-columns: repeat(2, 1fr);';
+        if (count <= 4) return 'grid-template-columns: repeat(2, 1fr);';
+        if (count <= 9) return 'grid-template-columns: repeat(3, 1fr);';
+        return 'grid-template-columns: repeat(4, 1fr);';
+    }
+
+    function openBcPlay(msgId) {
+        const msg = appData.chatHistory.find(m => m.id === msgId);
+        if (!msg || msg.type !== 'blindCard') return;
+        const overlay = document.getElementById('blindCardOverlay');
+        const grid = document.getElementById('blindCardGrid');
+        const title = document.getElementById('blindCardOverlayTitle');
+        const tip = document.getElementById('blindCardOverlayTip');
+
+        _blindCardState.msgId = msgId;
+        _blindCardState.options = msg.options.slice();
+        _blindCardState.correctIndexes = (msg.correctIndexes || []).slice();
+        _blindCardState.selected = [];
+        _blindCardState.flipped = false;
+        _blindCardState.otherSelected = false;
+        _blindCardState.otherSelection = [];
+
+        if (_blindCardState.correctIndexes.length === 0) _blindCardState.mode = 'free';
+        else if (_blindCardState.correctIndexes.length === 1) _blindCardState.mode = 'single';
+        else _blindCardState.mode = 'multi';
+
+        title.textContent = msg.question;
+
+        grid.style.cssText = getBlindCardGridClass(_blindCardState.options.length);
+
+        // 如果已有结果，直接显示翻开的卡面（查看模式）
+        if (msg.result) {
+            _blindCardState.selected = (msg.result.selectedIndexes || []).slice();
+            _blindCardState.flipped = true;
+            _blindCardState.otherSelected = true;
+
+            tip.textContent = '对方选择：' + (msg.result.selectedLabels || '无') + ' · ' + (msg.result.statusText || '');
+
+            let html = '';
+            _blindCardState.options.forEach((opt, i) => {
+                const isSel = _blindCardState.selected.includes(i);
+                html += `<div class="blind-card${isSel ? ' flipped selected' : ''}" id="bcard${i}">
+                    <div class="blind-card-inner" id="bcardInner${i}">
+                        <div class="blind-card-back">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </div>
+                        <div class="blind-card-front" id="bcardFront${i}">${opt}</div>
+                    </div>
+                </div>`;
+            });
+            grid.innerHTML = html;
+
+            document.getElementById('blindCardConfirmBtn').disabled = true;
+            document.getElementById('blindCardConfirmBtn').textContent = '已翻开';
+            document.getElementById('blindCardResultTip').classList.remove('show');
+
+            overlay.classList.add('show');
+        } else {
+            // 新问卷：对方自动选择，用户不能选
+            tip.textContent = '等待对方选择...';
+
+            let html = '';
+            _blindCardState.options.forEach((opt, i) => {
+                html += `<div class="blind-card" id="bcard${i}">
+                    <div class="blind-card-inner" id="bcardInner${i}">
+                        <div class="blind-card-back">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </div>
+                        <div class="blind-card-front" id="bcardFront${i}">${opt}</div>
+                    </div>
+                </div>`;
+            });
+            grid.innerHTML = html;
+
+            document.getElementById('blindCardConfirmBtn').disabled = true;
+            document.getElementById('blindCardConfirmBtn').textContent = '确定';
+            document.getElementById('blindCardResultTip').classList.remove('show');
+
+            overlay.classList.add('show');
+            startBlindCardCountdown(msg.countdown || 30);
+            // 模拟对方在倒计时内随机时间以平均概率选择
+            simulateOtherSelection(msg);
+        }
+    }
+
+    // 模拟对方以平均概率自动选择
+    function simulateOtherSelection(msg) {
+        const cd = msg.countdown || 30;
+        // 对方在倒计时的 20%-60% 之间随机选择（确保在倒计时结束前完成）
+        const minDelay = Math.max(1, Math.floor(cd * 0.2));
+        const maxDelay = Math.floor(cd * 0.6);
+        const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+
+        _blindCardState.otherSelectTimer = setTimeout(() => {
+            // 如果已过期、已关闭或已翻开，不执行
+            if (_blindCardState.expired || _blindCardState.flipped) return;
+
+            const count = msg.options.length;
+            const correct = msg.correctIndexes || [];
+            let selected = [];
+
+            if (correct.length === 1) {
+                // 单选：每个选项平均概率
+                selected = [Math.floor(Math.random() * count)];
+            } else if (correct.length > 1) {
+                // 多选：随机选 correct.length 个，每个组合等概率
+                const pool = Array.from({length: count}, (_, i) => i);
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                selected = pool.slice(0, correct.length).sort((a, b) => a - b);
+            } else {
+                // 自由选择：随机选 1~count 个
+                const pickCount = Math.floor(Math.random() * count) + 1;
+                const pool = Array.from({length: count}, (_, i) => i);
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                selected = pool.slice(0, pickCount).sort((a, b) => a - b);
+            }
+
+            _blindCardState.otherSelected = true;
+            _blindCardState.otherSelection = selected;
+
+            // 更新提示，启用确定按钮
+            const tipEl = document.getElementById('blindCardOverlayTip');
+            if (tipEl) tipEl.textContent = '对方已选择，点击确定翻开卡面';
+            const confirmBtn = document.getElementById('blindCardConfirmBtn');
+            if (confirmBtn) confirmBtn.disabled = false;
+        }, delay * 1000);
+    }
+
+    function closeBlindCardOverlay() {
+        const overlay = document.getElementById('blindCardOverlay');
+        overlay.classList.remove('show');
+        stopBlindCardCountdown();
+        if (_blindCardState.otherSelectTimer) {
+            clearTimeout(_blindCardState.otherSelectTimer);
+            _blindCardState.otherSelectTimer = null;
+        }
+        _blindCardState.expired = true;
+        // 渲染聊天界面，显示消息
+        renderMessages();
+        scrollToBottom();
+    }
+
+    function startBlindCardCountdown(cd) {
+        stopBlindCardCountdown();
+        _blindCardState.countdown = cd || 30;
+        _blindCardState.expired = false;
+        document.getElementById('blindCardCountdown').textContent = _blindCardState.countdown;
+        _blindCardState.timer = setInterval(() => {
+            _blindCardState.countdown--;
+            document.getElementById('blindCardCountdown').textContent = Math.max(0, _blindCardState.countdown);
+            if (_blindCardState.countdown <= 0) {
+                stopBlindCardCountdown();
+                blindCardTimeout();
+            }
+        }, 1000);
+    }
+
+    function stopBlindCardCountdown() {
+        if (_blindCardState.timer) { clearInterval(_blindCardState.timer); _blindCardState.timer = null; }
+    }
+
+    function updateBlindCardTip() {
+        const tip = document.getElementById('blindCardOverlayTip');
+        const s = _blindCardState;
+        if (s.otherSelected) {
+            tip.textContent = '对方已选择，点击确定翻开卡面';
+        } else {
+            tip.textContent = '等待对方选择...';
+        }
+    }
+
+    function toggleBlindCard(idx) {
+        // 用户不能选牌，只有对方可以选
+        return;
+    }
+
+    function confirmBlindCard() {
+        const s = _blindCardState;
+        if (s.flipped) return;
+        if (!s.otherSelected) {
+            showBlindCardTip('对方还未选择，请稍候');
+            return;
+        }
+        stopBlindCardCountdown();
+        if (s.otherSelectTimer) {
+            clearTimeout(s.otherSelectTimer);
+            s.otherSelectTimer = null;
+        }
+        // 使用对方的选择翻开卡面
+        s.selected = s.otherSelection.slice();
+        flipBlindCardSelection();
+    }
+
+    function showBlindCardTip(text) {
+        const el = document.getElementById('blindCardResultTip');
+        el.textContent = text;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 1600);
+    }
+
+    function flipBlindCardSelection() {
+        const s = _blindCardState;
+        s.flipped = true;
+        document.getElementById('blindCardConfirmBtn').disabled = true;
+        document.getElementById('blindCardConfirmBtn').textContent = '已翻开';
+
+        s.selected.forEach(idx => {
+            const card = document.getElementById('bcard' + idx);
+            if (card) card.classList.add('flipped');
+        });
+
+        setTimeout(() => {
+            finishBlindCardRound(s.selected);
+        }, 650);
+    }
+
+    function blindCardTimeout() {
+        const s = _blindCardState;
+        s.expired = true;
+        // 取消对方选择定时器
+        if (s.otherSelectTimer) {
+            clearTimeout(s.otherSelectTimer);
+            s.otherSelectTimer = null;
+        }
+        if (s.otherSelected) {
+            // 对方已选择但用户没点确定，自动翻开
+            s.selected = s.otherSelection.slice();
+            flipBlindCardSelection();
+        } else {
+            // 对方未在规定时间内选择
+            s.flipped = true;
+            document.getElementById('blindCardConfirmBtn').disabled = true;
+            showBlindCardTip('对方未作出选择');
+            setTimeout(() => {
+                const msg = appData.chatHistory.find(m => m.id === s.msgId);
+                if (msg) {
+                    msg.result = { selectedIndexes: [], selectedLabels: '无', status: 'timeout', statusText: '对方未作出选择' };
+                    saveData();
+                    addSystemMsg('对方未作出选择');
+                }
+                closeBlindCardOverlay();
+            }, 1200);
+        }
+    }
+
+    function finishBlindCardRound(selectedIndexes) {
+        const s = _blindCardState;
+        const msg = appData.chatHistory.find(m => m.id === s.msgId);
+        if (!msg) { closeBlindCardOverlay(); return; }
+
+        const selectedSorted = selectedIndexes.slice().sort((a, b) => a - b);
+        const correctSorted = s.correctIndexes.slice().sort((a, b) => a - b);
+        const labels = selectedIndexes.map(i => String.fromCharCode(65 + i) + '. ' + s.options[i]).join('、');
+
+        let status = '';
+        let statusText = '';
+        let correct = false;
+
+        if (s.mode === 'free') {
+            status = 'free';
+            statusText = '自由选择';
+        } else if (s.mode === 'single') {
+            correct = selectedSorted[0] === correctSorted[0];
+            status = correct ? 'correct' : 'wrong';
+            statusText = correct ? '一致' : '不一致';
+        } else {
+            correct = selectedSorted.length === correctSorted.length && selectedSorted.every((v, i) => v === correctSorted[i]);
+            status = correct ? 'correct' : 'wrong';
+            statusText = correct ? '完全一致' : '不完全一致';
+        }
+
+        msg.result = {
+            selectedIndexes: selectedIndexes.slice(),
+            selectedLabels: labels || '无',
+            status: status,
+            statusText: statusText,
+            correct: correct
+        };
+        saveData();
+        renderMessages();
+
+        addSystemMsg('对方选择了 ' + labels);
+        showBlindCardTip('对方选择了 ' + labels + ' · ' + statusText);
+
+        setTimeout(() => {
+            closeBlindCardOverlay();
+        }, 1800);
     }
 
     // ===== 图片压缩：减少 Base64 内存占用 =====
@@ -11122,7 +11911,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             'image': '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
             'emoji': '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
             'nudge': '<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7 3 9 3 14h6c0-5 3-7 3-14z"/><line x1="12" y1="2" x2="12" y2="3"/></svg>',
-            'survey': '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>'
+            'blindCard': '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9l2 2-2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="12" r="1" fill="currentColor"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>'
         };
         const color = appData.chatSettings.customIconColor || '#999999';
         document.querySelectorAll('.chat-btn').forEach(btn => {
@@ -12231,7 +13020,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         saveData();
         renderMomentsList();
 
-        // 对方2-5秒内回复：80%概率回复我的最新一条评论，20%概率直接评论
+        // 对方10分钟后回复：80%概率回复我的最新一条评论，20%概率直接评论
         setTimeout(() => {
             const m = appData.moments.list.find(x => x.id === id);
             if (!m) return;
@@ -12259,7 +13048,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             m.comments.push(newComment);
             saveData();
             renderMomentsList();
-        }, Math.random() * 3000 + 2000);
+        }, 10 * 60 * 1000);
     }
 
     function deleteMoment(id) {
@@ -12335,8 +13124,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             alert('请输入内容或添加图片/视频');
             return;
         }
+        const momentId = Date.now();
         appData.moments.list.unshift({
-            id: Date.now(),
+            id: momentId,
             sender: 'mine',
             text: text,
             media: [...appData.publishMediaList],
@@ -12347,6 +13137,25 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         saveData();
         closePublishMoment();
         renderMomentsList();
+
+        // 对方80%概率在10分钟后评论我的朋友圈
+        if (Math.random() < 0.8) {
+            setTimeout(() => {
+                const m = appData.moments.list.find(x => x.id === momentId);
+                if (m && !m.comments.find(c => c.nickname === appData.chatSettings.otherNickname)) {
+                    m.comments.push({
+                        id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                        nickname: appData.chatSettings.otherNickname,
+                        content: getReplyContent(),
+                        parentId: null,
+                        replyTo: null,
+                        time: Date.now()
+                    });
+                    saveData();
+                    renderMomentsList();
+                }
+            }, 10 * 60 * 1000);
+        }
     }
     // 单人日记对方字卡回复触发器
     function triggerDiaryReply(diaryId) {
@@ -16104,7 +16913,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     var _audioKeepAliveStarted = false; // 仅在音频真正播放/running 时才为 true
     var _keepAliveRetryBound = false;
     // 极短的静音 wav 数据 URI，避免依赖外部 silent.wav 文件缺失导致 play 失败
-    var _SILENT_WAV_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    var _SILENT_WAV_URI = './silent.mp3'; // 15秒静音音频文件，循环播放保活
     function startSilentAudioKeepAlive() {
         // 若已启动且确实在运行，只是从后台切回时确保它恢复运行
         if (_audioKeepAliveStarted) {
@@ -16296,8 +17105,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             content.textContent = '[图片]';
         } else if (msg.type === 'transfer') {
             content.textContent = '微信转账 ¥' + msg.amount;
-        } else if (msg.type === 'survey') {
-            content.textContent = '[问卷] ' + msg.question;
+        } else if (msg.type === 'blindCard') {
+            content.textContent = '[盲选抽牌] ' + msg.question;
         } else {
             content.textContent = msg.content || '[消息]';
         }
@@ -20990,7 +21799,7 @@ function mlsjIconClock() {
             if (msg.type === 'emoji') body = '[表情包]';
             else if (msg.type === 'image') body = '[图片]';
             else if (msg.type === 'transfer') body = '[转账] ¥' + msg.amount;
-            else if (msg.type === 'survey') body = '[问卷] ' + msg.question;
+            else if (msg.type === 'blindCard') body = '[盲选抽牌] ' + msg.question;
             else body = msg.content || '[消息]';
             sendSWNotification(name, body, 'qianyi-msg-' + msg.id);
         }
