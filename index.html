@@ -7665,7 +7665,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input accept="image/*,video/*" class="hidden-input" id="publishMediaInput" multiple="" onchange="handlePublishMediaUpload(event)" type="file"/>
 <input accept="video/*" class="hidden-input" id="videoCardInput" multiple="" onchange="handleVideoCardUpload(event)" type="file"/>
 <input accept="video/*" class="hidden-input" id="videoInput" onchange="handleVideoUpload(event)" type="file"/>
-<input accept=".txt" class="hidden-input" id="textFileInput" onchange="handleTextFileUpload(event)" type="file"/>
+<input accept=".txt,.json,.jsonl" class="hidden-input" id="textFileInput" onchange="handleTextFileUpload(event)" type="file"/>
 <input accept=".ttf,.otf" class="hidden-input" id="fontFileInput" onchange="handleFontUpload(event)" type="file"/>
 <script>
     // ===== 全局错误捕获：防止未处理异常导致页面白屏崩溃 =====
@@ -8392,6 +8392,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     document.querySelector('.phone-container').addEventListener('touchend', function(e) {
         try {
             if (!isDragging) return; isDragging = false;
+            // 视频通话「正常(非缩小)」状态下禁止左右滑动切页；缩小后允许正常使用桌面/字卡网站
+            var _vcp = document.getElementById('videoCallPage');
+            if (_vcp && _vcp.classList.contains('show') && !isMinimized) return;
             const endX = e.changedTouches[0].clientX; const diff = startX - endX;
             if (Math.abs(diff) > 50) {
                 if (diff > 0 && currentPage < 1) currentPage++; else if (diff < 0 && currentPage > 0) currentPage--;
@@ -11232,6 +11235,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         
         document.getElementById('videoCallPage').classList.remove('show');
         document.getElementById('videoContainer').classList.remove('minimized');
+        resetVideoContainerStyle();
         isMinimized = false;
         callStartTime = 0;
         
@@ -11239,7 +11243,57 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             addSystemMsg(`通话时长 ${durationText}`);
         }
     }
-    function makeVideoDraggable(el){if(!el||el._ds)return;el._ds=true;let isDragging=false,sx,sy,ox,oy,raf=null;function start(x,y){isDragging=true;sx=x;sy=y;const r=el.getBoundingClientRect();ox=r.left;oy=r.top;}function move(cx,cy){if(!isDragging)return;if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{el.style.transition='none';el.style.left=(ox+cx-sx)+'px';el.style.top=(oy+cy-sy)+'px';el.style.right='auto';el.style.bottom='auto';raf=null;});}function end(){isDragging=false;if(raf){cancelAnimationFrame(raf);raf=null;}}el.addEventListener('mousedown',e=>{e.preventDefault();start(e.clientX,e.clientY);const mv=e2=>move(e2.clientX,e2.clientY);const up=()=>{end();document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);};document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});el.addEventListener('touchstart',e=>{start(e.touches[0].clientX,e.touches[0].clientY);const mv=e2=>{e2.preventDefault();move(e2.touches[0].clientX,e2.touches[0].clientY);};const up=()=>{end();document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);};document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',up);},{passive:false});}
+    function makeVideoDraggable(el){
+        if(!el||el._ds)return;el._ds=true;
+        let isDragging=false,sx,sy,ox,oy,raf=null;
+        function start(x,y){
+            // 仅在最小化状态下允许拖动，避免正常模式下大窗口被拖出屏幕、遮挡聊天界面
+            if(!isMinimized){isDragging=false;return false;}
+            isDragging=true;sx=x;sy=y;
+            const r=el.getBoundingClientRect();ox=r.left;oy=r.top;
+            return true;
+        }
+        function move(cx,cy){
+            if(!isDragging)return;
+            if(raf)cancelAnimationFrame(raf);
+            raf=requestAnimationFrame(()=>{
+                el.style.transition='none';
+                let nl=ox+cx-sx, nt=oy+cy-sy;
+                const r=el.getBoundingClientRect();
+                const w=r.width||100, h=r.height||100;
+                // 限制小窗始终在视口内，左右滑动不会消失
+                const maxX=window.innerWidth-w-4, maxY=window.innerHeight-h-4;
+                if(nl<4)nl=4; else if(maxX>4&&nl>maxX)nl=maxX;
+                if(nt<4)nt=4; else if(maxY>4&&nt>maxY)nt=maxY;
+                el.style.left=nl+'px';el.style.top=nt+'px';
+                el.style.right='auto';el.style.bottom='auto';
+                raf=null;
+            });
+        }
+        function end(){isDragging=false;if(raf){cancelAnimationFrame(raf);raf=null;}}
+        el.addEventListener('mousedown',e=>{
+            if(!isMinimized)return;
+            e.preventDefault();
+            if(!start(e.clientX,e.clientY))return;
+            const mv=e2=>move(e2.clientX,e2.clientY);
+            const up=()=>{end();document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);};
+            document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+        });
+        el.addEventListener('touchstart',e=>{
+            if(!isMinimized)return; // 正常模式不响应拖动，防止滑动导致窗口消失/界面卡死
+            if(!start(e.touches[0].clientX,e.touches[0].clientY))return;
+            const mv=e2=>{e2.preventDefault();move(e2.touches[0].clientX,e2.touches[0].clientY);};
+            const up=()=>{end();document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);};
+            document.addEventListener('touchmove',mv,{passive:false});
+            document.addEventListener('touchend',up);
+        },{passive:false});
+    }
+    // 清除拖动残留的内联定位样式，让视频窗口回到 CSS 定义的默认位置
+    function resetVideoContainerStyle(){
+        const c=document.getElementById('videoContainer');
+        if(!c)return;
+        c.style.left='';c.style.top='';c.style.right='';c.style.bottom='';c.style.transition='';
+    }
     function toggleMinimizeVideo() {
         const container = document.getElementById('videoContainer');
         isMinimized = !isMinimized;
@@ -11248,6 +11302,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             makeVideoDraggable(container);
         } else {
             container.classList.remove('minimized');
+            resetVideoContainerStyle();
         }
     }
     function changeVideoBg() {
@@ -12154,10 +12209,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     }
     function confirmBatchUpload() {
         const text = document.getElementById('batchUploadTextarea').value;
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-        if (lines.length === 0) return;
-        
         const type = appData.batchUploadType;
+        // 字卡(word)导入支持 JSON 格式，仅提取纯字卡内容；其余类型保持"一句一行"
+        const lines = (type === 'word') ? parseCardTexts(text) : text.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length === 0) return;
         
         if (type === 'word') {
             const group = appData.currentGroup;
@@ -12206,6 +12261,63 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         
         closeBatchUpload();
     }
+    // 解析导入文件为“纯字卡文本”数组。
+    // 仅提取真正的字卡内容，不导入其他任何东西（不导入 emoji、拍一拍、状态、格言，
+    // 也不导入 ]、exportDate、_note 等语法符号与元数据），不在文字上添加引号或符号。
+    // 字卡网站不做拍一拍/emoji 兼容——那些是别的字卡处理器的格式，不使用。
+    function parseCardTexts(rawText) {
+        var out = [];
+        if (!rawText) return out;
+        var trimmed = String(rawText).trim();
+        if (!trimmed) return out;
+        var parsed = undefined;
+        try { parsed = JSON.parse(trimmed); } catch (e) { parsed = undefined; }
+
+        if (parsed !== undefined && parsed !== null) {
+            // 基本类型（单行 JSON 字符串/数字）直接作为一张字卡
+            if (typeof parsed === 'string' || typeof parsed === 'number' || typeof parsed === 'boolean') {
+                var ps = String(parsed).trim();
+                if (ps) out.push(ps);
+                return out;
+            }
+            // 纯字符串数组 → 全部作为字卡
+            if (Array.isArray(parsed)) {
+                parsed.forEach(function(item) {
+                    if (typeof item === 'string') { var s = item.trim(); if (s) out.push(s); }
+                    else if (item && typeof item === 'object' && typeof item.text === 'string') { var s2 = item.text.trim(); if (s2) out.push(s2); }
+                });
+                return out;
+            }
+            if (typeof parsed === 'object') {
+                // 仅提取字卡内容：优先 customReplies（系统预设备份中的字卡字段）；
+                // 其次 wordCards（本站字卡备份格式）。其余字段（customEmojis/customPokes/
+                // customStatuses/customMottos/exportDate/_note 等）一律忽略，不导入。
+                var _pushStrings = function(arr) {
+                    if (!Array.isArray(arr)) return;
+                    arr.forEach(function(item) {
+                        if (typeof item === 'string') { var s = item.trim(); if (s) out.push(s); }
+                        else if (item && typeof item === 'object' && typeof item.text === 'string') { var s2 = item.text.trim(); if (s2) out.push(s2); }
+                    });
+                };
+                if (Array.isArray(parsed.customReplies)) {
+                    _pushStrings(parsed.customReplies);
+                    return out;
+                }
+                if (parsed.wordCards && typeof parsed.wordCards === 'object') {
+                    Object.keys(parsed.wordCards).forEach(function(g) { _pushStrings(parsed.wordCards[g]); });
+                    return out;
+                }
+                // 既无 customReplies 也无 wordCards：返回空，不盲目提取其他字段
+                return out;
+            }
+        }
+        // 非 JSON 纯文本：一句一行（保持原有行为）
+        trimmed.split(/\r?\n/).forEach(function(line) {
+            var s = line.trim();
+            if (s) out.push(s);
+        });
+        return out;
+    }
     function uploadWordFile() {
         currentEditType = 'wordFile';
         document.getElementById('textFileInput').click();
@@ -12217,7 +12329,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const text = ev.target.result;
-                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+                const lines = parseCardTexts(text);
                 const group = appData.currentGroup;
                 const seen = new Set(appData.wordCards[group].map(c => (c.text || '').trim()));
                 let duplicateCount = 0;
@@ -17215,7 +17327,21 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 }
             });
         }
-        
+
+        // 桌面应用图标/组件图片、外观颜色与全部字卡（含特殊字卡）没有独立勾选项，
+        // 无论是否勾选其它模块，都一并纳入“全局文件”备份，避免这些数据丢失
+        if (!exportObj.full) {
+            try {
+                if (appData.appIconImages) exportObj.appIconImages = JSON.parse(JSON.stringify(appData.appIconImages));
+                if (appData.widgetImages) exportObj.widgetImages = JSON.parse(JSON.stringify(appData.widgetImages));
+                if (appData.colors) exportObj.colors = JSON.parse(JSON.stringify(appData.colors));
+                if (appData.wordCards) exportObj.wordCards = JSON.parse(JSON.stringify(appData.wordCards));
+                if (appData.specialCards) exportObj.specialCards = JSON.parse(JSON.stringify(appData.specialCards));
+                if (appData.wordGroups) exportObj.wordGroups = JSON.parse(JSON.stringify(appData.wordGroups));
+                if (appData.currentGroup !== undefined) exportObj.currentGroup = appData.currentGroup;
+            } catch(e) {}
+        }
+
         const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -21592,8 +21718,18 @@ function mlsjIconClock() {
 
     // ===== 注册 Service Worker =====
     if ('serviceWorker' in navigator) {
+        var _swReloaded = false; // 防止 controllerchange 重复刷新
+        var _hadControllerAtStart = !!navigator.serviceWorker.controller; // 区分“首次安装”与“有更新”
+        // 控制器变更（新 SW 接管）后自动刷新一次，加载最新资源
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+            // 首次安装（之前无 controller）不刷新，仅在有更新接管时刷新
+            if (!_hadControllerAtStart) { _hadControllerAtStart = true; return; }
+            if (_swReloaded) return; _swReloaded = true;
+            try { window.location.reload(); } catch(e) {}
+        });
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./sw.js', { scope: './' })
+            // updateViaCache:'none' 确保每次都向服务器校验 sw.js 是否更新
+            navigator.serviceWorker.register('./sw2.js', { scope: './', updateViaCache: 'none' })
                 .then(function(reg) {
                     _swReady = true;
                     // 尝试注册 Periodic Sync（实验性，大部分浏览器不支持也不报错）
@@ -21615,10 +21751,36 @@ function mlsjIconClock() {
                             openChatFromNotification();
                         }
                     });
+
+                    // ===== PWA 自动更新 =====
+                    // 通知处于 waiting 状态的新 SW 立即接管
+                    var _triggerSkipWaiting = function() {
+                        if (reg.waiting) {
+                            try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch(e) {}
+                        }
+                    };
+                    reg.addEventListener('updatefound', function() {
+                        var nw = reg.installing;
+                        if (!nw) return;
+                        nw.addEventListener('statechange', function() {
+                            // 新版本安装完成 → 触发跳过等待，随即通过 controllerchange 自动刷新
+                            if (nw.state === 'installed') _triggerSkipWaiting();
+                        });
+                    });
+                    // 页面加载时若已有等待接管的新 SW，立即触发刷新
+                    _triggerSkipWaiting();
                 })
                 .catch(function(err) {
                     console.warn('[PWA] SW注册失败:', err);
                 });
+        });
+        // 从后台切回前台时主动检查更新，重新进入网站即可自动获取最新版本
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.getRegistration().then(function(reg) {
+                    if (reg) { try { reg.update(); } catch(e) {} }
+                }).catch(function(){});
+            }
         });
     }
 
