@@ -6674,6 +6674,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
 <button onclick="compressStoredImages()" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">压缩当前图片</button>
+<button onclick="resetEntireWebsite()" style="padding:8px 12px;background:#ff3b30;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">重置网站数据</button>
 </div>
 </div></div>
 <div class="settings-section">
@@ -6839,6 +6840,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap;">
 <button onclick="compressAllImages()" style="padding:8px 12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">一键压缩所有图片</button>
 <button onclick="compressStoredImages()" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;cursor:pointer;">压缩当前图片</button>
+<button onclick="resetEntireWebsite()" style="padding:8px 12px;background:#ff3b30;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">重置网站数据</button>
 </div>
 <div class="section-title" style="margin-top:16px;">各应用数据占用</div>
 <div id="storageList"></div>
@@ -11173,10 +11175,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('plusPanel').classList.remove('show');
         isIncomingCall = false;
         document.getElementById('answerBtn').style.display = 'none';
+        ensureVideoCallPageInBody();
         document.getElementById('videoCallPage').classList.add('show');
         document.getElementById('videoStatus').textContent = '等待对方接听...';
         isMinimized = false;
         document.getElementById('videoContainer').classList.remove('minimized');
+        resetVideoContainerStyle();
         document.getElementById('videoBgMenu').classList.remove('show');
         
         const s = appData.chatSettings;
@@ -11197,10 +11201,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function incomingVideoCall() {
         isIncomingCall = true;
         document.getElementById('answerBtn').style.display = 'flex';
+        ensureVideoCallPageInBody();
         document.getElementById('videoCallPage').classList.add('show');
         document.getElementById('videoStatus').textContent = '对方邀请你视频通话';
         isMinimized = false;
         document.getElementById('videoContainer').classList.remove('minimized');
+        resetVideoContainerStyle();
         document.getElementById('videoBgMenu').classList.remove('show');
         
         callTimer = setTimeout(() => {
@@ -11293,6 +11299,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const c=document.getElementById('videoContainer');
         if(!c)return;
         c.style.left='';c.style.top='';c.style.right='';c.style.bottom='';c.style.transition='';
+    }
+    // 将视频通话页面移至 body 直接子节点，确保 position:fixed 始终相对视口定位，
+    // 不受任何祖先 transform / will-change 影响（放大版模态框始终居中，不会一半在屏幕外）
+    function ensureVideoCallPageInBody(){
+        var p=document.getElementById('videoCallPage');
+        if(p&&p.parentNode!==document.body){ document.body.appendChild(p); }
     }
     function toggleMinimizeVideo() {
         const container = document.getElementById('videoContainer');
@@ -17825,6 +17837,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             sizeSpan.style.color = '#999999';
             sizeSpan.style.fontSize = '12px';
             sizeSpan.textContent = formatBytes(item.size);
+            const resetBtn = document.createElement('span');
+            resetBtn.style.cssText = 'color:#34c759; font-size:12px; cursor:pointer; padding:4px 8px; border:1px solid #34c759; border-radius:4px; margin-left:8px;';
+            resetBtn.textContent = '重置';
+            resetBtn.onclick = () => {
+                if (confirm('确定重置' + item.key + '数据为初始状态？')) {
+                    resetStorageData(item.dataKey);
+                    renderStorageList();
+                }
+            };
             const clearBtn = document.createElement('span');
             clearBtn.style.cssText = 'color:#ff3b30; font-size:12px; cursor:pointer; padding:4px 8px; border:1px solid #ff3b30; border-radius:4px; margin-left:8px;';
             clearBtn.textContent = '清除';
@@ -17836,6 +17857,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             };
             row.appendChild(nameSpan);
             row.appendChild(sizeSpan);
+            row.appendChild(resetBtn);
             row.appendChild(clearBtn);
             container.appendChild(row);
         });
@@ -17867,6 +17889,49 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         else if (key === 'lifeDeathData') appData.lifeDeathData = { questionBank: [], history: [], initialized: false };
         else if (key === 'albumData') appData.albumData = { photos: [], categories: ['日常','风景','食物','合照','他拍的','我拍的'], currentCategory: '日常' };
         saveData();
+    }
+    // 重置指定应用数据为初始默认状态（第一次打开网站时的样子）
+    function resetStorageData(key) {
+        if (key === 'misc') {
+            appData.appIconImages = {};
+            appData.widgetImages = {};
+            appData.colors = {};
+            appData.videoBg = '';
+            appData.appNames = {};
+            appData.widgetOffsets = { anniversary: 0, appSection: 0, appSectionBottom: 0, period: 0, wordCard: 0, thirdRow: 0 };
+            appData.dockBottom = 20;
+        } else if (key === 'globalSettings') {
+            appData.globalSettings = JSON.parse(JSON.stringify({
+                darkMode: false, fontFamily: '', fontColor: '#1a1a1a', iconColor: '#999999',
+                globalFontSize: 14, chatWallpaper: '', disableGlass: false, iconBg: '#ffffff',
+                anniversaryBg: '#ffffff', dockBg: '#ffffff', periodBg: '#ffffff', timeBg: '#ffffff'
+            }));
+        } else if (key === 'beautifyPresets') {
+            appData.beautifyPresets = { chatGlobal: [], bubble: [], moments: [] };
+        } else if (defaultData[key] !== undefined) {
+            appData[key] = JSON.parse(JSON.stringify(defaultData[key]));
+        }
+        // 字卡联动重置
+        if (key === 'wordCards') {
+            appData.specialCards = JSON.parse(JSON.stringify(defaultData.specialCards));
+            appData.wordGroups = JSON.parse(JSON.stringify(defaultData.wordGroups));
+            appData.currentGroup = defaultData.currentGroup;
+        }
+        saveData();
+    }
+    // 重置整个网站：清除所有存储并刷新，恢复到第一次打开的初始状态
+    function resetEntireWebsite() {
+        if (!confirm('确定重置整个网站数据？此操作不可恢复，所有数据将恢复到初始状态！')) return;
+        if (!confirm('再次确认：重置后所有聊天记录、字卡、设置等都将清空，确定继续吗？')) return;
+        try { localStorage.clear(); } catch(e) {}
+        try {
+            var req = indexedDB.deleteDatabase(IDB_NAME);
+            req.onsuccess = function(){ location.reload(); };
+            req.onerror = function(){ location.reload(); };
+            req.onblocked = function(){ location.reload(); };
+        } catch(e) {}
+        // 兜底：1.5秒后强制刷新（防止 IndexedDB 删除卡住）
+        setTimeout(function(){ location.reload(); }, 1500);
     }
 
     // ===== 词云与消息条数统计 =====
