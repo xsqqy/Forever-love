@@ -21794,7 +21794,7 @@ function mlsjIconClock() {
         });
         window.addEventListener('load', function() {
             // updateViaCache:'none' 确保每次都向服务器校验 sw.js 是否更新
-            navigator.serviceWorker.register('./sw2.js', { scope: './', updateViaCache: 'none' })
+            navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
                 .then(function(reg) {
                     _swReady = true;
                     // 尝试注册 Periodic Sync（实验性，大部分浏览器不支持也不报错）
