@@ -915,7 +915,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .chat-header {
             height: calc(var(--chat-header-height) + env(safe-area-inset-top, 0px));
-            padding-top: 0;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 12px); /* 修改: 增加顶部间距 */
             background: #f0f0f0;
             border-bottom: none;
             display: flex;
@@ -1141,8 +1141,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             -webkit-touch-callout: none;
         }
         .system-msg span{display:inline-block;padding:4px 12px;background:rgba(255,255,255,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #eeeeee;border-radius:2px;font-size:12px;color:#aaa;}
-        .system-msg.blind-card-record span{position:relative;background:#fff;border:1px solid #bfe4ff;border-radius:6px;color:#8a8a8a;padding:8px 14px 8px 24px;box-shadow:0 2px 8px rgba(120,190,245,0.08);}
-        .system-msg.blind-card-record span::before{content:'★';position:absolute;left:8px;top:6px;color:#4aa7ff;font-size:12px;line-height:1;}
+        .system-msg.blind-card-record{display:flex;justify-content:center;}
+        .system-msg.blind-card-record span{position:relative;background:#fff;border:1px solid #a8d4ff;border-radius:8px;color:#8a8a8a;padding:10px 16px 10px 28px;box-shadow:0 2px 12px rgba(120,190,245,0.15);font-size:13px;}
+        .system-msg.blind-card-record span::before{content:'★';position:absolute;left:10px;top:8px;color:#4aa7ff;font-size:14px;line-height:1;}
         .msg-row .msg-bubble.media-msg{background:transparent!important;border:none!important;padding:0!important;box-shadow:none!important;border-radius:0!important;}
         .msg-row .msg-bubble.media-msg img,.msg-row .msg-bubble.media-msg video{max-width:220px;border-radius:8px;display:block;}
         .double-diary-form{width:86%;max-width:400px;flex:0 0 auto;max-height:70vh;overflow-y:auto;box-sizing:border-box;}
@@ -1425,7 +1426,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .blind-card-title {
             font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 22px;
+            font-size: 20px;
             color: #4A7BA7;
             margin-bottom: 8px;
             text-align: center;
@@ -1434,7 +1435,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .blind-card-tip {
             font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 15px;
+            font-size: 13px;
             color: #7BA7CC;
             margin-bottom: 20px;
             text-align: center;
@@ -1446,7 +1447,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             margin-bottom: 24px;
             justify-content: center;
             align-content: center;
-            padding: 16px;
+            padding: 14px;
             background: rgba(255,255,255,0.5);
             border-radius: 20px;
             border: 1.5px solid rgba(184, 212, 232, 0.4);
@@ -1504,10 +1505,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             border: 2px solid #B8D4E8;
             transform: rotateY(180deg);
             color: #6A8CA8;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             line-height: 1.35;
             font-family: 'ZCOOL KuaiLe', cursive;
             box-shadow: 0 4px 12px rgba(123,167,204,0.15);
@@ -3421,7 +3422,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .dd-summon-btn:hover { opacity: 0.85; }
         .dd-summon-btn.summoned { background: #ccc; cursor: not-allowed; }
-        /* 单人日记召唤按钮 */
+        /* 单人日记dd按钮 */
         .diary-summon-btn {
             display: inline-block;
             padding: 3px 10px;
@@ -4125,7 +4126,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode .sw-glass-text{color:#bdbdbd;}
 
         /* 顶部标题栏：返回 + 歌名 + 菜单 */
-        .sw-topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;background:transparent;}
+        .sw-topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top, 0px) + 14px) 2px 10px;background:transparent;}
         .sw-topbar .sw-tb-back{width:34px;height:34px;border-radius:50%;background:var(--sw-return-bg);background-image:var(--sw-return-img);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,0.25);user-select:none;text-shadow:0 1px 2px rgba(0,0,0,0.35);}
         html.dark-mode .sw-topbar .sw-tb-back{border-color:rgba(255,255,255,0.1);}
         .sw-topbar .sw-tb-title{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--sw-font);padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -6185,7 +6186,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg>
 </div>
 <div class="chat-input-wrap">
-<input class="chat-input" id="chatInput" onkeydown="handleChatEnter(event)" placeholder="输入消息" type="text"/>
+<input class="chat-input" id="chatInput" inputmode="text" onkeydown="handleChatEnter(event)" placeholder="输入消息" type="text"/>
 </div>
 <div class="chat-btn" data-icon="receive" onclick="triggerReceive()">
 <svg viewbox="0 0 24 24"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -7622,7 +7623,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
           <div class="xcyj-detail-label">他的留言</div>
           <div class="xcyj-detail-text" id="xcyjDetailHis"></div>
           <div class="xcyj-detail-actions">
-            <button class="xcyj-mini-btn" id="xcyjSummonBtn" onclick="summonHisMessage()">召唤对方留言</button>
+            <button class="xcyj-mini-btn" id="xcyjSummonBtn" onclick="summonHisMessage()">dd对方留言</button>
             <button class="xcyj-mini-btn" onclick="editHisMessage()">编辑</button>
           </div>
           <div class="xcyj-detail-status" id="xcyjSummonStatus"></div>
@@ -7945,7 +7946,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input id="diarySpliceMax" max="20" min="0" onchange="saveDiarySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="3"/>
 </div>
 <div class="settings-row">
-<label>催更概率(%)</label>
+<label>今日提醒概率(%)</label>
 <input id="diaryUrgeProb" max="100" min="0" onchange="saveDiarySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="20"/>
 </div>
 <div class="settings-row">
@@ -8081,6 +8082,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <label>展开高度</label>
 <input id="envelopeHeight" max="500" min="200" oninput="saveLetterSettings()" type="range" value="300"/>
 <span id="envelopeHeightVal">300px</span>
+</div>
+<div class="settings-row">
+<label>悬浮框宽度</label>
+<input id="letterFloatBoxWidth" max="95" min="40" oninput="saveLetterSettings()" step="1" type="range" value="86"/>
+<span id="letterFloatBoxWidthVal">86%</span>
+</div>
+<div class="settings-row">
+<label>悬浮框高度</label>
+<input id="letterFloatBoxHeight" max="90" min="40" oninput="saveLetterSettings()" step="1" type="range" value="52"/>
+<span id="letterFloatBoxHeightVal">52vh</span>
 </div>
 <div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
 <div class="section-subtitle">信纸样式</div>
@@ -8743,6 +8754,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                             target[key] = mergeDeep(target[key] || {}, source[key]);
                         } else if (!(key in target)) {
                             target[key] = source[key];
+                        } else if (Array.isArray(source[key]) && !Array.isArray(target[key])) {
+                            // 修复: 如果源是数组但目标不是,使用源数组
+                            target[key] = source[key];
                         }
                     }
                     return target;
@@ -8802,6 +8816,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
                             target[key] = mergeDeep(target[key] || {}, source[key]);
                         } else if (!(key in target)) {
+                            target[key] = source[key];
+                        } else if (Array.isArray(source[key]) && !Array.isArray(target[key])) {
+                            // 修复: 如果源是数组但目标不是,使用源数组
                             target[key] = source[key];
                         }
                     }
@@ -10366,10 +10383,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 bubble.textContent = msg.content;
             } else if (msg.type === 'image') {
                 bubble.className += ' media-msg';
-                bubble.innerHTML = `<img src="${msg.content}" alt="">`;
+                bubble.innerHTML = `<img src="${msg.content}" alt="" onclick="previewImage(this.src)" style="cursor:pointer;">`;
             } else if (msg.type === 'video') {
                 bubble.className += ' media-msg';
-                bubble.innerHTML = `<video src="${msg.content}" controls></video>`;
+                bubble.innerHTML = `<video src="${msg.content}" controls onclick="playVideo(this.src)" style="cursor:pointer;"></video>`;
             } else if (msg.type === 'emoji') {
                 bubble.innerHTML = `<img src="${msg.content}" style="width:80px;">`;
                 bubble.style.background = 'transparent';
@@ -14161,21 +14178,21 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         });
     }
 
-    // 召唤对方回复单人日记
+    // dd对方回复单人日记
     function summonSingleDiaryReply(diaryId, btn) {
         const diary = appData.diary.singleList.find(d => d.id === diaryId);
         if (!diary) return;
         if (diary.reply) return; // 已有回复
-        if (diary.summoned) return; // 已召唤过
+        if (diary.summoned) return; // 已dd过
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         diary.summoned = true;
         diary.pendingReplyAt = Date.now() + replyTime * 60 * 1000;
         saveData();
         if (btn) {
             btn.classList.add('summoned');
-            btn.textContent = '已召唤';
+            btn.textContent = '已dd';
         }
-        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '回复日记，预计' + replyTime + '分钟后回复');
+        addSystemMsg('已dd' + (appData.chatSettings.otherNickname || '对方') + '回复日记，预计' + replyTime + '分钟后回复');
         scheduleDiaryReply(diaryId, replyTime * 60 * 1000);
     }
 
@@ -14469,11 +14486,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
     }
 
-    // 召唤对方填写双人日记
+    // dd对方填写双人日记
     function summonDoubleDiaryOther(index, btn) {
         const entry = appData.diary.doubleList[index];
         if (!entry) return;
-        if (entry.summoned) return; // 已经召唤过
+        if (entry.summoned) return; // 已经dd过
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         entry.summoned = true;
         entry.summonedAt = Date.now();
@@ -14482,16 +14499,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // 更新按钮状态
         if (btn) {
             btn.classList.add('summoned');
-            btn.textContent = '已召唤';
+            btn.textContent = '已dd';
         }
-        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '填写日记，预计' + replyTime + '分钟后回复');
+        addSystemMsg('已dd' + (appData.chatSettings.otherNickname || '对方') + '填写日记，预计' + replyTime + '分钟后回复');
         // 定时触发对方填写
         setTimeout(() => {
             generateSummonedDoubleDiary(entry);
         }, replyTime * 60 * 1000);
     }
 
-    // 召唤后生成对方双人日记数据
+    // dd后生成对方双人日记数据
     function generateSummonedDoubleDiary(entry) {
         if (!entry || hasDoubleDiaryData(entry.otherData)) return;
         const data = generateDoubleDiaryData();
@@ -14501,11 +14518,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         delete entry.summonedAt;
         delete entry.summonReplyAt;
         saveData();
-        addSystemMsg(appData.chatSettings.otherNickname + '已响应召唤，更新了今日日记');
+        addSystemMsg(appData.chatSettings.otherNickname + '已响应dd，更新了今日日记');
         if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
     }
 
-    // 检查未完成的召唤（页面刷新后恢复）
+    // 检查未完成的dd（页面刷新后恢复）
     function checkPendingSummons() {
         const now = Date.now();
         appData.diary.doubleList.forEach(entry => {
@@ -14709,12 +14726,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             replyLabel.style.display = 'flex';
             replyLabel.style.alignItems = 'center';
             replyLabel.innerHTML = '<span>' + (diary.reply ? '对方的回复：' : '等待回复...') + '</span>';
-            // 召唤对方按钮 - 没有回复时显示
+            // dd对方按钮 - 没有回复时显示
             if (!diary.reply) {
                 const summonBtn = document.createElement('button');
                 summonBtn.className = 'diary-summon-btn' + (diary.summoned ? ' summoned' : '');
                 const otherNick = appData.chatSettings.otherNickname || '对方';
-                summonBtn.textContent = diary.summoned ? '已召唤' : '召唤' + otherNick;
+                summonBtn.textContent = diary.summoned ? '已dd' : 'dd' + otherNick;
                 summonBtn.onclick = (e) => {
                     e.stopPropagation();
                     summonSingleDiaryReply(diary.id, summonBtn);
@@ -14743,7 +14760,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         return card;
     }
 
-    // 双人日记卡片：拆分为独立可滚动卡片，召唤提示仅在"我写了但对方没写"时出现
+    // 双人日记卡片：拆分为独立可滚动卡片，dd提示仅在"我写了但对方没写"时出现
     function ensureTodayDoubleDiaryEntry() {
         if (!appData.diary) appData.diary = {singleList:[], doubleList:[], currentTab:'single', settings:{}};
         if (!Array.isArray(appData.diary.doubleList)) appData.diary.doubleList = [];
@@ -14859,7 +14876,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
         const body = document.createElement('div');
         body.className = 'dd-detail-section';
-        body.innerHTML = '<div style="text-align:center;color:#d68a8a;font-size:13px;padding:10px 0;">快召唤 ' + escapeHtml(otherNick) + ' 来写今日日记吧~</div>';
+        body.innerHTML = '<div style="text-align:center;color:#d68a8a;font-size:13px;padding:10px 0;">快dd ' + escapeHtml(otherNick) + ' 来写今日日记吧~</div>';
         card.appendChild(body);
 
         const footer = document.createElement('div');
@@ -14867,7 +14884,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         footer.style.justifyContent = 'center';
         const summonBtn = document.createElement('button');
         summonBtn.className = 'dd-summon-btn' + (entry.summoned ? ' summoned' : '');
-        summonBtn.textContent = entry.summoned ? '已召唤' : '召唤' + otherNick;
+        summonBtn.textContent = entry.summoned ? '已dd' : 'dd' + otherNick;
         summonBtn.onclick = (e) => {
             e.stopPropagation();
             summonDoubleDiaryOther(index, summonBtn);
@@ -16051,6 +16068,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         s.fontSize = parseInt(document.getElementById('letterFontSize').value);
         s.envelopeBgOpacity = parseFloat(document.getElementById('envelopeBgOpacity').value);
         s.envelopeHeight = parseInt(document.getElementById('envelopeHeight').value);
+        s.floatBoxWidth = parseInt(document.getElementById('letterFloatBoxWidth').value);
+        s.floatBoxHeight = parseInt(document.getElementById('letterFloatBoxHeight').value);
         s.envelopeBorderColor = document.getElementById('envelopeBorderColor').value;
         s.envelopeBgColor = document.getElementById('envelopeBgColor').value;
         s.rulerEnabled = document.getElementById('letterRulerEnabled').checked;
@@ -16065,6 +16084,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('letterRulerGapVal').textContent = s.rulerGap + 'px';
         document.getElementById('envelopeBgOpacityVal').textContent = Math.round(s.envelopeBgOpacity * 100) + '%';
         document.getElementById('envelopeHeightVal').textContent = s.envelopeHeight + 'px';
+        document.getElementById('letterFloatBoxWidthVal').textContent = s.floatBoxWidth + '%';
+        document.getElementById('letterFloatBoxHeightVal').textContent = s.floatBoxHeight + 'vh';
         saveData();
         applyLetterCustomCss();
         applyLetterTheme();
@@ -16086,8 +16107,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const rulerStyle = s.rulerEnabled !== false 
             ? `background-image: repeating-linear-gradient(to bottom, transparent, transparent ${lineH}px, ${s.rulerColor || '#e0e0e0'} ${lineH}px, ${s.rulerColor || '#e0e0e0'} ${lineH + (s.rulerThickness || 1)}px);`
             : 'background-image: none !important; display: none;';
+        const floatBoxWidth = s.floatBoxWidth || 86;
+        const floatBoxHeight = s.floatBoxHeight || 52;
         styleEl.textContent = `
-            .letter-detail-modal .modal-content { background: ${s.envelopeBgColor || '#fff'}; border-color: ${s.envelopeBorderColor || '#c8ddf0'}; }
+            .letter-detail-modal .modal-content { background: ${s.envelopeBgColor || '#fff'}; border-color: ${s.envelopeBorderColor || '#c8ddf0'}; width: ${floatBoxWidth}%; max-height: ${floatBoxHeight}vh; }
             .envelope-body { background: ${s.envelopeBgColor || '#FFFFFF'}; }
             .envelope-ruler-layer { ${rulerStyle} }
             .envelope-text { color: ${s.textColor || '#333'}; font-size: ${s.fontSize || 14}px; line-height: ${lineH}px; }
@@ -16359,6 +16382,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             });
 
             item.addEventListener('click', (e) => {
+                // 防止swipe状态触发点击
+                if (isSwiping) return;
                 if (isSwipedOpen) {
                     item.style.transition = 'transform 0.3s ease';
                     item.style.transform = 'translateX(0)';
@@ -22098,21 +22123,21 @@ function mlsjIconClock() {
       myEl.innerHTML = photo.myMessage ? escapeHtml(photo.myMessage) : '<span class="xcyj-dim">暂无留言</span>';
     }
 
-    // 召唤按钮与状态
+    // dd按钮与状态
     var sBtn = document.getElementById("xcyjSummonBtn");
     var st = document.getElementById("xcyjSummonStatus");
     if (photo.summonTime) {
       var left = 10 * 60 * 1000 - (Date.now() - photo.summonTime);
-      if (sBtn) { sBtn.textContent = "召唤中…"; sBtn.disabled = true; }
+      if (sBtn) { sBtn.textContent = "dd中…"; sBtn.disabled = true; }
       if (st) st.textContent = left > 0 ? "对方正在赶来，约 " + Math.ceil(left / 60000) + " 分钟" : "留言已送达";
     } else if (photo.autoGenScheduled) {
-      if (sBtn) { sBtn.textContent = "召唤对方留言"; sBtn.disabled = false; }
+      if (sBtn) { sBtn.textContent = "dd对方留言"; sBtn.disabled = false; }
       if (st) {
         var left2 = 2 * 3600 * 1000 - (Date.now() - photo.hisMessageTime);
         st.textContent = left2 > 0 ? "对方将在约 " + Math.ceil(left2 / 3600000) + " 小时后留言" : "对方即将留言";
       }
     } else {
-      if (sBtn) { sBtn.textContent = "召唤对方留言"; sBtn.disabled = !!photo.hisMessageManual; }
+      if (sBtn) { sBtn.textContent = "dd对方留言"; sBtn.disabled = !!photo.hisMessageManual; }
       if (st) st.textContent = photo.hisMessageManual ? "（已手动编辑）" : "";
     }
   }
@@ -22166,24 +22191,24 @@ function mlsjIconClock() {
   }
 
   /* =========================================================
-   * 模块十二：召唤对方留言（10 分钟内送达）
+   * 模块十二：dd对方留言（10 分钟内送达）
    * ========================================================= */
   function summonHisMessage() {
     var photo = getCurrentPhoto();
     if (!photo) return;
-    if (photo.summonTime) { showToast("已在召唤中，请稍候"); return; }
+    if (photo.summonTime) { showToast("已在dd中，请稍候"); return; }
     var card = getRandomWordCard();
     if (!card) { showToast("字卡库为空，请先添加字卡"); return; }
     photo.summonTime = Date.now();
-    photo.autoGenScheduled = false; // 召唤后取消 2h 自动流程
+    photo.autoGenScheduled = false; // dd后取消 2h 自动流程
     albumSave();
     renderDetail(photo.id);
-    showToast("已召唤，约10分钟内送达");
+    showToast("已dd，约10分钟内送达");
     // 定时器会在 10 分钟后自动填充（见 checkAutoMessages）
   }
 
   /* =========================================================
-   * 模块十三：自动留言检查（2h 自动 / 10min 召唤）
+   * 模块十三：自动留言检查（2h 自动 / 10min dd）
    * ========================================================= */
   function checkAutoMessages() {
     var photos = (appData && appData.albumData && appData.albumData.photos) || [];
@@ -22208,10 +22233,10 @@ function mlsjIconClock() {
           // 字卡库为空时保留 autoGenScheduled=true，待后续补充字卡后重试
         }
       }
-      // 规则二：召唤 10 分钟后送达（仅当未被手动编辑）
+      // 规则二：dd 10 分钟后送达（仅当未被手动编辑）
       if (photo.summonTime && (now - photo.summonTime > 10 * 60 * 1000)) {
         if (photo.hisMessageManual) {
-          photo.summonTime = null; // 已手动编辑，取消召唤
+          photo.summonTime = null; // 已手动编辑，取消dd
         } else {
           var c2 = getRandomWordCard();
           if (c2) { photo.hisMessage = c2; photo.summonTime = null; changed = true; }
@@ -26499,6 +26524,23 @@ setInterval(function () {
 }, 1000);
 setInterval(function () { try { shopProcessPendingCards(); } catch (e) {} }, 3000);
 
+
+    // 图片预览函数
+    function previewImage(src) {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = '<img src="'+src+'" style="max-width:95%;max-height:95%;object-fit:contain;" onclick="this.parentElement.remove()">';
+        modal.onclick = function(e) { if(e.target === modal) modal.remove(); };
+        document.body.appendChild(modal);
+    }
+    // 视频预览函数
+    function playVideo(src) {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = '<video src="'+src+'" controls autoplay style="max-width:95%;max-height:95%;"></video>';
+        modal.onclick = function(e) { if(e.target === modal) modal.remove(); };
+        document.body.appendChild(modal);
+    }
 </script>
 </body>
 </html>
