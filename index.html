@@ -914,8 +914,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             /* 键盘弹出时由 JS 设置 padding-bottom，不再修改 bottom */
         }
         .chat-header {
-            height: calc(var(--chat-header-height) + env(safe-area-inset-top, 0px));
-            padding-top: calc(env(safe-area-inset-top, 0px) + 12px); /* 修改: 增加顶部间距 */
+            height: calc(var(--chat-header-height) + env(safe-area-inset-top, 0px) + 20px);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 20px); /* 从12px改为20px */
+            padding-bottom: 8px; /* 新增:确保垂直居中 */
             background: #f0f0f0;
             border-bottom: none;
             display: flex;
@@ -3771,25 +3772,31 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             to { opacity: 1; transform: translateY(0); }
         }
         .envelope-footer {
-            display: flex;
+            display: flex !important;
             flex-wrap: wrap;
             align-items: center;
             justify-content: center;
             gap: 16px;
-            padding: 12px 10px;
+            padding: 16px 10px; /* 从12px改为16px */
             border-top: 1px dashed #c8ddf0;
             margin-top: auto;
+            background: #fff; /* 新增:确保背景可见 */
+            position: sticky; /* 新增:固定在底部 */
+            bottom: 0;
+            z-index: 10; /* 新增:提高层级 */
+            min-height: 50px; /* 新增:确保最小高度 */
         }
         .envelope-footer span,
         .envelope-footer button {
-            font-size: 13px;
+            font-size: 14px; /* 从13px改为14px,更清晰 */
             color: #7a9cc6;
             cursor: pointer;
-            padding: 4px 8px;
+            padding: 6px 12px; /* 从4px 8px改为6px 12px,更大更易点击 */
             background: transparent;
             border: none;
             font-family: var(--font-family);
             transition: color 0.2s;
+            pointer-events: auto; /* 新增:确保可点击 */
         }
         .envelope-footer span:hover,
         .envelope-footer button:hover { color: #555; }
@@ -8750,18 +8757,39 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 const parsed = JSON.parse(raw);
                 function mergeDeep(target, source) {
                     for (const key in source) {
+                        // 如果源字段是对象但不是数组
                         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                            target[key] = mergeDeep(target[key] || {}, source[key]);
-                        } else if (!(key in target)) {
-                            target[key] = source[key];
-                        } else if (Array.isArray(source[key]) && !Array.isArray(target[key])) {
-                            // 修复: 如果源是数组但目标不是,使用源数组
+                            // 如果目标字段不存在或不是对象,创建新对象
+                            if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+                                target[key] = {};
+                            }
+                            target[key] = mergeDeep(target[key], source[key]);
+                        } 
+                        // 如果源字段是数组
+                        else if (Array.isArray(source[key])) {
+                            // 直接使用源数组,不合并(保留用户数据)
                             target[key] = source[key];
                         }
+                        // 如果目标没有该字段,使用源字段
+                        else if (!(key in target)) {
+                            target[key] = source[key];
+                        }
+                        // 如果都有且都不是对象/数组,保留目标值(保留用户设置)
                     }
                     return target;
                 }
                 const merged = mergeDeep(parsed, JSON.parse(JSON.stringify(defaultData)));
+                // 确保联系人数据完整
+                if (!merged.contactList) {
+                    merged.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
+                }
+                if (!merged.contactList.contacts) {
+                    merged.contactList.contacts = [];
+                }
+                if (!merged.contactList.groups) {
+                    merged.contactList.groups = [];
+                }
+                console.log('联系人数据检查:', merged.contactList.contacts.length, '个联系人');
                 // 兼容旧版拍一拍数据
                 if (Array.isArray(merged.nudgeCards) && merged.nudgeCards.length > 0 && typeof merged.nudgeCards[0] === 'string') {
                     merged.specialCards.nudge = merged.nudgeCards.map(t => ({text: t, hidden: false}));
@@ -8813,18 +8841,39 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 const parsed = JSON.parse(json);
                 function mergeDeep(target, source) {
                     for (const key in source) {
+                        // 如果源字段是对象但不是数组
                         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                            target[key] = mergeDeep(target[key] || {}, source[key]);
-                        } else if (!(key in target)) {
-                            target[key] = source[key];
-                        } else if (Array.isArray(source[key]) && !Array.isArray(target[key])) {
-                            // 修复: 如果源是数组但目标不是,使用源数组
+                            // 如果目标字段不存在或不是对象,创建新对象
+                            if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+                                target[key] = {};
+                            }
+                            target[key] = mergeDeep(target[key], source[key]);
+                        } 
+                        // 如果源字段是数组
+                        else if (Array.isArray(source[key])) {
+                            // 直接使用源数组,不合并(保留用户数据)
                             target[key] = source[key];
                         }
+                        // 如果目标没有该字段,使用源字段
+                        else if (!(key in target)) {
+                            target[key] = source[key];
+                        }
+                        // 如果都有且都不是对象/数组,保留目标值(保留用户设置)
                     }
                     return target;
                 }
                 const merged = mergeDeep(parsed, JSON.parse(JSON.stringify(defaultData)));
+                // 确保联系人数据完整
+                if (!merged.contactList) {
+                    merged.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
+                }
+                if (!merged.contactList.contacts) {
+                    merged.contactList.contacts = [];
+                }
+                if (!merged.contactList.groups) {
+                    merged.contactList.groups = [];
+                }
+                console.log('联系人数据检查:', merged.contactList.contacts.length, '个联系人');
                 // 迁移旧版统一设置到分方设置
                 if (merged.chatSettings) {
                     const cs = merged.chatSettings;
