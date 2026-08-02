@@ -8528,6 +8528,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     let currentOpsMsgId = null;
     let replyTimer = null;
     let isTyping = false;
+    var _pendingReplyContactId = null; // 保存 triggerReceive 时的联系人 ID，确保退出聊天后回复仍保存到正确的联系人记录
     let callTimer = null;
     let callDurationTimer = null;
     let callStartTime = 0;
@@ -9874,20 +9875,66 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function getAllVisibleWordCards() {
         let all = [];
         // 共用字卡：所有联系人都可以调取
-        for (const group in appData.wordCards) {
-            appData.wordCards[group].forEach(card => {
-                if (!card.hidden) all.push(card.text);
-            });
+        if (appData.wordCards) {
+            for (const group in appData.wordCards) {
+                if (Array.isArray(appData.wordCards[group])) {
+                    appData.wordCards[group].forEach(card => {
+                        if (!card.hidden) all.push(card.text);
+                    });
+                }
+            }
         }
         // 联系人专属字卡：仅当前聊天联系人可调取
         if (_activeContactId && appData.contactWordCards && appData.contactWordCards[_activeContactId]) {
             var cw = appData.contactWordCards[_activeContactId];
             if (cw && cw.cards) {
                 for (const group in cw.cards) {
-                    cw.cards[group].forEach(card => {
-                        if (!card.hidden) all.push(card.text);
-                    });
+                    if (Array.isArray(cw.cards[group])) {
+                        cw.cards[group].forEach(card => {
+                            if (!card.hidden) all.push(card.text);
+                        });
+                    }
                 }
+            }
+        }
+        return all;
+    }
+    // 获取合并后的特殊字卡（共用 + 当前联系人专属）
+    function getVisibleSpecialCards(type) {
+        var all = [];
+        // 共用特殊字卡
+        if (appData.specialCards && Array.isArray(appData.specialCards[type])) {
+            appData.specialCards[type].forEach(function(c) {
+                if (!c.hidden) all.push(c);
+            });
+        }
+        // 联系人专属特殊字卡
+        if (_activeContactId && appData.contactWordCards && appData.contactWordCards[_activeContactId]) {
+            var cw = appData.contactWordCards[_activeContactId];
+            if (cw && cw.specialCards && Array.isArray(cw.specialCards[type])) {
+                cw.specialCards[type].forEach(function(c) {
+                    if (!c.hidden) all.push(c);
+                });
+            }
+        }
+        return all;
+    }
+    // 获取合并后的图片字卡（共用 + 当前联系人专属）
+    function getVisibleImageCards() {
+        var all = [];
+        // 共用图片字卡
+        if (appData.specialCards && Array.isArray(appData.specialCards.image)) {
+            appData.specialCards.image.forEach(function(src) {
+                all.push(src);
+            });
+        }
+        // 联系人专属图片字卡
+        if (_activeContactId && appData.contactWordCards && appData.contactWordCards[_activeContactId]) {
+            var cw = appData.contactWordCards[_activeContactId];
+            if (cw && cw.specialCards && Array.isArray(cw.specialCards.image)) {
+                cw.specialCards.image.forEach(function(src) {
+                    all.push(src);
+                });
             }
         }
         return all;
@@ -10897,12 +10944,18 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // 批量模式下不立即渲染，由调用方统一触发
         if (_batchRendering) return;
         saveData();
-        renderMessages(true);
-        scrollToBottom();
-        // 触发站内消息通知（仅对方发来的消息）
+        // 先触发站内消息通知（仅对方发来的消息），放在渲染之前，
+        // 避免渲染报错导致通知不弹
         if (msg.sender === 'other') {
-            showChatNotification(msg);
+            try { showChatNotification(msg); } catch(ne) { console.error('showChatNotification失败:', ne); }
         }
+        // 聊天界面不可见时只保存消息，不执行 DOM 渲染，避免报错导致回复中断
+        var chatPage = document.getElementById('chatPage');
+        if (!chatPage || chatPage.offsetParent === null) return;
+        try {
+            renderMessages(true);
+            scrollToBottom();
+        } catch (re) { console.error('renderMessages渲染失败:', re); }
       } catch (e) { console.error('addMessage失败:', e); }
     }
     function triggerReceive() {
@@ -10914,21 +10967,44 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             return;
         }
         isTyping = true;
-        document.getElementById('chatTitle').textContent = '对方正在输入中...';
+        // 保存当前联系人 ID，确保退出聊天后回复仍保存到正确的联系人记录
+        _pendingReplyContactId = _activeContactId;
+        // 聊天界面可见时才更新标题，不可见时不依赖 DOM
+        var chatTitleEl = document.getElementById('chatTitle');
+        if (chatTitleEl) {
+            var cp = document.getElementById('chatPage');
+            if (cp && cp.offsetParent !== null) {
+                chatTitleEl.textContent = '对方正在输入中...';
+            }
+        }
         const delay = Math.floor(Math.random() * (s.replyTimeMax - s.replyTimeMin + 1) + s.replyTimeMin) * 1000;
         
         replyTimer = setTimeout(() => {
             isTyping = false;
-            document.getElementById('chatTitle').textContent = appData.chatSettings.otherNickname;
+            // 聊天界面可见时才更新标题
+            var titleEl = document.getElementById('chatTitle');
+            if (titleEl) {
+                var cp2 = document.getElementById('chatPage');
+                if (cp2 && cp2.offsetParent !== null) {
+                    titleEl.textContent = appData.chatSettings.otherNickname;
+                }
+            }
             generateReply();
         }, delay);
     }
     function generateReply() {
+        // 临时切换到待回复的联系人，确保消息保存到正确的联系人记录
+        var _savedContactId = _activeContactId;
+        var _replyContactId = _pendingReplyContactId;
+        if (_replyContactId !== null && _replyContactId !== undefined) {
+            _activeContactId = _replyContactId;
+        }
+        try {
         const s = appData.chatSettings;
         const count = Math.floor(Math.random() * (s.replyCountMax - s.replyCountMin + 1)) + s.replyCountMin;
         
-        if (Math.random() * 100 < s.nudgeProb && appData.specialCards.nudge.length > 0) {
-            const visible = appData.specialCards.nudge.filter(c => !c.hidden);
+        if (Math.random() * 100 < s.nudgeProb) {
+            const visible = getVisibleSpecialCards('nudge');
             if (visible.length > 0) {
                 const nudgeText = visible[Math.floor(Math.random() * visible.length)].text;
                 addSystemMsg(`${appData.chatSettings.otherNickname} ${nudgeText}`);
@@ -10961,12 +11037,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 text = allCards[Math.floor(Math.random() * allCards.length)];
             }
             
-            if (appData.specialSettings.emojiSplice && Math.random() < 0.1 && appData.specialCards.emoji.length > 0) {
-                const visible = appData.specialCards.emoji.filter(c => !c.hidden);
+            if (appData.specialSettings.emojiSplice && Math.random() < 0.1) {
+                const visible = getVisibleSpecialCards('emoji');
                 if (visible.length > 0) text += visible[Math.floor(Math.random() * visible.length)].text;
             }
-            if (appData.specialSettings.kaomojiSplice && Math.random() < 0.1 && appData.specialCards.kaomoji.length > 0) {
-                const visible = appData.specialCards.kaomoji.filter(c => !c.hidden);
+            if (appData.specialSettings.kaomojiSplice && Math.random() < 0.1) {
+                const visible = getVisibleSpecialCards('kaomoji');
                 if (visible.length > 0) text += visible[Math.floor(Math.random() * visible.length)].text;
             }
             
@@ -10990,11 +11066,29 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         /* 批量结束：统一渲染一次 */
         _batchRendering = false;
         saveData();
-        renderMessages(true);
-        scrollToBottom();
+        // 批量结束后，为最后一条对方消息触发站内通知（批量模式下 addMessage 不触发通知）
+        if (appData.chatHistory.length > 0) {
+            var lastMsg = appData.chatHistory[appData.chatHistory.length - 1];
+            if (lastMsg && lastMsg.sender === 'other') {
+                try { showChatNotification(lastMsg); } catch(ne) { console.error('showChatNotification失败:', ne); }
+            }
+        }
+        // 聊天界面不可见时只保存消息，不渲染 DOM，避免报错中断后续逻辑
+        var _gp = document.getElementById('chatPage');
+        if (_gp && _gp.offsetParent !== null) {
+            try {
+                renderMessages(true);
+                scrollToBottom();
+            } catch (re) { console.error('generateReply渲染失败:', re); }
+        }
         
         if (Math.random() * 100 < (s.transferProb !== undefined ? s.transferProb : 5)) {
+            var _transferContactId = _replyContactId;
             setTimeout(() => {
+                // 保持联系人上下文，确保转账消息保存到正确的联系人记录
+                var _savedId2 = _activeContactId;
+                if (_transferContactId) _activeContactId = _transferContactId;
+                try {
                 const bd = appData.balanceData;
                 // Check if other party has balance
                 if (bd && bd.other > 0) {
@@ -11020,6 +11114,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     // Other party has no money
                     addSystemMsg('对方想为你转账，但奈何余额空空，快一起去赚钱吧！');
                 }
+                } finally { _activeContactId = _savedId2; }
             }, 1000);
         }
         
@@ -11027,6 +11122,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             setTimeout(() => {
                 incomingVideoCall();
             }, 2000);
+        }
+        } finally {
+            // 恢复 _activeContactId，清除待回复联系人 ID
+            _activeContactId = _savedContactId;
+            _pendingReplyContactId = null;
         }
     }
     function getRandomWordCard() {
@@ -13730,7 +13830,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         appData.moments.lastDailyDate = today;
         const count = appData.chatSettings.momentCount;
         const allCards = getAllVisibleWordCards();
-        const images = appData.specialCards.image;
+        const images = getVisibleImageCards();
         const videos = appData.specialCards.video;
         
         for (let i = 0; i < count; i++) {
@@ -18177,10 +18277,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
     }
     let _notifTimer = null;
+    var _notifContactId = null; // 通知中记录的联系人 ID，用于 openChatFromNotification
     function showChatNotification(msg) {
         // 仅在通知开关开启且不在聊天界面时显示
         if (!appData.globalSettings.notificationEnabled) return;
-        if (document.getElementById('chatPage').style.display === 'flex') return;
+        // 用 offsetParent 判断聊天界面是否真正可见，比 style.display 更可靠
+        var chatPage = document.getElementById('chatPage');
+        if (chatPage && chatPage.offsetParent !== null) return;
+
+        // 记录消息来源的联系人 ID，供 openChatFromNotification 使用
+        _notifContactId = (msg && msg.contactId) ? msg.contactId : (_activeContactId || (appData.contactList && appData.contactList.contacts && appData.contactList.contacts.length > 0 ? appData.contactList.contacts[0].id : null));
         
         const notifEl = document.getElementById('chatNotification');
         const senderName = document.getElementById('notifSenderName');
@@ -18266,6 +18372,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         notifEl.style.pointerEvents = 'none';
         // 从通知直接进入聊天页（跳过联系人列表）
         try {
+            // 设置 _activeContactId：优先用通知中记录的联系人 ID，否则用第一个联系人
+            if (_notifContactId) {
+                _activeContactId = _notifContactId;
+            } else if (appData.contactList && appData.contactList.contacts && appData.contactList.contacts.length > 0) {
+                _activeContactId = appData.contactList.contacts[0].id;
+            }
             refreshCustomIcons();
             document.getElementById('chatPage').style.display = 'flex';
             initChatPage();
