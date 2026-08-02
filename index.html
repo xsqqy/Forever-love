@@ -938,15 +938,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             color: var(--color-normal-gray);
             font-weight: 300;
             cursor: pointer;
-            position: absolute;
-            left: 16px;
-            top: 0;
-            bottom: 0;
             min-width: 44px;
             min-height: 44px;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             flex-shrink: 0;
             -webkit-tap-highlight-color: transparent;
         }
@@ -954,10 +950,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             font-size: 22px;
             color: var(--color-normal-gray);
             cursor: pointer;
-            position: absolute;
-            right: 8px;
-            top: 0;
-            bottom: 0;
             min-width: 44px;
             min-height: 44px;
             display: flex;
@@ -6686,6 +6678,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input id="letterCountMin" max="20" min="0" onchange="updateReplySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="1"/>
 <input id="letterCountMax" max="20" min="0" onchange="updateReplySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="3"/>
 </div>
+<div class="settings-row">
+<label>对方收藏信件概率(%)</label>
+<input id="letterFavProb" max="100" min="0" onchange="updateReplySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="30"/>
+</div>
 <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
 <div style="display:flex;align-items:center;gap:8px;width:100%;">
 <span class="ios-switch-label">对方主动发消息</span>
@@ -7133,10 +7129,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div id="beautifyBubblePreviewBox" style="width:100%;height:80px;background:#f5f5f5;border-radius:8px;margin-bottom:12px;overflow:hidden;">
 <div class="msg-row other" style="display:flex;margin:8px;gap:8px;align-items:flex-start;">
 <div style="width:30px;height:30px;border-radius:6px;background:#ccc;flex-shrink:0;"></div>
-<div class="msg-bubble-wrap" style="max-width:70%;"><div class="msg-bubble tail-left" style="padding:6px 10px;border-radius:8px;font-size:13px;">对方气泡</div></div>
+<div class="msg-bubble-wrap" style="max-width:70%;"><div class="msg-bubble tail-left">对方气泡</div></div>
 </div>
 <div class="msg-row mine" style="display:flex;margin:8px;gap:8px;align-items:flex-start;justify-content:flex-end;">
-<div class="msg-bubble-wrap" style="max-width:70%;"><div class="msg-bubble tail-right" style="padding:6px 10px;border-radius:8px;font-size:13px;">我方气泡</div></div>
+<div class="msg-bubble-wrap" style="max-width:70%;"><div class="msg-bubble tail-right">我方气泡</div></div>
 <div style="width:30px;height:30px;border-radius:6px;background:#ccc;flex-shrink:0;"></div>
 </div>
 </div>
@@ -7768,10 +7764,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input id="diaryModalHeight" max="90" min="40" oninput="saveDiarySettings()" step="1" type="range" value="52"/>
 <span id="diaryModalHeightVal">52vh</span>
 </div>
-<div class="settings-row ios-switch-row">
-<span class="ios-switch-label">关闭毛玻璃效果</span>
-<span class="ios-switch"><input id="diaryModalNoGlass" onchange="saveDiarySettings()" type="checkbox"/><span class="ios-switch-slider"></span></span>
-</div>
 <div class="settings-row">
 <label>悬浮框背景颜色</label>
 <input id="diaryModalBg" oninput="saveDiarySettings()" type="color" value="#ffffff"/>
@@ -7948,10 +7940,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input id="letterModalHeight" max="90" min="40" oninput="saveLetterSettings()" step="1" type="range" value="52"/>
 <span id="letterModalHeightVal">52vh</span>
 </div>
-<div class="settings-row ios-switch-row">
-<span class="ios-switch-label">关闭毛玻璃效果</span>
-<span class="ios-switch"><input id="letterModalNoGlass" onchange="saveLetterSettings()" type="checkbox"/><span class="ios-switch-slider"></span></span>
-</div>
 <div class="settings-row">
 <label>悬浮框背景颜色</label>
 <input id="letterModalBg" oninput="saveLetterSettings()" type="color" value="#ffffff"/>
@@ -8024,6 +8012,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             try { checkPendingDiaryReplies(); } catch(e) {}
             try { checkPendingSummons(); } catch(e) {}
             try { checkDoubleDiaryNotification(); } catch(e) {}
+            try { if (typeof checkAutoMessages === 'function') checkAutoMessages(); } catch(e) {}
         }, 300);
     });
         // ===== iOS standalone PWA 视口修复：后台返回/冷启动时强制恢复全屏高度 =====
@@ -8314,6 +8303,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             letterReplyMax: 48,
             letterCountMin: 1,
             letterCountMax: 3,
+            letterFavProb: 30,
             // 对方主动发消息
             proactiveEnable: false,
             proactiveMinSec: 30,
@@ -10278,6 +10268,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('letterReplyMax').value = s.letterReplyMax;
         document.getElementById('letterCountMin').value = s.letterCountMin;
         document.getElementById('letterCountMax').value = s.letterCountMax;
+        if (document.getElementById('letterFavProb')) document.getElementById('letterFavProb').value = s.letterFavProb !== undefined ? s.letterFavProb : 30;
         // 对方主动发消息
         document.getElementById('proactiveEnable').checked = s.proactiveEnable || false;
         document.getElementById('proactiveMinSec').value = s.proactiveMinSec || 30;
@@ -10910,11 +10901,23 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     var _batchRendering = false;
     function addMessage(msg) {
       try {
+        // 记录消息所属的联系人 ID，用于通知恢复时定位正确的聊天记录
+        if (!msg.contactId) msg.contactId = _activeContactId || _lastChatContactId || null;
+        // 如果当前不在该联系人聊天上下文中，临时切换以确保消息写入正确的聊天记录
+        var _msgContactId = msg.contactId;
+        var _needRestoreContext = _msgContactId && _activeContactId !== _msgContactId;
+        var _savedAddMsgId = _activeContactId;
+        if (_needRestoreContext) {
+            _activeContactId = _msgContactId;
+        }
         appData.chatHistory.push(msg);
         // 限制消息历史数量，防止内存占用过大导致卡顿
         const MAX_HISTORY = 500;
         if (appData.chatHistory.length > MAX_HISTORY) {
             appData.chatHistory = appData.chatHistory.slice(-MAX_HISTORY);
+        }
+        if (_needRestoreContext) {
+            _activeContactId = _savedAddMsgId;
         }
         // 批量模式下不立即渲染，由调用方统一触发
         if (_batchRendering) return;
@@ -12966,6 +12969,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         s.letterReplyMax = safeInt('letterReplyMax', s.letterReplyMax);
         s.letterCountMin = safeInt('letterCountMin', s.letterCountMin);
         s.letterCountMax = safeInt('letterCountMax', s.letterCountMax);
+        s.letterFavProb = Math.max(0, Math.min(100, safeInt('letterFavProb', s.letterFavProb !== undefined ? s.letterFavProb : 30)));
         // 对方主动发消息
         s.proactiveEnable = document.getElementById('proactiveEnable').checked;
         s.proactiveMinSec = safeInt('proactiveMinSec', s.proactiveMinSec);
@@ -14241,9 +14245,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const s = appData.diary.settings;
         const allCards = getAllVisibleWordCards();
         if (allCards.length === 0) return;
-        // 有概率回复（默认80%概率）
-        const replyProb = 100;
-        // 单人日记回复改为必达，确保一定能看到对方回复。
+        // 有概率回复（概率由设置中的replyProb决定，默认80%）
+        const replyProb = s.replyProb !== undefined ? s.replyProb : 80;
+        // 按概率决定对方是否主动回复
+        if (Math.random() * 100 >= replyProb) return;
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         // 持久化计划回复时间，防止页面刷新后丢失
         const diary = appData.diary.singleList.find(d => d.id === diaryId);
@@ -14268,6 +14273,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 delete diary.pendingReplyAt;
                 diary.summoned = false;
                 saveData();
+                // 在聊天界面提醒对方已回复日记
+                addSystemMsg((appData.chatSettings.otherNickname || '对方') + '已回复你的日记，快去看看吧');
                 if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
             }
         }, delay);
@@ -14632,6 +14639,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         delete entry.summonReplyAt;
         saveDataSync();
         addSystemMsg(appData.chatSettings.otherNickname + '已响应召唤，更新了今日日记');
+        // 设置通知待处理状态，使用户重新上线后弹出提醒框
+        appData.diary.settings.doubleDiaryNotifyPending = true;
+        saveDataSync();
+        // 如果用户当前在线且不在日记页面，直接弹出通知
+        if (!document.hidden && document.getElementById('diaryPage').style.display !== 'flex') {
+            try { checkDoubleDiaryNotification(); } catch(e) {}
+        }
         if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
     }
 
@@ -15701,13 +15715,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         modalContent.style.maxWidth = w + '%';
         modalContent.style.minWidth = '0';
         modalContent.style.aspectRatio = 'auto';
-        if (s.modalNoGlass) {
-            modalContent.style.backdropFilter = 'none';
-            modalContent.style.webkitBackdropFilter = 'none';
-        } else {
-            modalContent.style.backdropFilter = '';
-            modalContent.style.webkitBackdropFilter = '';
-        }
+        // 毛玻璃效果由全局设置控制，日记/信封不再单独开关
+        modalContent.style.backdropFilter = '';
+        modalContent.style.webkitBackdropFilter = '';
         if (s.modalBg) { modalContent.style.background = s.modalBg; }
         if (s.modalBorderColor) {
             modalContent.style.border = '2px solid ' + s.modalBorderColor;
@@ -15732,7 +15742,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('diaryModalWidthVal').textContent = Math.min(s.modalWidth || 86, 95) + '%';
         document.getElementById('diaryModalHeight').value = Math.min(s.modalHeight || 70, 90);
         document.getElementById('diaryModalHeightVal').textContent = Math.min(s.modalHeight || 70, 90) + 'vh';
-        document.getElementById('diaryModalNoGlass').checked = !!s.modalNoGlass;
         document.getElementById('diaryModalBg').value = s.modalBg || s.cardBg || '#ffffff';
         document.getElementById('diaryModalBorderColor').value = s.modalBorderColor || '#e0e0e0';
         document.getElementById('diaryRulerEnabled').checked = s.rulerEnabled !== false;
@@ -16061,7 +16070,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         s.replyProb = parseInt(document.getElementById('diaryReplyProb').value);
         s.modalWidth = parseInt(document.getElementById('diaryModalWidth').value);
         s.modalHeight = parseInt(document.getElementById('diaryModalHeight').value);
-        s.modalNoGlass = document.getElementById('diaryModalNoGlass').checked;
         s.modalBg = document.getElementById('diaryModalBg').value;
         s.modalBorderColor = document.getElementById('diaryModalBorderColor').value;
         s.rulerEnabled = document.getElementById('diaryRulerEnabled').checked;
@@ -16153,7 +16161,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         s.fontSize = parseInt(document.getElementById('letterFontSize').value);
         s.modalWidth = parseInt(document.getElementById('letterModalWidth').value);
         s.modalHeight = parseInt(document.getElementById('letterModalHeight').value);
-        s.modalNoGlass = document.getElementById('letterModalNoGlass').checked;
         s.modalBg = document.getElementById('letterModalBg').value;
         s.modalBorderColor = document.getElementById('letterModalBorderColor').value;
         s.rulerEnabled = document.getElementById('letterRulerEnabled').checked;
@@ -16268,6 +16275,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             });
         }
         saveData();
+        // 在聊天界面提醒对方写了信
+        if (typeof addSystemMsg === 'function' && cnt > 0) {
+            addSystemMsg((appData.chatSettings.otherNickname || '对方') + '给你写了' + cnt + '封信，快去信封查看吧');
+        }
         if(document.getElementById('letterPage').style.display==='flex')renderLetterList();
     }
 
@@ -16591,7 +16602,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('letterModalWidthVal').textContent = Math.min(s.modalWidth || 86, 95) + '%';
         document.getElementById('letterModalHeight').value = Math.min(s.modalHeight || 70, 90);
         document.getElementById('letterModalHeightVal').textContent = Math.min(s.modalHeight || 70, 90) + 'vh';
-        document.getElementById('letterModalNoGlass').checked = !!s.modalNoGlass;
         document.getElementById('letterModalBg').value = s.modalBg || s.cardBg || '#ffffff';
         document.getElementById('letterModalBorderColor').value = s.modalBorderColor || '#e0e0e0';
         document.getElementById('letterRulerEnabled').checked = s.rulerEnabled !== false;
@@ -16662,11 +16672,31 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 time: Date.now(),
                 favorite: false
             });
+            // 对方有概率收藏用户写的信
+            var favProb = appData.chatSettings.letterFavProb !== undefined ? appData.chatSettings.letterFavProb : 30;
+            if (Math.random() * 100 < favProb) {
+                // 标记原信被对方收藏
+                for (var i = 0; i < appData.letter.sent.length; i++) {
+                    if (appData.letter.sent[i].title === pending.originalTitle && !appData.letter.sent[i].otherFavorited) {
+                        appData.letter.sent[i].otherFavorited = true;
+                        appData.letter.sent[i].otherFavoritedTime = Date.now();
+                        break;
+                    }
+                }
+                // 在聊天界面提醒
+                if (typeof addSystemMsg === 'function') {
+                    addSystemMsg((appData.chatSettings.otherNickname || '对方') + '收藏了你的信件「' + pending.originalTitle + '」');
+                }
+            }
             // 从待处理列表中移除
             if (appData.letter.pendingReplies) {
                 appData.letter.pendingReplies = appData.letter.pendingReplies.filter(function(p){ return p.scheduledAt !== pending.scheduledAt; });
             }
             saveData();
+            // 在聊天界面提醒对方回了信
+            if (typeof addSystemMsg === 'function') {
+                addSystemMsg((appData.chatSettings.otherNickname || '对方') + '回了你的信「' + pending.originalTitle + '」，快去信封查看吧');
+            }
             if (document.getElementById('letterPage').style.display === 'flex') renderLetterList();
         }, delay);
     }
@@ -18222,10 +18252,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
     }
     let _notifTimer = null;
+    var _notifContactId = null; // 存储通知对应的联系人 ID，用于点击通知时恢复正确的聊天上下文
     function showChatNotification(msg) {
         // 仅在通知开关开启且不在聊天界面时显示
         if (!appData.globalSettings.notificationEnabled) return;
         if (document.getElementById('chatPage').style.display === 'flex') return;
+        // 优先使用消息上记录的联系人 ID，其次使用当前活跃联系人 ID，最后使用最后聊天的联系人 ID
+        _notifContactId = (msg && msg.contactId) || _activeContactId || _lastChatContactId || null;
         
         const notifEl = document.getElementById('chatNotification');
         const senderName = document.getElementById('notifSenderName');
@@ -18312,10 +18345,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // 从通知直接进入聊天页（跳过联系人列表）
         try {
             refreshCustomIcons();
-            // 恢复最后聊天的联系人上下文，确保加载正确的聊天记录
-            if (_lastChatContactId && _findContactById(_lastChatContactId)) {
-                _activeContactId = _lastChatContactId;
-                var c = _findContactById(_lastChatContactId);
+            // 优先使用通知中记录的联系人 ID，其次使用最后聊天的联系人 ID
+            var targetContactId = _notifContactId || _lastChatContactId;
+            if (targetContactId && _findContactById(targetContactId)) {
+                _activeContactId = targetContactId;
+                var c = _findContactById(targetContactId);
                 if (c) {
                     if (c.avatar) appData.chatSettings.otherAvatar = c.avatar;
                     if (c.name) appData.chatSettings.otherNickname = c.name;
@@ -18323,6 +18357,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             } else {
                 _activeContactId = null;
             }
+            _notifContactId = null; // 清除通知联系人 ID
             document.getElementById('chatPage').style.display = 'flex';
             initChatPage();
             // 覆盖聊天标题为联系人自身名称，但保留"正在输入中"状态
@@ -19190,7 +19225,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const minMs = Math.max(1, s.proactiveMinSec || 30) * 1000;
         const maxMs = Math.max(minMs, (s.proactiveMaxMin || 5) * 60 * 1000);
         const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+        // 捕获当前联系人上下文，确保退出聊天后定时器触发时消息仍写入正确的聊天记录
+        var _proactiveContactId = _activeContactId || _lastChatContactId;
         _proactiveTimer = setTimeout(() => {
+            // 恢复触发时的联系人上下文，使主动消息写入正确的聊天记录
+            var _savedContactId = _activeContactId;
+            _activeContactId = _proactiveContactId;
             // 调取字卡给对方主动发消息
             const allCards = getAllVisibleWordCards();
             if (allCards.length > 0) {
@@ -19208,6 +19248,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     type: 'text',
                     content: text
                 });
+            }
+            _activeContactId = _savedContactId;
+            // 如果聊天页可见但当前联系人与消息目标不同，需要重新渲染当前聊天
+            if (document.getElementById('chatPage').style.display === 'flex' && _savedContactId !== _proactiveContactId) {
+                try { renderMessages(); scrollToBottom(); } catch(e) {}
             }
             // 继续调度下一次
             scheduleProactiveMessage();
@@ -20645,16 +20690,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
 /* 预置10道内置问卷 */
 var MLSJ_PRESET_QUESTIONS = [
-  { id: 'mlsj_preset_1', question: 'TA最希望你叫TA什么？', options: ['答案不在其中', '宝贝', '哥哥姐姐', 'TA的名字'], correctIndex: 1 },
-  { id: 'mlsj_preset_2', question: 'TA最喜欢你用什么方式叫TA起床？', options: ['轻轻摇醒', '亲一口', '捏鼻子', '在耳边小声说"起床啦"'], correctIndex: 3 },
-  { id: 'mlsj_preset_3', question: 'TA觉得最甜的情话是哪句？', options: ['我在呢', '想你了', '你是我的', '别怕，有我在'], correctIndex: 2 },
-  { id: 'mlsj_preset_4', question: 'TA最希望你主动做的一件事是？', options: ['主动牵TA的手', '主动说"我想你"', '主动抱TA', '主动亲TA一下'], correctIndex: 0 },
-  { id: 'mlsj_preset_5', question: 'TA最心动的身体接触是？', options: ['摸头', '十指相扣', '从背后抱住', '靠在肩膀上'], correctIndex: 1 },
-  { id: 'mlsj_preset_6', question: 'TA觉得最有安全感的瞬间是？', options: ['你紧紧抱住TA', '你认真听TA说话', '你说"有我在"', '你主动找TA聊天'], correctIndex: 2 },
-  { id: 'mlsj_preset_7', question: 'TA最希望你记住关于TA的事是？', options: ['TA的生日', 'TA爱吃和不爱吃的', 'TA说过的一句很重要的话', '你们在一起的纪念日'], correctIndex: 0 },
-  { id: 'mlsj_preset_8', question: 'TA最喜欢的亲密时刻是？', options: ['睡前聊天', '一起看剧', '一起吃饭', '什么都不做就待在一起'], correctIndex: 3 },
-  { id: 'mlsj_preset_9', question: 'TA最希望你夸TA什么？', options: ['好看', '温柔', '靠谱', '有趣'], correctIndex: 1 },
-  { id: 'mlsj_preset_10', question: 'TA觉得自己在你面前最真实的瞬间是？', options: ['刚睡醒头发乱糟糟', '狼狈的时候', '尴尬的时候', '失败的时候'], correctIndex: 0 }
+  { id: 'mlsj_preset_1', question: 'TA最希望你叫TA什么？', options: ['答案不在其中', '宝贝', '哥哥姐姐', 'TA的名字'], correctIndex: -1 },
+  { id: 'mlsj_preset_2', question: 'TA最喜欢你用什么方式叫TA起床？', options: ['轻轻摇醒', '亲一口', '捏鼻子', '在耳边小声说"起床啦"'], correctIndex: -1 },
+  { id: 'mlsj_preset_3', question: 'TA觉得最甜的情话是哪句？', options: ['我在呢', '想你了', '你是我的', '别怕，有我在'], correctIndex: -1 },
+  { id: 'mlsj_preset_4', question: 'TA最希望你主动做的一件事是？', options: ['主动牵TA的手', '主动说"我想你"', '主动抱TA', '主动亲TA一下'], correctIndex: -1 },
+  { id: 'mlsj_preset_5', question: 'TA最心动的身体接触是？', options: ['摸头', '十指相扣', '从背后抱住', '靠在肩膀上'], correctIndex: -1 },
+  { id: 'mlsj_preset_6', question: 'TA觉得最有安全感的瞬间是？', options: ['你紧紧抱住TA', '你认真听TA说话', '你说"有我在"', '你主动找TA聊天'], correctIndex: -1 },
+  { id: 'mlsj_preset_7', question: 'TA最希望你记住关于TA的事是？', options: ['TA的生日', 'TA爱吃和不爱吃的', 'TA说过的一句很重要的话', '你们在一起的纪念日'], correctIndex: -1 },
+  { id: 'mlsj_preset_8', question: 'TA最喜欢的亲密时刻是？', options: ['睡前聊天', '一起看剧', '一起吃饭', '什么都不做就待在一起'], correctIndex: -1 },
+  { id: 'mlsj_preset_9', question: 'TA最希望你夸TA什么？', options: ['好看', '温柔', '靠谱', '有趣'], correctIndex: -1 },
+  { id: 'mlsj_preset_10', question: 'TA觉得自己在你面前最真实的瞬间是？', options: ['刚睡醒头发乱糟糟', '狼狈的时候', '尴尬的时候', '失败的时候'], correctIndex: -1 }
 ];
 
 /* 甜蜜惩罚句子库（7句指定 + 10句生成） */
@@ -21463,12 +21508,11 @@ function mlsjRenderManage() {
   for (var i = 0; i < 4; i++) {
     html += '<div class="mlsj-form-group">';
     html += '<div class="mlsj-opt-row">';
-    html += '<input type="radio" name="mlsjCorrectIdx" class="mlsj-opt-radio" value="' + i + '" ' + (i === 0 ? 'checked' : '') + '>';
     html += '<input type="text" class="mlsj-input" id="mlsjNewOpt' + i + '" placeholder="选项 ' + letters[i] + '">';
     html += '</div>';
     html += '</div>';
   }
-  html += '<div class="mlsj-correct-mark">选择正确答案对应的单选框</div>';
+  html += '<div class="mlsj-correct-mark">正确答案由对方在调取问卷时随机选择，无需预设</div>';
   html += '<button class="mlsj-btn mlsj-btn-primary" onclick="mlsjAddQuestion()">添加问卷</button>';
   html += '</div>';
 
@@ -21483,8 +21527,7 @@ function mlsjRenderManage() {
       html += '<div class="mlsj-q-item">';
       html += '<div class="mlsj-q-item-q">' + (j + 1) + '. ' + mlsjEscape(q.question) + (isPreset ? ' <span style="font-size:11px;color:#6A5854;">（内置）</span>' : '') + '</div>';
       for (var k = 0; k < q.options.length; k++) {
-        var cls = (k === q.correctIndex) ? 'mlsj-q-item-opt correct' : 'mlsj-q-item-opt';
-        html += '<div class="' + cls + '">' + letters[k] + '. ' + mlsjEscape(q.options[k]) + (k === q.correctIndex ? ' (正确)' : '') + '</div>';
+        html += '<div class="mlsj-q-item-opt">' + letters[k] + '. ' + mlsjEscape(q.options[k]) + '</div>';
       }
       html += '<div style="margin-top:8px;">';
       html += '<button class="mlsj-q-item-edit" onclick="mlsjEditQuestion(\'' + q.id + '\')">编辑</button>';
@@ -21507,18 +21550,12 @@ function mlsjAddQuestion() {
     if (inp && inp.value.trim()) { opts.push(inp.value.trim()); }
   }
   if (opts.length < 2) { alert('请至少填写2个选项'); return; }
-  /* 获取正确答案索引 */
-  var radios = document.getElementsByName('mlsjCorrectIdx');
-  var correctIdx = 0;
-  for (var r = 0; r < radios.length; r++) {
-    if (radios[r].checked) { correctIdx = parseInt(radios[r].value, 10); break; }
-  }
-  if (correctIdx >= opts.length) { correctIdx = 0; }
+  /* 正确答案不预设，由对方调取问卷时随机选择 */
   var newQ = {
     id: 'mlsj_user_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
     question: question,
     options: opts,
-    correctIndex: correctIdx
+    correctIndex: -1  // -1 表示未预设答案，调取时随机选择
   };
   appData.lifeDeathData.questionBank.push(newQ);
   mlsjSave();
@@ -21556,7 +21593,6 @@ function mlsjEditQuestion(id) {
   for (var i = 0; i < q.options.length; i++) {
     html += '<div class="mlsj-form-group">';
     html += '<div class="mlsj-opt-row">';
-    html += '<input type="radio" name="mlsjEditCorrectIdx" class="mlsj-opt-radio" value="' + i + '" ' + (i === q.correctIndex ? 'checked' : '') + '>';
     html += '<input type="text" class="mlsj-input" id="mlsjEditOpt' + i + '" value="' + mlsjEscapeAttr(q.options[i]) + '" placeholder="选项 ' + letters[i] + '">';
     html += '</div>';
     html += '</div>';
@@ -21566,12 +21602,11 @@ function mlsjEditQuestion(id) {
     if (j >= 6) break;
     html += '<div class="mlsj-form-group">';
     html += '<div class="mlsj-opt-row">';
-    html += '<input type="radio" name="mlsjEditCorrectIdx" class="mlsj-opt-radio" value="' + j + '">';
     html += '<input type="text" class="mlsj-input" id="mlsjEditOpt' + j + '" placeholder="选项 ' + letters[j] + '（可选）">';
     html += '</div>';
     html += '</div>';
   }
-  html += '<div class="mlsj-correct-mark">选择正确答案对应的单选框</div>';
+  html += '<div class="mlsj-correct-mark">正确答案由对方在调取问卷时随机选择，无需预设</div>';
   html += '<button class="mlsj-btn mlsj-btn-primary" onclick="mlsjSaveEditQuestion()">保存修改</button>';
   html += '<button class="mlsj-btn mlsj-btn-ghost" onclick="mlsjRenderManage()">取消</button>';
   html += '</div>';
@@ -21592,12 +21627,8 @@ function mlsjSaveEditQuestion() {
     if (inp && inp.value.trim()) { opts.push(inp.value.trim()); }
   }
   if (opts.length < 2) { alert('请至少填写2个选项'); return; }
-  var radios = document.getElementsByName('mlsjEditCorrectIdx');
-  var correctIdx = 0;
-  for (var r = 0; r < radios.length; r++) {
-    if (radios[r].checked) { correctIdx = parseInt(radios[r].value, 10); break; }
-  }
-  if (correctIdx >= opts.length) { correctIdx = 0; }
+  /* 正确答案不预设，由对方调取问卷时随机选择 */
+  var correctIdx = -1;
 
   /* 查找并更新问卷（包括内置问卷） */
   var bank = appData.lifeDeathData.questionBank;
@@ -22188,6 +22219,10 @@ function mlsjIconClock() {
     albumSave();
     renderDetail(photo.id);
     showToast("已召唤，约10分钟内送达");
+    // 在聊天界面小字区域提醒
+    if (typeof addSystemMsg === 'function') {
+        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '留言相册寄语，预计10分钟内回复');
+    }
     // 定时器会在 10 分钟后自动填充（见 checkAutoMessages）
   }
 
@@ -22234,6 +22269,10 @@ function mlsjIconClock() {
       if (isAlbumOpen()) {
         renderAlbumPhotos();
         if (currentDetailId) renderDetail(currentDetailId);
+      }
+      // 在聊天界面提醒对方已留言相册寄语
+      if (typeof addSystemMsg === 'function') {
+        addSystemMsg((appData.chatSettings.otherNickname || '对方') + '已留言你的相册寄语，快去看看吧');
       }
     }
   }
@@ -23607,7 +23646,18 @@ function mlsjIconClock() {
     // ===== 注册 Service Worker =====
     if ('serviceWorker' in navigator) {
         var _swReloaded = false; // 防止 controllerchange 重复刷新
-        var _hadControllerAtStart = !!navigator.serviceWorker.controller; // 区分“首次安装”与“有更新”
+        var _hadControllerAtStart = !!navigator.serviceWorker.controller; // 区分"首次安装"与"有更新"
+        // 提前注册消息监听器，确保 SW 发来的消息不会因注册延迟而丢失
+        navigator.serviceWorker.addEventListener('message', function(event) {
+            var msg = event.data;
+            if (!msg) return;
+            if (msg.type === 'WAKE_UP') { catchUpBackgroundMessages(); }
+            if (msg.type === 'NOTIF_CLICK') {
+                // 使用 SW 通知中携带的联系人 ID 恢复正确的聊天上下文
+                if (msg.contactId) _notifContactId = msg.contactId;
+                openChatFromNotification();
+            }
+        });
         // 控制器变更（新 SW 接管）后自动刷新一次，加载最新资源
         navigator.serviceWorker.addEventListener('controllerchange', function() {
             // 首次安装（之前无 controller）不刷新，仅在有更新接管时刷新
@@ -23626,19 +23676,6 @@ function mlsjIconClock() {
                             minInterval: 12 * 60 * 60 * 1000  // 最小12小时
                         }).catch(function(){});
                     }
-                    // 监听 SW 发来的消息
-                    navigator.serviceWorker.addEventListener('message', function(event) {
-                        var msg = event.data;
-                        if (!msg) return;
-                        // SW 唤醒：检查是否需要补发消息
-                        if (msg.type === 'WAKE_UP') {
-                            catchUpBackgroundMessages();
-                        }
-                        // 通知点击：直接打开聊天页
-                        if (msg.type === 'NOTIF_CLICK') {
-                            openChatFromNotification();
-                        }
-                    });
 
                     // ===== PWA 自动更新 =====
                     // 通知处于 waiting 状态的新 SW 立即接管
@@ -23679,7 +23716,9 @@ function mlsjIconClock() {
             type: 'NOTIFY',
             title: title,
             body: body,
-            tag: tag || 'qianyi-msg'
+            tag: tag || 'qianyi-msg',
+            icon: appData.chatSettings.otherAvatar || undefined,
+            data: { contactId: _notifContactId || _lastChatContactId }
         });
     }
 
@@ -23709,7 +23748,7 @@ function mlsjIconClock() {
                 // 返回前台时补发离开期间应产生的消息（触发顶部通知）
                 catchUpBackgroundMessages();
             }
-            // 返回前台时检查所有待处理的定时任务（双人日记通知、召唤回复、日记/信件回复、每日自动写信）
+            // 返回前台时检查所有待处理的定时任务（双人日记通知、召唤回复、日记/信件回复、每日自动写信、相册寄语自动留言）
             setTimeout(function() {
                 try { if (typeof checkDoubleDiaryNotification === 'function') checkDoubleDiaryNotification(); } catch(e) {}
                 try { if (typeof checkPendingSummons === 'function') checkPendingSummons(); } catch(e) {}
@@ -23717,6 +23756,7 @@ function mlsjIconClock() {
                 try { if (typeof checkPendingLetterReplies === 'function') checkPendingLetterReplies(); } catch(e) {}
                 try { if (typeof checkDailyAutoLetter === 'function') checkDailyAutoLetter(); } catch(e) {}
                 try { if (typeof processPendingMomentActions === 'function') processPendingMomentActions(); } catch(e) {}
+                try { if (typeof checkAutoMessages === 'function') checkAutoMessages(); } catch(e) {}
             }, 500);
         }
     });
@@ -23754,6 +23794,9 @@ function mlsjIconClock() {
         // ===== 第一步：检查离开期间是否有已生成的未读消息（主动消息定时器可能在后台已触发） =====
         // 这一步不依赖 proactiveEnable，只要有通知开启就检查
         if (appData.globalSettings.notificationEnabled) {
+            // 临时切换到最后聊天的联系人上下文，检查该联系人的未读消息
+            var _savedCatchUpId = _activeContactId;
+            if (_lastChatContactId) _activeContactId = _lastChatContactId;
             var hist = appData.chatHistory;
             if (hist && hist.length > 0) {
                 // 找出离开期间收到的对方消息
@@ -23779,6 +23822,7 @@ function mlsjIconClock() {
             if (hist && hist.length > 0) {
                 _lastSeenMsgTime = hist[hist.length - 1].id || Date.now();
             }
+            _activeContactId = _savedCatchUpId; // 恢复
         }
 
         // ===== 第二步：如果开启了主动发消息，根据离开时长补发消息 =====
@@ -23798,10 +23842,15 @@ function mlsjIconClock() {
         if (allCards.length === 0) return;
 
         var otherName = s.otherNickname || '对方';
+        // 捕获联系人上下文，确保补发消息写入正确的聊天记录
+        var _catchUpContactId = _activeContactId || _lastChatContactId;
         // 逐条补发，每条间隔一小段时间模拟真实节奏
         for (var i = 0; i < catchUpCount; i++) {
             (function(idx) {
                 setTimeout(function() {
+                    // 恢复联系人上下文，使补发消息写入正确的聊天记录
+                    var _savedId = _activeContactId;
+                    _activeContactId = _catchUpContactId;
                     var text;
                     if (s.enableSplice && Math.random() > 0.5) {
                         var spliceCount = Math.min(Math.floor(Math.random() * 3) + 1, allCards.length);
@@ -23816,6 +23865,7 @@ function mlsjIconClock() {
                         type: 'text',
                         content: text
                     });
+                    _activeContactId = _savedId;
                 }, idx * 800);
             })(i);
         }
@@ -23854,8 +23904,8 @@ function mlsjIconClock() {
     showChatNotification = function(msg) {
         // 调用原有站内弹窗逻辑
         _originalShowChatNotification(msg);
-        // 如果页面在后台且开启了通知并已有通知权限，通过 SW 发送系统通知
-        if (document.hidden && appData.globalSettings && appData.globalSettings.notificationEnabled && (!('Notification' in window) || Notification.permission === 'granted')) {
+        // 如果页面在后台且开启了通知并已有通知权限，发送系统通知
+        if (document.hidden && appData.globalSettings && appData.globalSettings.notificationEnabled && ('Notification' in window) && Notification.permission === 'granted') {
             var name = appData.chatSettings.otherNickname || '对方';
             var body = '';
             if (msg.type === 'emoji') body = '[表情包]';
@@ -23864,7 +23914,27 @@ function mlsjIconClock() {
             else if (msg.type === 'blindCard') body = '[盲选抽牌] ' + msg.question;
             else if (msg.type === 'shopShareCard') body = '[购物卡片] ' + (msg.title || '');
             else body = msg.content || '[消息]';
-            sendSWNotification(name, body, 'qianyi-msg-' + msg.id);
+            // 优先通过 SW 发送系统通知（支持后台通知和点击跳转）
+            if (_swReady && navigator.serviceWorker.controller) {
+                sendSWNotification(name, body, 'qianyi-msg-' + msg.id);
+            } else {
+                // SW 不可用时，直接使用 Notification API 发送系统通知
+                try {
+                    var sysNotif = new Notification(name, {
+                        body: body,
+                        tag: 'qianyi-msg-' + msg.id,
+                        icon: appData.chatSettings.otherAvatar || undefined,
+                        data: { contactId: (msg && msg.contactId) || _notifContactId || _lastChatContactId }
+                    });
+                    sysNotif.onclick = function() {
+                        window.focus();
+                        // 使用消息中记录的联系人 ID 恢复正确的聊天上下文
+                        _notifContactId = (msg && msg.contactId) || _notifContactId || _lastChatContactId;
+                        openChatFromNotification();
+                        sysNotif.close();
+                    };
+                } catch(e) { console.warn('系统通知发送失败:', e); }
+            }
         }
     };
 
@@ -25716,6 +25786,7 @@ if (document.readyState === 'loading') {
             try { if (typeof checkPendingDiaryReplies === 'function') checkPendingDiaryReplies(); } catch(e) {}
             try { if (typeof checkPendingSummons === 'function') checkPendingSummons(); } catch(e) {}
             try { if (typeof checkDoubleDiaryNotification === 'function') checkDoubleDiaryNotification(); } catch(e) {}
+            try { if (typeof checkAutoMessages === 'function') checkAutoMessages(); } catch(e) {}
             try { if (typeof shopProcessPendingCards === 'function') shopProcessPendingCards(); } catch(e) {}
 
             // 8. 恢复美化预设
@@ -25726,7 +25797,12 @@ if (document.readyState === 'loading') {
                             var active = appData.beautifyPresets[type].find(function(p) { return p.active; });
                             if (active) {
                                 var styleEl = document.getElementById('beautifyCustomStyle_' + type);
-                                if (styleEl) styleEl.textContent = active.css;
+                                if (!styleEl) {
+                                    styleEl = document.createElement('style');
+                                    styleEl.id = 'beautifyCustomStyle_' + type;
+                                    document.head.appendChild(styleEl);
+                                }
+                                styleEl.textContent = active.css;
                             }
                         }
                     });
