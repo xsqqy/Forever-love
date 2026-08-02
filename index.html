@@ -9899,6 +9899,18 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     });
                 }
             }
+        } else if (!_activeContactId && appData.contactWordCards) {
+            // 不在特定联系人聊天中时（如日记、信封等功能），包含所有联系人的专属字卡
+            for (const contactId in appData.contactWordCards) {
+                var cw2 = appData.contactWordCards[contactId];
+                if (cw2 && cw2.cards) {
+                    for (const group in cw2.cards) {
+                        cw2.cards[group].forEach(card => {
+                            if (!card.hidden) all.push(card.text);
+                        });
+                    }
+                }
+            }
         }
         return all;
     }
@@ -11015,7 +11027,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         saveData();
         renderMessages(true);
         scrollToBottom();
-        
+        /* 批量模式下 addMessage 提前返回未触发通知，此处补发：仅当不在聊天界面时通知最后一条消息 */
+        var _hist = appData.chatHistory;
+        if (_hist && _hist.length > 0) {
+            var _lastMsg = _hist[_hist.length - 1];
+            if (_lastMsg && _lastMsg.sender === 'other') {
+                showChatNotification(_lastMsg);
+            }
+        }
+
         if (Math.random() * 100 < (s.transferProb !== undefined ? s.transferProb : 5)) {
             setTimeout(() => {
                 const bd = appData.balanceData;
@@ -17570,8 +17590,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 _lastChatContactId = null;
             }
             initChatPage();
-            // 覆盖聊天标题为联系人自身名称（而非全局 otherNickname）
-            if (type === 'contact') {
+            // 覆盖聊天标题为联系人自身名称（而非全局 otherNickname），但保留"正在输入中"状态
+            if (type === 'contact' && !isTyping) {
                 var c2 = _findContactById(id);
                 if (c2 && c2.name) {
                     var titleEl = document.getElementById('chatTitle');
@@ -18305,8 +18325,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             }
             document.getElementById('chatPage').style.display = 'flex';
             initChatPage();
-            // 覆盖聊天标题为联系人自身名称
-            if (_activeContactId) {
+            // 覆盖聊天标题为联系人自身名称，但保留"正在输入中"状态
+            if (_activeContactId && !isTyping) {
                 var c2 = _findContactById(_activeContactId);
                 if (c2 && c2.name) {
                     var titleEl = document.getElementById('chatTitle');
@@ -23689,6 +23709,15 @@ function mlsjIconClock() {
                 // 返回前台时补发离开期间应产生的消息（触发顶部通知）
                 catchUpBackgroundMessages();
             }
+            // 返回前台时检查所有待处理的定时任务（双人日记通知、召唤回复、日记/信件回复、每日自动写信）
+            setTimeout(function() {
+                try { if (typeof checkDoubleDiaryNotification === 'function') checkDoubleDiaryNotification(); } catch(e) {}
+                try { if (typeof checkPendingSummons === 'function') checkPendingSummons(); } catch(e) {}
+                try { if (typeof checkPendingDiaryReplies === 'function') checkPendingDiaryReplies(); } catch(e) {}
+                try { if (typeof checkPendingLetterReplies === 'function') checkPendingLetterReplies(); } catch(e) {}
+                try { if (typeof checkDailyAutoLetter === 'function') checkDailyAutoLetter(); } catch(e) {}
+                try { if (typeof processPendingMomentActions === 'function') processPendingMomentActions(); } catch(e) {}
+            }, 500);
         }
     });
 
