@@ -915,12 +915,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .chat-header {
             height: calc(var(--chat-header-height) + env(safe-area-inset-top, 0px));
-            padding-top: 0;
+            padding-top: env(safe-area-inset-top, 0px);
             background: #f0f0f0;
             border-bottom: none;
             display: flex;
             align-items: center;
-            justify-content: space-between;
             padding-left: 16px;
             padding-right: 16px;
             position: relative;
@@ -928,14 +927,32 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             flex-shrink: 0;
             overflow: hidden;
         }
-        .chat-back, .chat-menu {
-            font-size: 26px;
+        .chat-back {
+            font-size: 28px;
             color: var(--color-normal-gray);
             font-weight: 300;
             cursor: pointer;
-            width: 32px;
-            text-align: center;
+            position: absolute;
+            left: 16px;
+            width: auto;
             flex-shrink: 0;
+        }
+        .chat-menu {
+            font-size: 22px;
+            color: var(--color-normal-gray);
+            cursor: pointer;
+            position: absolute;
+            right: 8px;
+            top: 0;
+            bottom: 0;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            z-index: 10;
+            -webkit-tap-highlight-color: transparent;
         }
         .chat-title {
             font-size: 16px;
@@ -8005,7 +8022,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         console.error('未处理的 Promise 错误:', e.reason);
         e.preventDefault();
     });
-    window.addEventListener('beforeunload', function() { try { saveDataSync(); } catch(e) {} });
+    window.addEventListener('beforeunload', function() { try { if (_idbReady) saveDataSync(); } catch(e) {} });
     window.addEventListener('pageshow', function() {
         setTimeout(function() {
             try { processPendingMomentActions(); } catch(e) {}
@@ -8569,11 +8586,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     });
 
     function loadData() {
-        // 先尝试从旧版 localStorage 迁移数据
+        // 先尝试从 localStorage 读取数据（含备份键和旧版键迁移）
         try {
             let raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) raw = localStorage.getItem(STORAGE_KEY + '_backup');
             // 兼容旧版本key
             if (!raw) raw = localStorage.getItem('qianyi_data_v7');
+            if (!raw) raw = localStorage.getItem('qianyi_data_v7_backup');
             if (raw) {
                 const parsed = JSON.parse(raw);
                 function mergeDeep(target, source) {
@@ -8629,11 +8648,37 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     // 异步从 IndexedDB 加载数据（支持30G大容量存储）
     let _idbLoaded = false;
     let _idbReady = false; // 标记 IndexedDB 数据是否已加载完毕，防止 init 中的每日检查用默认数据覆盖真实数据
+    // 从指定数据库名读取数据（用于旧版数据库迁移）
+    async function idbGetFromDb(dbName, key) {
+        try {
+            return await new Promise((resolve) => {
+                const req = indexedDB.open(dbName, 1);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = (e) => {
+                    const db = e.target.result;
+                    try {
+                        const tx = db.transaction(IDB_STORE, 'readonly');
+                        const r = tx.objectStore(IDB_STORE).get(key);
+                        r.onsuccess = () => { resolve(r.result); db.close(); };
+                        r.onerror = () => { resolve(undefined); db.close(); };
+                    } catch(err) { resolve(undefined); db.close(); }
+                };
+                req.onerror = () => resolve(undefined);
+            });
+        } catch(e) { return undefined; }
+    }
     async function loadDataFromIDB() {
         if (_idbLoaded) return;
         _idbLoaded = true;
         try {
-            const json = await idbGet('appData');
+            // 优先从主键读取，其次从备份键读取，最后尝试旧版数据库名
+            let json = await idbGet('appData');
+            if (!json) json = await idbGet('appData_backup');
+            if (!json) json = await idbGetFromDb('qianyi_db_v7', 'appData');
+            if (!json) json = await idbGetFromDb('qianyi_db_v6', 'appData');
             if (json) {
                 const parsed = JSON.parse(json);
                 function mergeDeep(target, source) {
@@ -8680,6 +8725,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     appData[_k] = merged[_k];
                 }
                 _idbReady = true; // 数据加载完毕，允许 saveData 写入 IndexedDB
+                // 确保数据写入主键和备份键（迁移旧数据库时尤为重要）
+                saveData();
                 // 重新初始化界面以应用IndexedDB数据
                 if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
             } else {
@@ -8712,12 +8759,17 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             _lastGoodJson = json; // 记录成功序列化的数据
             if (_idbReady) {
                 idbSet('appData', json);
+                idbSet('appData_backup', json); // 冗余备份，防止单点数据丢失
             }
-            try {
-                localStorage.setItem(STORAGE_KEY, json);
-            } catch (e) {
-                if (json.length > 3000000) {
-                    console.warn('localStorage空间不足，仅使用IndexedDB存储');
+            // 数据未加载完毕前不写入 localStorage，防止默认数据覆盖真实备份
+            if (_idbReady) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, json);
+                    localStorage.setItem(STORAGE_KEY + '_backup', json);
+                } catch (e) {
+                    if (json.length > 3000000) {
+                        console.warn('localStorage空间不足，仅使用IndexedDB存储');
+                    }
                 }
             }
             return true;
@@ -8726,8 +8778,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             // 序列化失败时尝试回滚到上次成功的状态，避免损坏数据被写入
             if (_lastGoodJson) {
                 try {
-                    if (_idbReady) idbSet('appData', _lastGoodJson);
+                    if (_idbReady) {
+                        idbSet('appData', _lastGoodJson);
+                        idbSet('appData_backup', _lastGoodJson);
+                    }
                     try { localStorage.setItem(STORAGE_KEY, _lastGoodJson); } catch(e2) {}
+                    try { localStorage.setItem(STORAGE_KEY + '_backup', _lastGoodJson); } catch(e3) {}
                     console.warn('已回滚到上次成功保存的数据');
                 } catch (e2) {
                     console.error('回滚失败:', e2);
@@ -8750,14 +8806,19 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 // 主存储：IndexedDB（支持30G大容量）—— 数据未加载完毕前不写入，防止默认数据覆盖真实数据
                 if (_idbReady) {
                     idbSet('appData', json);
+                    idbSet('appData_backup', json); // 冗余备份
                 }
                 // 备份：localStorage（小容量，可能失败，不影响主存储）
-                try {
-                    localStorage.setItem(STORAGE_KEY, json);
-                } catch (e) {
-                    // localStorage 空间不足时尝试压缩后备份
-                    if (json.length > 3000000) {
-                        console.warn('localStorage空间不足，仅使用IndexedDB存储');
+                // 数据未加载完毕前不写入，防止默认数据覆盖真实备份
+                if (_idbReady) {
+                    try {
+                        localStorage.setItem(STORAGE_KEY, json);
+                        localStorage.setItem(STORAGE_KEY + '_backup', json);
+                    } catch (e) {
+                        // localStorage 空间不足时尝试压缩后备份
+                        if (json.length > 3000000) {
+                            console.warn('localStorage空间不足，仅使用IndexedDB存储');
+                        }
                     }
                 }
             } catch (e) {
@@ -8765,8 +8826,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 // 序列化失败时回滚到上次成功的状态
                 if (_lastGoodJson) {
                     try {
-                        if (_idbReady) idbSet('appData', _lastGoodJson);
+                        if (_idbReady) {
+                            idbSet('appData', _lastGoodJson);
+                            idbSet('appData_backup', _lastGoodJson);
+                        }
                         try { localStorage.setItem(STORAGE_KEY, _lastGoodJson); } catch(e2) {}
+                        try { localStorage.setItem(STORAGE_KEY + '_backup', _lastGoodJson); } catch(e3) {}
                         console.warn('已回滚到上次成功保存的数据');
                     } catch (e2) {
                         console.error('回滚失败:', e2);
@@ -9147,8 +9212,14 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             } else if (currentEditType === 'otherAvatar') {
                 appData.chatSettings.otherAvatar = src;
                 updateAvatarPreview('other', src);
+                // 同步更新当前联系人的头像到列表界面
+                if (_activeContactId) {
+                    var _c = _findContactById(_activeContactId);
+                    if (_c) { _c.avatar = src; }
+                }
                 saveData();
                 renderMessages();
+                try { renderContactList(); } catch(e) {}
                 closeAllModals();
             } else if (currentEditType === 'myAvatar') {
                 appData.chatSettings.myAvatar = src;
@@ -9714,10 +9785,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const chatHeader = document.querySelector('.chat-header');
         const chatFooter = document.querySelector('.chat-footer');
         if (s.topBgPadding) {
-            chatHeader.style.paddingTop = s.topBgPadding + 'vh';
+            chatHeader.style.paddingTop = 'calc(env(safe-area-inset-top, 0px) + ' + s.topBgPadding + 'vh)';
             chatHeader.style.paddingBottom = s.topBgPadding + 'vh';
         } else {
-            chatHeader.style.paddingTop = '0';
+            chatHeader.style.paddingTop = '';
             chatHeader.style.paddingBottom = '';
         }
         if (s.bottomBgPadding) {
@@ -10199,7 +10270,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 bubble.innerHTML = `<img src="${msg.content}" alt="">`;
             } else if (msg.type === 'video') {
                 bubble.className += ' media-msg';
-                bubble.innerHTML = `<video src="${msg.content}" controls></video>`;
+                bubble.innerHTML = `<video src="${msg.content}" controls playsinline webkit-playsinline preload="auto"></video>`;
             } else if (msg.type === 'emoji') {
                 bubble.innerHTML = `<img src="${msg.content}" style="width:80px;">`;
                 bubble.style.background = 'transparent';
@@ -11923,9 +11994,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const name = prompt('输入对方昵称', appData.chatSettings.otherNickname);
         if (name && name.trim()) {
             appData.chatSettings.otherNickname = name.trim();
+            // 同步更新当前联系人的名称到列表界面
+            if (_activeContactId) {
+                var _c = _findContactById(_activeContactId);
+                if (_c) { _c.name = name.trim(); }
+            }
             saveData();
             initChatPage();
             renderMomentsList();
+            try { renderContactList(); } catch(e) {}
         }
     }
     function editMyNickname() {
@@ -13578,7 +13655,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     if (m.type === 'image') {
                         imgWrap.innerHTML += `<img src="${m.src}" alt="" onclick="event.stopPropagation();viewMomentImage('${m.src}')" style="cursor:pointer;">`;
                     } else {
-                        imgWrap.innerHTML += `<video src="${m.src}" controls></video>`;
+                        imgWrap.innerHTML += `<video src="${m.src}" controls playsinline webkit-playsinline preload="auto"></video>`;
                     }
                 });
                 content.appendChild(imgWrap);
@@ -13899,7 +13976,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             if (m.type === 'image') {
                 item.innerHTML = `<img src="${m.src}" alt=""><div class="publish-media-del" onclick="removePublishMedia(${index})">×</div>`;
             } else {
-                item.innerHTML = `<video src="${m.src}"></video><div class="publish-media-del" onclick="removePublishMedia(${index})">×</div>`;
+                item.innerHTML = `<video src="${m.src}" playsinline webkit-playsinline preload="auto"></video><div class="publish-media-del" onclick="removePublishMedia(${index})">×</div>`;
             }
             grid.appendChild(item);
         });
@@ -15025,17 +15102,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             const weatherIcon = renderDiaryIconImg('weather', diary.weather);
             const moodIcon = renderDiaryIconImg('mood', diary.mood);
             let html =
-                '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px;">' +
-                '<div style="width:48px;height:48px;border-radius:50%;background:#e0ecf5;overflow:hidden;margin-bottom:6px;">' +
-                (senderAvatar ? '<img src="'+senderAvatar+'" style="width:100%;height:100%;object-fit:cover;" alt="">' : '') +
-                '</div>' +
-                '<div style="font-size:13px;color:#4a90d9;font-weight:500;">'+escapeHtml(senderNick)+'</div>' +
-                '</div>' +
-                '<div style="width:100%;border-top:1px dashed #c8ddf0;margin-bottom:12px;"></div>' +
                 '<div style="font-size:13px;font-weight:600;color:#4a90d9;padding-bottom:6px;border-bottom:1px dashed #c8ddf0;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a90d9" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>'+escapeHtml(diary.tag || '未分类')+'</div>' +
-                '<div style="display:flex;align-items:center;font-size:12px;color:#7a9cc6;gap:12px;padding-bottom:6px;border-bottom:1px dashed #e0ecf5;margin-bottom:8px;">' +
-                '<span style="display:flex;align-items:center;gap:3px;">'+weatherIcon+(diary.weather || '—')+'</span>' +
-                '<span style="display:flex;align-items:center;gap:3px;">'+moodIcon+(diary.mood || '—')+'</span>' +
+                '<div style="display:flex;align-items:center;font-size:12px;color:#7a9cc6;gap:20px;padding-bottom:6px;border-bottom:1px dashed #e0ecf5;margin-bottom:8px;">' +
+                '<span style="display:flex;align-items:center;gap:4px;">'+weatherIcon+(diary.weather || '—')+'</span>' +
+                '<span style="display:flex;align-items:center;gap:4px;">'+moodIcon+(diary.mood || '—')+'</span>' +
                 '<span style="margin-left:auto;">'+dateStr+'</span>' +
                 '</div>';
             // 日记正文
@@ -16197,13 +16267,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const s = appData.letter.settings;
         if (detailContent) {
             detailContent.innerHTML =
-                '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px;">' +
-                '<div style="width:48px;height:48px;border-radius:50%;background:var(--color-light-gray);overflow:hidden;margin-bottom:6px;">' +
-                (senderAvatar ? '<img src="'+senderAvatar+'" style="width:100%;height:100%;object-fit:cover;" alt="">' : '') +
-                '</div>' +
-                '<div style="font-size:13px;color:var(--color-deep-black);font-weight:500;">'+senderNick+'</div>' +
-                '</div>' +
-                '<div style="width:100%;border-top:1px dashed var(--color-light-gray);margin-bottom:12px;"></div>' +
                 '<div id="letterDetailText" class="'+(s.rulerEnabled!==false?'letter-detail-ruled':'')+'" style="color:'+(s.textColor||'#1a1a1a')+';'+(s.fontFamily?'font-family:'+s.fontFamily+';':'')+'font-size:'+(s.fontSize||14)+'px;--ruler-gap:'+(s.rulerGap||32)+'px;--ruler-thickness:'+(s.rulerThickness||1)+'px;--ruler-color:'+(s.rulerColor||'rgba(0,0,0,0.15)')+';">'+renderDetailTextHtml(letter.content, s)+'</div>';
         } else {
             document.getElementById('letterDetailText').textContent = letter.content;
@@ -17290,16 +17353,22 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             // 设置当前联系人 ID，使 appData.chatHistory 重定向到该联系人的独立记录
             if (type === 'contact') {
                 _activeContactId = id;
+                // 将联系人的头像和昵称同步到聊天设置，使聊天界面和设置页显示正确
+                var c = _findContactById(id);
+                if (c) {
+                    if (c.avatar) appData.chatSettings.otherAvatar = c.avatar;
+                    if (c.name) appData.chatSettings.otherNickname = c.name;
+                }
             } else {
                 _activeContactId = null; // 群聊暂不隔离
             }
             initChatPage();
             // 覆盖聊天标题为联系人自身名称（而非全局 otherNickname）
             if (type === 'contact') {
-                var c = _findContactById(id);
-                if (c && c.name) {
+                var c2 = _findContactById(id);
+                if (c2 && c2.name) {
                     var titleEl = document.getElementById('chatTitle');
-                    if (titleEl) titleEl.textContent = c.name;
+                    if (titleEl) titleEl.textContent = c2.name;
                 }
             }
             var container = document.getElementById('chatMessages');
@@ -23269,6 +23338,11 @@ function mlsjIconClock() {
             checkDailyAutoLetter();
         }, 60000);
 
+        // 定时自动保存数据（每2分钟），防止意外退出导致数据丢失
+        setInterval(() => {
+            try { if (_idbReady) saveData(); } catch(e) {}
+        }, 120000);
+
     }
 
     init();
@@ -23366,7 +23440,8 @@ function mlsjIconClock() {
         // 只要开启了「消息通知」或「后台保活」或「对方主动发消息」，都需记录离开时间以便回来补发通知
         var _needTrack = appData.globalSettings && (appData.globalSettings.keepAliveEnabled || appData.globalSettings.notificationEnabled || (appData.chatSettings && appData.chatSettings.proactiveEnable));
         if (document.hidden) {
-            // 页面被隐藏（切后台、最小化、锁屏）
+            // 页面被隐藏（切后台、最小化、锁屏）—— 立即保存数据，防止后台被系统杀死导致数据丢失
+            try { if (_idbReady) saveDataSync(); } catch(e) {}
             if (_needTrack) {
                 _lastLeaveTime = Date.now();
                 // 记录离开前最后看到的消息时间戳
@@ -23391,6 +23466,8 @@ function mlsjIconClock() {
 
     // 备选：pagehide 事件作为 visibilitychange 的补充（部分移动浏览器 visibilitychange 不可靠）
     window.addEventListener('pagehide', function() {
+        // 立即保存数据，防止移动端浏览器回收页面导致数据丢失
+        try { if (_idbReady) saveDataSync(); } catch(e) {}
         var _needTrack = appData.globalSettings && (appData.globalSettings.keepAliveEnabled || appData.globalSettings.notificationEnabled || (appData.chatSettings && appData.chatSettings.proactiveEnable));
         if (_needTrack && !_lastLeaveTime) {
             _lastLeaveTime = Date.now();
@@ -23616,7 +23693,7 @@ function mlsjIconClock() {
         document.getElementById('topBgPaddingVal').textContent = val + 'vh';
         const header = document.querySelector('.chat-header');
         if (header) {
-            header.style.paddingTop = 'calc(env(safe-area-inset-top) + ' + val + 'vh)';
+            header.style.paddingTop = 'calc(env(safe-area-inset-top, 0px) + ' + val + 'vh)';
             header.style.paddingBottom = val + 'vh';
         }
         saveData();
@@ -23772,6 +23849,15 @@ function mlsjIconClock() {
         if (s.topBgPadding) {
             const el = document.getElementById('topBgPadding'); if (el) el.value = s.topBgPadding;
             const v = document.getElementById('topBgPaddingVal'); if (v) v.textContent = s.topBgPadding + 'vh';
+            // 同步应用到聊天头部
+            const header = document.querySelector('.chat-header');
+            if (header) {
+                header.style.paddingTop = 'calc(env(safe-area-inset-top, 0px) + ' + s.topBgPadding + 'vh)';
+                header.style.paddingBottom = s.topBgPadding + 'vh';
+            }
+        } else {
+            const header = document.querySelector('.chat-header');
+            if (header) { header.style.paddingTop = ''; header.style.paddingBottom = ''; }
         }
         if (s.bottomBgPadding) {
             const el = document.getElementById('bottomBgPadding'); if (el) el.value = s.bottomBgPadding;
