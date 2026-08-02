@@ -8150,7 +8150,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().catch(()=>{});
     }
+    const CURRENT_DATA_VERSION = 4;
     const defaultData = {
+        dataVersion: 1,
         periodData: {},
         wordCardText: '☆*:.｡. o(≧▽≦)o .｡.:*☆等待对方更新中……',
         timeOffset: -9,
@@ -8571,6 +8573,267 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         enumerable: true
     });
 
+    /* ===== 数据迁移系统 =====
+       每次加载页面时检查 dataVersion，执行必要的升级。
+       升级完成后更新版本号，由调用方负责 saveData()。 */
+    function migrateData(data) {
+        if (!data || typeof data !== 'object') return data;
+        var version = data.dataVersion || 1;
+        var upgraded = false;
+
+        /* ---- v1 → v2: 联系人迁移 ----
+           如果 contactList.contacts 为空但 chatHistory 有记录，
+           自动创建联系人并把 chatHistory 挂上去。 */
+        if (version < 2) {
+            try {
+                if (!data.contactList) data.contactList = { background: '#ededed', fontColor: '#1a1a1a', contacts: [], groups: [] };
+                if (!Array.isArray(data.contactList.contacts)) data.contactList.contacts = [];
+                if (!data.contactList.groups) data.contactList.groups = [];
+
+                if (data.contactList.contacts.length === 0) {
+                    var cs = data.chatSettings || {};
+                    var mainHistory = data.chatHistory;
+                    if (Array.isArray(mainHistory) && mainHistory.length > 0) {
+                        var contactId = 'contact_main_' + Date.now();
+                        data.contactList.contacts.push({
+                            id: contactId,
+                            nickname: cs.otherNickname || '对方',
+                            avatar: cs.otherAvatar || '',
+                            chatHistory: mainHistory.slice(),
+                            createdAt: Date.now()
+                        });
+                        upgraded = true;
+                        console.log('[迁移 v1→v2] 从主聊天记录创建联系人:', contactId, '消息数:', mainHistory.length);
+                    }
+                    // 兼容旧版直接存 contacts 数组的情况
+                    if (data.contacts && Array.isArray(data.contacts) && data.contacts.length > 0) {
+                        data.contacts.forEach(function(c) {
+                            if (c && c.id && !data.contactList.contacts.find(function(ex) { return ex.id === c.id; })) {
+                                if (!c.chatHistory && Array.isArray(mainHistory) && mainHistory.length > 0) {
+                                    c.chatHistory = mainHistory.slice();
+                                }
+                                data.contactList.contacts.push(c);
+                            }
+                        });
+                        upgraded = true;
+                    }
+                }
+            } catch(e) { console.error('[迁移 v1→v2] 失败:', e); }
+            version = 2;
+        }
+
+        /* ---- v2 → v3: 字卡迁移 ----
+           如果 wordCards 默认分组为空，从 contactWordCards 里把字卡迁移过来。 */
+        if (version < 3) {
+            try {
+                if (!data.wordCards) data.wordCards = { default: [] };
+                if (!data.wordGroups) data.wordGroups = ['default'];
+                if (!data.wordCards.default) data.wordCards.default = [];
+                if (!data.currentGroup) data.currentGroup = 'default';
+
+                var hasCards = false;
+                for (var g in data.wordCards) {
+                    if (Array.isArray(data.wordCards[g]) && data.wordCards[g].length > 0) { hasCards = true; break; }
+                }
+
+                if (!hasCards) {
+                    // 从 contactWordCards 迁移
+                    if (data.contactWordCards && typeof data.contactWordCards === 'object') {
+                        for (var cid in data.contactWordCards) {
+                            var cw = data.contactWordCards[cid];
+                            if (cw && cw.cards && typeof cw.cards === 'object') {
+                                for (var cg in cw.cards) {
+                                    if (Array.isArray(cw.cards[cg])) {
+                                        cw.cards[cg].forEach(function(card) {
+                                            if (card && card.text) {
+                                                var exists = data.wordCards.default.find(function(c) { return c.text === card.text; });
+                                                if (!exists) {
+                                                    data.wordCards.default.push({ text: card.text, hidden: card.hidden || false });
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // 兼容旧版扁平字卡数组
+                    ['wordCardList', 'allWordCards', 'wordCardsList'].forEach(function(key) {
+                        if (Array.isArray(data[key]) && data[key].length > 0) {
+                            data[key].forEach(function(card) {
+                                if (card && card.text) {
+                                    var exists = data.wordCards.default.find(function(c) { return c.text === card.text; });
+                                    if (!exists) data.wordCards.default.push({ text: card.text, hidden: card.hidden || false });
+                                }
+                            });
+                        }
+                    });
+                    if (data.wordCards.default.length > 0) upgraded = true;
+                }
+            } catch(e) { console.error('[迁移 v2→v3] 失败:', e); }
+            version = 3;
+        }
+
+        /* ---- v3 → v4: 日记/信封/朋友圈数据恢复 ----
+           如果 diary、letter、moments 的列表为空，
+           从 appData 里搜索可能存在的旧数据并迁移，
+           同时尝试从 localStorage 旧备份中恢复。 */
+        if (version < 4) {
+            try {
+                // --- 日记 ---
+                if (data.diary) {
+                    if (!Array.isArray(data.diary.singleList)) data.diary.singleList = [];
+                    if (!Array.isArray(data.diary.doubleList)) data.diary.doubleList = [];
+                    // 搜索 appData 内可能存在的旧日记数据
+                    ['diaryEntries', 'diaries', 'diaryList', 'oldDiaryList', 'oldDiaries'].forEach(function(key) {
+                        if (Array.isArray(data[key]) && data[key].length > 0) {
+                            data[key].forEach(function(entry) {
+                                if (entry && data.diary.singleList.indexOf(entry) === -1) {
+                                    data.diary.singleList.push(entry);
+                                    upgraded = true;
+                                }
+                            });
+                        }
+                    });
+                    // 搜索旧双人日记数据
+                    ['doubleDiaryList', 'doubleDiaries', 'oldDoubleDiaryList'].forEach(function(key) {
+                        if (Array.isArray(data[key]) && data[key].length > 0) {
+                            data[key].forEach(function(entry) {
+                                if (entry && data.diary.doubleList.indexOf(entry) === -1) {
+                                    data.diary.doubleList.push(entry);
+                                    upgraded = true;
+                                }
+                            });
+                        }
+                    });
+                }
+                // --- 信封 ---
+                if (data.letter) {
+                    ['inbox', 'sent', 'reply', 'favorite'].forEach(function(box) {
+                        if (!Array.isArray(data.letter[box])) data.letter[box] = [];
+                    });
+                    // 搜索旧信封数据
+                    ['letters', 'letterList', 'allLetters'].forEach(function(key) {
+                        if (Array.isArray(data[key]) && data[key].length > 0) {
+                            data[key].forEach(function(letter) {
+                                if (letter && letter.box && data.letter[letter.box] && data.letter[letter.box].indexOf(letter) === -1) {
+                                    data.letter[letter.box].push(letter);
+                                    upgraded = true;
+                                }
+                            });
+                        }
+                    });
+                    // 兼容旧版按信箱分开存的数组
+                    var boxMap = { inbox: ['letterInbox', 'inboxList'], sent: ['letterSent', 'sentList'], reply: ['letterReply', 'replyList'], favorite: ['letterFavorite', 'favoriteList'] };
+                    for (var box in boxMap) {
+                        boxMap[box].forEach(function(key) {
+                            if (Array.isArray(data[key]) && data[key].length > 0) {
+                                data[key].forEach(function(letter) {
+                                    if (letter && data.letter[box].indexOf(letter) === -1) {
+                                        data.letter[box].push(letter);
+                                        upgraded = true;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+                // --- 朋友圈 ---
+                if (data.moments) {
+                    if (!Array.isArray(data.moments.list)) data.moments.list = [];
+                    ['momentsData', 'momentList', 'momentsList', 'oldMoments', 'allMoments'].forEach(function(key) {
+                        if (Array.isArray(data[key]) && data[key].length > 0) {
+                            data[key].forEach(function(moment) {
+                                if (moment && data.moments.list.indexOf(moment) === -1) {
+                                    data.moments.list.push(moment);
+                                    upgraded = true;
+                                }
+                            });
+                        }
+                    });
+                }
+
+                /* 尝试从 localStorage 旧备份中恢复缺失的数据 */
+                var oldKeys = ['qianyi_data_v7', 'qianyi_data_v7_backup', 'qianyi_data_v6', 'qianyi_data_v6_backup',
+                               'qianyi_data_v5', 'qianyi_data_v5_backup', 'qianyi_data', 'qianyi_data_backup',
+                               STORAGE_KEY, STORAGE_KEY + '_backup'];
+                for (var ki = 0; ki < oldKeys.length; ki++) {
+                    try {
+                        var oldRaw = localStorage.getItem(oldKeys[ki]);
+                        if (!oldRaw) continue;
+                        var oldParsed = JSON.parse(oldRaw);
+                        if (!oldParsed || typeof oldParsed !== 'object') continue;
+
+                        // 联系人恢复
+                        if (data.contactList && (!data.contactList.contacts || data.contactList.contacts.length === 0)) {
+                            if (oldParsed.contactList && Array.isArray(oldParsed.contactList.contacts) && oldParsed.contactList.contacts.length > 0) {
+                                data.contactList.contacts = oldParsed.contactList.contacts;
+                                upgraded = true;
+                                console.log('[迁移 v3→v4] 从', oldKeys[ki], '恢复联系人', data.contactList.contacts.length, '个');
+                            }
+                        }
+                        // 字卡恢复
+                        var wcEmpty = true;
+                        for (var wg in data.wordCards) { if (data.wordCards[wg].length > 0) { wcEmpty = false; break; } }
+                        if (wcEmpty && oldParsed.wordCards) {
+                            for (var owg in oldParsed.wordCards) {
+                                if (Array.isArray(oldParsed.wordCards[owg])) {
+                                    if (!data.wordCards[owg]) data.wordCards[owg] = [];
+                                    oldParsed.wordCards[owg].forEach(function(card) {
+                                        if (card && card.text) {
+                                            var exists = data.wordCards[owg].find(function(c) { return c.text === card.text; });
+                                            if (!exists) data.wordCards[owg].push(card);
+                                        }
+                                    });
+                                    upgraded = true;
+                                }
+                            }
+                            console.log('[迁移 v3→v4] 从', oldKeys[ki], '恢复字卡');
+                        }
+                        // 日记恢复
+                        if (data.diary && oldParsed.diary) {
+                            if (data.diary.singleList.length === 0 && Array.isArray(oldParsed.diary.singleList) && oldParsed.diary.singleList.length > 0) {
+                                data.diary.singleList = oldParsed.diary.singleList;
+                                upgraded = true;
+                                console.log('[迁移 v3→v4] 从', oldKeys[ki], '恢复单人日记', data.diary.singleList.length, '条');
+                            }
+                            if (data.diary.doubleList.length === 0 && Array.isArray(oldParsed.diary.doubleList) && oldParsed.diary.doubleList.length > 0) {
+                                data.diary.doubleList = oldParsed.diary.doubleList;
+                                upgraded = true;
+                                console.log('[迁移 v3→v4] 从', oldKeys[ki], '恢复双人日记', data.diary.doubleList.length, '条');
+                            }
+                        }
+                        // 信封恢复
+                        if (data.letter && oldParsed.letter) {
+                            ['inbox', 'sent', 'reply', 'favorite'].forEach(function(box) {
+                                if (data.letter[box].length === 0 && Array.isArray(oldParsed.letter[box]) && oldParsed.letter[box].length > 0) {
+                                    data.letter[box] = oldParsed.letter[box];
+                                    upgraded = true;
+                                    console.log('[迁移 v3→v4] 从', oldKeys[ki], '恢复信封', box, data.letter[box].length, '封');
+                                }
+                            });
+                        }
+                        // 朋友圈恢复
+                        if (data.moments && oldParsed.moments) {
+                            if (data.moments.list.length === 0 && Array.isArray(oldParsed.moments.list) && oldParsed.moments.list.length > 0) {
+                                data.moments.list = oldParsed.moments.list;
+                                upgraded = true;
+                                console.log('[迁移 v3→v4] 从', oldKeys[ki], '恢复朋友圈', data.moments.list.length, '条');
+                            }
+                        }
+                    } catch(e) { /* 忽略单个 key 解析失败 */ }
+                }
+            } catch(e) { console.error('[迁移 v3→v4] 失败:', e); }
+            version = 4;
+        }
+
+        data.dataVersion = version;
+        if (upgraded) {
+            console.log('[数据迁移] 已升级到版本 ' + version);
+        }
+        return data;
+    }
+
     function loadData() {
         // 先尝试从 localStorage 读取数据（含备份键和旧版键迁移）
         try {
@@ -8630,12 +8893,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                         if (ds.weatherEmojis.length === 0) ds.weatherEmojis = ['晴天','多云','阴天','雨天','雷雨','雪天','雾天','彩虹'];
                     }
                 }
+                // 执行数据迁移
+                migrateData(merged);
                 return merged;
             }
         } catch (e) {
             console.error('localStorage数据加载失败，使用默认值:', e);
         }
-        return JSON.parse(JSON.stringify(defaultData));
+        var fallback = JSON.parse(JSON.stringify(defaultData));
+        migrateData(fallback);
+        return fallback;
     }
     // 异步从 IndexedDB 加载数据（支持30G大容量存储）
     let _idbLoaded = false;
@@ -8713,20 +8980,26 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                         if (ds.weatherEmojis.length === 0) ds.weatherEmojis = ['晴天','多云','阴天','雨天','雷雨','雪天','雾天','彩虹'];
                     }
                 }
+                // 执行数据迁移（在复制到 appData 之前，此时 merged 是普通对象）
+                migrateData(merged);
                 // 将 merged 的属性逐一复制到 appData（而非替换引用），
                 // 以保留 chatHistory 上的 getter/setter（联系人独立聊天记录）
                 for (var _k in merged) {
                     appData[_k] = merged[_k];
                 }
+                // 同步 appData.dataVersion
+                appData.dataVersion = merged.dataVersion || CURRENT_DATA_VERSION;
                 _idbReady = true; // 数据加载完毕，允许 saveData 写入 IndexedDB
                 // 确保数据写入主键和备份键（迁移旧数据库时尤为重要）
-                saveData();
+                saveDataSync();
                 // 重新初始化界面以应用IndexedDB数据
                 if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
             } else {
                 // IndexedDB 没有数据，把当前 localStorage 数据写入 IndexedDB
+                // loadData() 已经执行过迁移，确保版本号正确
+                if (!appData.dataVersion) appData.dataVersion = CURRENT_DATA_VERSION;
                 _idbReady = true;
-                saveData();
+                saveDataSync();
             }
             // 数据就绪后执行每日检查（此时 appData 已是真实数据，saveData 可安全写入）
             runDailyChecks();
