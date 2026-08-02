@@ -914,9 +914,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             /* 键盘弹出时由 JS 设置 padding-bottom，不再修改 bottom */
         }
         .chat-header {
-            height: calc(var(--chat-header-height) + env(safe-area-inset-top, 0px) + 20px);
-            padding-top: calc(env(safe-area-inset-top, 0px) + 20px); /* 从12px改为20px */
-            padding-bottom: 8px; /* 新增:确保垂直居中 */
+            height: calc(var(--chat-header-height) + env(safe-area-inset-top, 0px));
+            padding-top: 0;
             background: #f0f0f0;
             border-bottom: none;
             display: flex;
@@ -1142,9 +1141,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             -webkit-touch-callout: none;
         }
         .system-msg span{display:inline-block;padding:4px 12px;background:rgba(255,255,255,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #eeeeee;border-radius:2px;font-size:12px;color:#aaa;}
-        .system-msg.blind-card-record{display:flex;justify-content:center;}
-        .system-msg.blind-card-record span{position:relative;background:#fff;border:1px solid #a8d4ff;border-radius:8px;color:#8a8a8a;padding:10px 16px 10px 28px;box-shadow:0 2px 12px rgba(120,190,245,0.15);font-size:13px;}
-        .system-msg.blind-card-record span::before{content:'★';position:absolute;left:10px;top:8px;color:#4aa7ff;font-size:14px;line-height:1;}
+        .system-msg.blind-card-record span{position:relative;background:#fff;border:1px solid #bfe4ff;border-radius:6px;color:#8a8a8a;padding:8px 14px 8px 24px;box-shadow:0 2px 8px rgba(120,190,245,0.08);}
+        .system-msg.blind-card-record span::before{content:'★';position:absolute;left:8px;top:6px;color:#4aa7ff;font-size:12px;line-height:1;}
         .msg-row .msg-bubble.media-msg{background:transparent!important;border:none!important;padding:0!important;box-shadow:none!important;border-radius:0!important;}
         .msg-row .msg-bubble.media-msg img,.msg-row .msg-bubble.media-msg video{max-width:220px;border-radius:8px;display:block;}
         .double-diary-form{width:86%;max-width:400px;flex:0 0 auto;max-height:70vh;overflow-y:auto;box-sizing:border-box;}
@@ -1342,9 +1340,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         
         /* ===== 盲选抽牌 可爱蓝白风 ===== */
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
 
         .blind-card-font {
-            font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', cursive;
+            font-family: 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', cursive;
         }
 
         /* 盲选抽牌消息气泡 */
@@ -1427,7 +1426,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .blind-card-title {
             font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 20px;
+            font-size: 22px;
             color: #4A7BA7;
             margin-bottom: 8px;
             text-align: center;
@@ -1436,7 +1435,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .blind-card-tip {
             font-family: 'ZCOOL KuaiLe', cursive;
-            font-size: 13px;
+            font-size: 15px;
             color: #7BA7CC;
             margin-bottom: 20px;
             text-align: center;
@@ -1448,7 +1447,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             margin-bottom: 24px;
             justify-content: center;
             align-content: center;
-            padding: 14px;
+            padding: 16px;
             background: rgba(255,255,255,0.5);
             border-radius: 20px;
             border: 1.5px solid rgba(184, 212, 232, 0.4);
@@ -1506,10 +1505,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             border: 2px solid #B8D4E8;
             transform: rotateY(180deg);
             color: #6A8CA8;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             line-height: 1.35;
             font-family: 'ZCOOL KuaiLe', cursive;
             box-shadow: 0 4px 12px rgba(123,167,204,0.15);
@@ -3423,7 +3422,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .dd-summon-btn:hover { opacity: 0.85; }
         .dd-summon-btn.summoned { background: #ccc; cursor: not-allowed; }
-        /* 单人日记dd按钮 */
+        /* 单人日记召唤按钮 */
         .diary-summon-btn {
             display: inline-block;
             padding: 3px 10px;
@@ -3646,192 +3645,66 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             color: #7ab5d8;
             text-align: right;
         }
-                /* 信封展开 - 与日记风格一致 */
-        .letter-detail-modal .modal-content,
-        .send-letter-modal .modal-content {
-            width: 92%;
-            max-width: 420px;
-            min-width: 300px;
-            height: auto;
-            max-height: 86vh;
-            min-height: 0;
-            aspect-ratio: auto;
+        /* 信封详情 - 手账风（9:16比例，宽1080×高1920） */
+        /* 悬浮框采用9:16竖屏比例，以视口高度为基准自适应缩放。 */
+        .letter-detail-modal .modal-content {
+            height: 92vh;
+            max-height: 92vh;
+            min-height: 92vh;
+            aspect-ratio: 9 / 16;
+            width: auto;
+            min-width: calc(92vh * 9 / 16);
+            max-width: calc(92vh * 9 / 16);
             display: flex;
             flex-direction: column;
             background: #fff;
             border-radius: 20px;
-            border: 2px solid #c8ddf0;
-            box-shadow: 0 8px 32px rgba(74,144,217,0.15);
-            padding: 0;
-            overflow: hidden;
+            border: 2px solid #85DBF9;
+            padding: 20px 16px;
         }
-        .envelope-wrap {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            overflow: hidden;
-        }
-        .envelope-flap {
-            display: none;
-        }
-        .envelope-body {
-            width: 100%;
-            background: #FFFFFF;
-            border: none;
-            border-radius: 0;
-            position: relative;
-            z-index: 1;
-            overflow: hidden;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        .envelope-body-inner {
-            padding: 16px 18px;
-            min-height: 200px;
-            position: relative;
-            z-index: 1;
+        .letter-detail-content {
             flex: 1;
             overflow-y: auto;
+            padding: 10px 0;
         }
-        .envelope-body-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-size: cover;
-            background-position: center;
-            z-index: 0;
-            opacity: 1;
-        }
-        .envelope-ruler-layer {
-            position: absolute;
-            top: 16px;
-            left: 18px;
-            right: 18px;
-            bottom: 60px;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .envelope-content {
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 2;
-        }
-        .envelope-title {
-            font-size: 16px;
-            font-weight: 600;
-            text-align: center;
-            color: #4a90d9;
-            margin-bottom: 12px;
-            letter-spacing: 1px;
-            padding-bottom: 8px;
-            border-bottom: 1px dashed #c8ddf0;
-        }
-        .envelope-text {
+        .letter-detail-text {
             font-size: 14px;
-            line-height: 1.9;
+            line-height: 1.8;
             white-space: pre-wrap;
             word-break: break-word;
-            color: #333;
-            min-height: 120px;
-            background-image: repeating-linear-gradient(
-                to bottom,
-                transparent,
-                transparent calc(var(--ruler-gap, 32px) - var(--ruler-thickness, 1px)),
-                var(--ruler-color, rgba(0,0,0,0.12)) calc(var(--ruler-gap, 32px) - var(--ruler-thickness, 1px)),
-                var(--ruler-color, rgba(0,0,0,0.12)) var(--ruler-gap, 32px)
-            );
-            padding: 0 4px;
         }
-        .envelope-textarea {
-            width: 100%;
-            min-height: 180px;
-            border: none;
-            outline: none;
-            resize: vertical;
-            background: transparent;
-            font-family: var(--font-family);
-            font-size: 14px;
-            line-height: 1.9;
-            color: #333;
-            padding: 0 4px;
-        }
-        .envelope-page {
-            display: none;
-            animation: envelopePageIn .28s ease;
-        }
-        .envelope-page.active {
-            display: block;
-        }
-        @keyframes envelopePageIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .envelope-footer {
-            display: flex !important;
-            flex-wrap: wrap;
-            align-items: center;
+        .letter-detail-footer {
+            display: flex;
             justify-content: center;
             gap: 16px;
-            padding: 16px 10px; /* 从12px改为16px */
-            border-top: 1px dashed #c8ddf0;
-            margin-top: auto;
-            background: #fff; /* 新增:确保背景可见 */
-            position: sticky; /* 新增:固定在底部 */
-            bottom: 0;
-            z-index: 10; /* 新增:提高层级 */
-            min-height: 50px; /* 新增:确保最小高度 */
+            flex-wrap: wrap;
+            padding-top: 12px;
+            border-top: 1px dashed #85DBF9;
         }
-        .envelope-footer span,
-        .envelope-footer button {
-            font-size: 14px; /* 从13px改为14px,更清晰 */
-            color: #7a9cc6;
-            cursor: pointer;
-            padding: 6px 12px; /* 从4px 8px改为6px 12px,更大更易点击 */
-            background: transparent;
-            border: none;
-            font-family: var(--font-family);
-            transition: color 0.2s;
-            pointer-events: auto; /* 新增:确保可点击 */
-        }
-        .envelope-footer span:hover,
-        .envelope-footer button:hover { color: #555; }
-        .envelope-footer span.danger { color: #ff6b6b; }
-        .envelope-footer span.danger:hover { color: #ee5a5a; }
-        .envelope-paging {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .letter-detail-footer span {
             font-size: 13px;
-            color: #888;
-        }
-        .envelope-paging button {
-            padding: 4px 10px;
-            border: 1px solid rgba(255,182,193,0.6);
-            border-radius: 10px;
-            background: #fff;
-            color: #666;
+            color: #5a9ec4;
             cursor: pointer;
+            padding: 4px 8px;
         }
-        .envelope-paging button:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-        .send-letter-modal .envelope-body {
-            border-top: 3px solid #FFB6C1;
-            border-radius: 0;
-        }
-        .send-letter-modal .envelope-flap {
-            display: none;
-        }
-        .send-letter-modal .modal-input {
-            margin: 0 14px 10px;
+        .letter-detail-footer span:hover { color: #2a7ab5; }
+
+        /* 写信弹窗（9:16比例，宽1080×高1920） */
+        .send-letter-modal .modal-content {
+            height: 92vh;
+            max-height: 92vh;
+            min-height: 92vh;
+            aspect-ratio: 9 / 16;
             width: auto;
-        }.send-letter-modal .modal-textarea {
+            min-width: calc(92vh * 9 / 16);
+            max-width: calc(92vh * 9 / 16);
+            display: flex;
+            flex-direction: column;
+            background: #f7fbff;
+            border-radius: 20px;
+            border: 2px solid #c8ddf0;
+        }
+        .send-letter-modal .modal-textarea {
             flex: 1;
             height: auto;
             line-height: 1.6;
@@ -4104,20 +3977,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
         /* ===== 一起写歌（重写版：毛玻璃 + 画布白底） ===== */
         #songwriteAppPage{
-            --sw-return-bg:#1a1a1a;         /* 返回键背景色 */
-            --sw-menu-bg:#1a1a1a;           /* 菜单键背景色 */
-            --sw-return-img:none;           /* 返回键背景图 */
-            --sw-menu-img:none;             /* 菜单键背景图 */
-            --sw-font:#222222;              /* 全局字体颜色 */
+            --sw-btn-bg:#1a1a1a;            /* 按钮背景色 */
+            --sw-btn-text:#ffffff;          /* 按钮文字色 */
+            --sw-font:#222222;              /* 字体颜色 */
             --sw-accent:#1a1a1a;            /* 选中强调色 */
             --sw-bg-color:transparent;      /* 背景纯色 */
             --sw-bg-img:none;               /* 背景图片 */
-            --sw-glass-bg:rgba(255,255,255,0.5); /* 毛玻璃背景色 */
-            --sw-glass-enabled:1;
+            --sw-btn-img:none;              /* 按钮背景图片 */
             background:var(--sw-bg-color);
-            color:var(--sw-font);
         }
-        html.dark-mode #songwriteAppPage{ --sw-font:#e8e8e8; }
         html.dark-mode #songwriteAppPage{ --sw-font:#e8e8e8; }
 
         .sw-wrap{padding:8px 4px 24px;max-width:560px;margin:0 auto;}
@@ -4126,24 +3994,24 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-step{font-size:12px;color:#a9a9a9;text-align:center;margin-bottom:14px;letter-spacing:1px;}
 
         /* 毛玻璃容器 */
-        .sw-glass{background:var(--sw-glass-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;padding:18px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.45);box-shadow:0 4px 18px rgba(0,0,0,0.05);}
-        html.dark-mode .sw-glass{background:var(--sw-glass-bg);border-color:rgba(255,255,255,0.08);}
+        .sw-glass{background:rgba(255,255,255,0.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;padding:18px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.45);box-shadow:0 4px 18px rgba(0,0,0,0.05);}
+        html.dark-mode .sw-glass{background:rgba(45,45,45,0.5);border-color:rgba(255,255,255,0.08);}
         .sw-glass.small{padding:12px 14px;border-radius:12px;}
         .sw-glass-text{font-size:13px;color:#6f6f6f;line-height:1.6;text-align:center;}
         html.dark-mode .sw-glass-text{color:#bdbdbd;}
 
         /* 顶部标题栏：返回 + 歌名 + 菜单 */
-        .sw-topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top, 0px) + 14px) 2px 10px;background:transparent;}
-        .sw-topbar .sw-tb-back{width:34px;height:34px;border-radius:50%;background:var(--sw-return-bg);background-image:var(--sw-return-img);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,0.25);user-select:none;text-shadow:0 1px 2px rgba(0,0,0,0.35);}
-        html.dark-mode .sw-topbar .sw-tb-back{border-color:rgba(255,255,255,0.1);}
+        .sw-topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;padding:6px 2px 10px;background:transparent;}
+        .sw-topbar .sw-tb-back{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--sw-font);cursor:pointer;border:1px solid rgba(255,255,255,0.5);user-select:none;}
+        html.dark-mode .sw-topbar .sw-tb-back{background:rgba(60,60,60,0.6);border-color:rgba(255,255,255,0.1);}
         .sw-topbar .sw-tb-title{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--sw-font);padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-        .sw-topbar .sw-tb-menu{width:34px;height:34px;border-radius:50%;background:var(--sw-menu-bg);background-image:var(--sw-menu-img);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,0.25);}
-        html.dark-mode .sw-topbar .sw-tb-menu{border-color:rgba(255,255,255,0.1);}
+        .sw-topbar .sw-tb-menu{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;color:var(--sw-font);cursor:pointer;border:1px solid rgba(255,255,255,0.5);}
+        html.dark-mode .sw-topbar .sw-tb-menu{background:rgba(60,60,60,0.6);border-color:rgba(255,255,255,0.1);}
 
         /* 通用按钮 */
         .sw-btn{text-align:center;padding:12px 16px;background:var(--sw-btn-bg);background-image:var(--sw-btn-img);background-size:cover;background-position:center;color:var(--sw-btn-text);border-radius:12px;font-size:15px;cursor:pointer;margin:10px auto 0;border:none;transition:transform .12s,opacity .2s;font-family:var(--font-family);}
         .sw-btn:active{transform:scale(0.97);}
-        .sw-btn.ghost{background:var(--sw-glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--sw-font);background-image:none;border:1px solid rgba(0,0,0,0.06);}
+        .sw-btn.ghost{background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--sw-font);background-image:none;border:1px solid rgba(0,0,0,0.06);}
         html.dark-mode .sw-btn.ghost{background:rgba(70,70,70,0.5);color:#e8e8e8;}
         .sw-btn.full{width:100%;}
         .sw-btn.disabled{opacity:0.5;pointer-events:none;}
@@ -4152,7 +4020,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
         /* 选项卡片 */
         .sw-chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
-        .sw-chip{padding:13px 22px;border:1.5px solid rgba(0,0,0,0.1);border-radius:14px;font-size:15px;cursor:pointer;background:var(--sw-glass-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:all .18s;color:var(--sw-font);}
+        .sw-chip{padding:13px 22px;border:1.5px solid rgba(0,0,0,0.1);border-radius:14px;font-size:15px;cursor:pointer;background:rgba(255,255,255,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:all .18s;color:var(--sw-font);}
         html.dark-mode .sw-chip{background:rgba(70,70,70,0.45);border-color:rgba(255,255,255,0.1);}
         .sw-chip.on{border-color:var(--sw-accent);background:var(--sw-accent);color:#fff;transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.16);background-image:none;}
 
@@ -4172,7 +4040,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         /* 乐器横滚卡片 */
         .sw-inst-scroll{display:flex;gap:10px;overflow-x:auto;padding:6px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
         .sw-inst-scroll::-webkit-scrollbar{display:none;}
-        .sw-inst-card{flex:0 0 auto;width:92px;padding:12px 8px;border:1.5px solid rgba(0,0,0,0.08);border-radius:14px;background:var(--sw-glass-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:center;cursor:pointer;transition:all .18s;color:var(--sw-font);}
+        .sw-inst-card{flex:0 0 auto;width:92px;padding:12px 8px;border:1.5px solid rgba(0,0,0,0.08);border-radius:14px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:center;cursor:pointer;transition:all .18s;color:var(--sw-font);}
         html.dark-mode .sw-inst-card{background:rgba(70,70,70,0.45);border-color:rgba(255,255,255,0.1);}
         .sw-inst-card.on{border-color:var(--sw-accent);box-shadow:0 8px 20px rgba(0,0,0,0.14);transform:translateY(-2px);}
         .sw-inst-card .sw-inst-ic{display:flex;justify-content:center;margin-bottom:6px;}
@@ -4190,7 +4058,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-canvas-box{position:relative;background:#ffffff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.12);overflow:hidden;}
         .sw-canvas{display:block;background:#ffffff;touch-action:none;cursor:crosshair;}
         .sw-canvas-tools{display:flex;gap:10px;justify-content:center;margin-top:12px;}
-        .sw-tool{width:44px;height:44px;border-radius:12px;background:var(--sw-glass-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sw-font);}
+        .sw-tool{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sw-font);}
         html.dark-mode .sw-tool{background:rgba(70,70,70,0.5);border-color:rgba(255,255,255,0.1);}
         .sw-tool.on{background:var(--sw-accent);color:#fff;border-color:var(--sw-accent);}
 
@@ -4203,7 +4071,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-progress-txt{font-size:12px;color:#9a9a9a;text-align:center;margin-bottom:6px;}
 
         /* 创作完成卡片 */
-        .sw-card{background:var(--sw-glass-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.45);border-radius:18px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.08);margin-bottom:14px;}
+        .sw-card{background:rgba(255,255,255,0.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.45);border-radius:18px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,0.08);margin-bottom:14px;}
         html.dark-mode .sw-card{background:rgba(50,50,50,0.5);border-color:rgba(255,255,255,0.08);}
         .sw-card .rw{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);font-size:13px;color:var(--sw-font);}
         html.dark-mode .sw-card .rw{border-bottom-color:rgba(255,255,255,0.08);}
@@ -4257,27 +4125,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-pbtn.loop.on{color:#d43c33;}
         /* 混响选择器 */
         .sw-reverb-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0 4px;}
-        .sw-reverb-btn{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;background:var(--sw-glass-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(0,0,0,0.08);color:var(--sw-font);transition:all .15s;}
+        .sw-reverb-btn{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;background:rgba(255,255,255,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(0,0,0,0.08);color:var(--sw-font);transition:all .15s;}
         html.dark-mode .sw-reverb-btn{background:rgba(70,70,70,0.45);border-color:rgba(255,255,255,0.1);}
         .sw-reverb-btn.on{background:#d43c33;color:#fff;border-color:#d43c33;}
-        .sw-player-melody{width:100%;max-width:340px;background:var(--sw-glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.4);border-radius:12px;padding:12px;margin-bottom:8px;max-height:120px;overflow-y:auto;}
-        html.dark-mode .sw-player-melody{background:var(--sw-glass-bg);border-color:rgba(255,255,255,0.08);}
-
-        /* 关闭一起写歌的毛玻璃效果 */
-        #songwriteAppPage.sw-no-glass .sw-glass,
-        #songwriteAppPage.sw-no-glass .sw-topbar .sw-tb-back,
-        #songwriteAppPage.sw-no-glass .sw-topbar .sw-tb-menu,
-        #songwriteAppPage.sw-no-glass .sw-btn.ghost,
-        #songwriteAppPage.sw-no-glass .sw-chip,
-        #songwriteAppPage.sw-no-glass .sw-inst-card,
-        #songwriteAppPage.sw-no-glass .sw-tool,
-        #songwriteAppPage.sw-no-glass .sw-reverb-btn,
-        #songwriteAppPage.sw-no-glass .sw-player-melody,
-        #songwriteAppPage.sw-no-glass .sw-card {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            background: var(--sw-glass-bg) !important;
-        }
+        .sw-player-melody{width:100%;max-width:340px;background:rgba(255,255,255,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.4);border-radius:12px;padding:12px;margin-bottom:8px;max-height:120px;overflow-y:auto;}
+        html.dark-mode .sw-player-melody{background:rgba(60,60,60,0.4);border-color:rgba(255,255,255,0.08);}
         .sw-player-melody .mt{font-size:12px;font-weight:600;color:#9a9a9a;margin-bottom:6px;}
         .sw-melody-list{display:flex;flex-wrap:wrap;gap:5px;}
         .sw-melody-list span{font-size:12px;color:#6f6f6f;background:rgba(0,0,0,0.05);padding:2px 7px;border-radius:8px;}
@@ -4298,8 +4150,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-menu-item .mi-r{font-size:12px;color:#bbb;}
         .sw-color-pick{display:flex;align-items:center;gap:10px;}
         .sw-color-pick input[type=color]{width:34px;height:34px;border:none;border-radius:8px;background:none;cursor:pointer;padding:0;}
-        .sw-reset-btn{font-size:11px;color:#888;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:4px;}
-        html.dark-mode .sw-reset-btn{background:#3a3a3a;border-color:#555;color:#bbb;}
         .sw-sec-h{font-size:13px;font-weight:700;margin:14px 4px 8px;color:inherit;}
         .sw-pal-row{display:flex;flex-wrap:wrap;gap:8px;padding:4px;}
         .sw-pal-dot{width:34px;height:34px;border-radius:50%;cursor:pointer;border:2px solid rgba(0,0,0,0.08);position:relative;}
@@ -6193,7 +6043,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg>
 </div>
 <div class="chat-input-wrap">
-<input class="chat-input" id="chatInput" inputmode="text" onkeydown="handleChatEnter(event)" placeholder="输入消息" type="text"/>
+<input class="chat-input" id="chatInput" onkeydown="handleChatEnter(event)" placeholder="输入消息" type="text"/>
 </div>
 <div class="chat-btn" data-icon="receive" onclick="triggerReceive()">
 <svg viewbox="0 0 24 24"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -7630,7 +7480,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
           <div class="xcyj-detail-label">他的留言</div>
           <div class="xcyj-detail-text" id="xcyjDetailHis"></div>
           <div class="xcyj-detail-actions">
-            <button class="xcyj-mini-btn" id="xcyjSummonBtn" onclick="summonHisMessage()">dd对方留言</button>
+            <button class="xcyj-mini-btn" id="xcyjSummonBtn" onclick="summonHisMessage()">召唤对方留言</button>
             <button class="xcyj-mini-btn" onclick="editHisMessage()">编辑</button>
           </div>
           <div class="xcyj-detail-status" id="xcyjSummonStatus"></div>
@@ -7881,11 +7731,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 </div>
 <div class="settings-row">
-<label>背景图片透明度</label>
-<input id="diaryBgOpacity" max="1" min="0" oninput="saveDiarySettings()" step="0.1" type="range" value="1"/>
-<span id="diaryBgOpacityVal">100%</span>
-</div>
-<div class="settings-row">
 <label>自定义字体</label>
 <div class="btn-group">
 <button onclick="uploadCustomFont('diary')">上传TTF</button>
@@ -7909,6 +7754,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <label>悬浮框高度</label>
 <input id="diaryModalHeight" max="90" min="40" oninput="saveDiarySettings()" step="1" type="range" value="52"/>
 <span id="diaryModalHeightVal">52vh</span>
+</div>
+<div class="settings-row ios-switch-row">
+<span class="ios-switch-label">关闭毛玻璃效果</span>
+<span class="ios-switch"><input id="diaryModalNoGlass" onchange="saveDiarySettings()" type="checkbox"/><span class="ios-switch-slider"></span></span>
 </div>
 <div class="settings-row">
 <label>悬浮框背景颜色</label>
@@ -7953,7 +7802,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input id="diarySpliceMax" max="20" min="0" onchange="saveDiarySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="3"/>
 </div>
 <div class="settings-row">
-<label>今日提醒概率(%)</label>
+<label>催更概率(%)</label>
 <input id="diaryUrgeProb" max="100" min="0" onchange="saveDiarySettings()" style="width:60px;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;font-size:13px;outline:none;" type="number" value="20"/>
 </div>
 <div class="settings-row">
@@ -8002,46 +7851,27 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <!-- 寄信模态框 -->
 <div class="modal send-letter-modal" id="sendLetterModal">
 <div class="modal-content">
-<div class="envelope-wrap">
-<div class="envelope-body">
-<div class="envelope-content">
-<div class="envelope-title">写一封信</div>
-<input class="modal-input" id="letterTitle" placeholder="信件标题" type="text" style="margin-bottom:10px;"/>
-<textarea class="envelope-textarea" id="letterContent" placeholder="写下你想说的话..."></textarea>
-<div class="envelope-footer">
-<span onclick="closeSendLetter()">取消</span>
-<span class="confirm" onclick="sendLetter()" style="color:#FF85A1;font-weight:600;">寄出</span>
-</div>
-</div>
-</div>
+<div class="modal-title">写一封信</div>
+<input class="modal-input" id="letterTitle" placeholder="信件标题" type="text"/>
+<textarea class="modal-textarea" id="letterContent" placeholder="写下你想说的话..."></textarea>
+<div class="modal-btns">
+<div class="modal-btn cancel" onclick="closeSendLetter()">取消</div>
+<div class="modal-btn confirm" onclick="sendLetter()">寄出</div>
 </div>
 </div>
 </div>
 <!-- 信件详情模态框 -->
 <div class="modal letter-detail-modal" id="letterDetailModal">
-<div class="modal-content">
-<div class="envelope-wrap">
-<div class="envelope-body">
-<div class="envelope-body-bg" id="envelopeBodyBg"></div>
-<div class="envelope-ruler-layer" id="envelopeRulerLayer"></div>
-<div class="envelope-body-inner">
-<div class="envelope-content">
-<div class="envelope-title" id="letterDetailTitle">信件详情</div>
-<div class="envelope-text" id="letterEnvelopeContent"></div>
+<div class="modal-content" style="display:flex;flex-direction:column;align-items:center;padding:20px 16px;">
+<div class="modal-title" id="letterDetailTitle" style="width:100%;text-align:center;">信件详情</div>
+<div class="letter-detail-content" id="letterDetailContent" style="flex:1;overflow-y:auto;width:100%;">
+<div class="letter-detail-text" id="letterDetailText"></div>
 </div>
-</div>
-<div class="envelope-footer">
-<div class="envelope-paging">
-<button id="letterPrevPageBtn" onclick="showLetterPage(-1)">上一页</button>
-<span id="letterPageIndicator">1 / 1</span>
-<button id="letterNextPageBtn" onclick="showLetterPage(1)">下一页</button>
-</div>
-<span id="letterNextSentenceBtn" onclick="showNextLetterSentence()" style="display:none;">下一句</span>
-<span id="toggleFavBtn" onclick="toggleFavoriteLetter()">收藏</span>
+<div class="letter-detail-footer">
 <span class="danger" onclick="deleteCurrentLetter()">删除</span>
+<span id="toggleFavBtn" onclick="toggleFavoriteLetter()">收藏</span>
+<span id="letterNextSentenceBtn" onclick="showNextLetterSentence()" style="display:none;">下一句</span>
 <span onclick="closeLetterDetail()">关闭</span>
-</div>
-</div>
 </div>
 </div>
 </div>
@@ -8074,59 +7904,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <span id="letterFontSizeVal">14</span>
 </div>
 <div class="settings-row">
-<label>信封背景图片</label>
+<label>背景图片</label>
 <div class="btn-group">
-<button onclick="uploadEnvelopeBg()">上传</button>
-<button onclick="resetEnvelopeBg()">恢复默认</button>
+<button onclick="uploadLetterBg()">上传</button>
+<button onclick="resetLetterBg()">重置</button>
 </div>
-</div>
-<div class="settings-row">
-<label>背景图片透明度</label>
-<input id="envelopeBgOpacity" max="1" min="0" oninput="saveLetterSettings()" step="0.1" type="range" value="1"/>
-<span id="envelopeBgOpacityVal">100%</span>
-</div>
-<div class="settings-row">
-<label>展开高度</label>
-<input id="envelopeHeight" max="500" min="200" oninput="saveLetterSettings()" type="range" value="300"/>
-<span id="envelopeHeightVal">300px</span>
-</div>
-<div class="settings-row">
-<label>悬浮框宽度</label>
-<input id="letterFloatBoxWidth" max="95" min="40" oninput="saveLetterSettings()" step="1" type="range" value="86"/>
-<span id="letterFloatBoxWidthVal">86%</span>
-</div>
-<div class="settings-row">
-<label>悬浮框高度</label>
-<input id="letterFloatBoxHeight" max="90" min="40" oninput="saveLetterSettings()" step="1" type="range" value="52"/>
-<span id="letterFloatBoxHeightVal">52vh</span>
-</div>
-<div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
-<div class="section-subtitle">信纸样式</div>
-<div class="settings-row">
-<label>信纸边框色</label>
-<input id="envelopeBorderColor" oninput="saveLetterSettings()" type="color" value="#FFB6C1"/>
-</div>
-<div class="settings-row">
-<label>信纸背景色</label>
-<input id="envelopeBgColor" oninput="saveLetterSettings()" type="color" value="#FFFFFF"/>
-</div>
-<div class="settings-row ios-switch-row">
-<span class="ios-switch-label">显示横线</span>
-<span class="ios-switch"><input id="letterRulerEnabled" onchange="saveLetterSettings()" type="checkbox" checked="checked"/><span class="ios-switch-slider"></span></span>
-</div>
-<div class="settings-row">
-<label>横线颜色</label>
-<input id="letterRulerColor" oninput="saveLetterSettings()" type="color" value="#e0e0e0"/>
-</div>
-<div class="settings-row">
-<label>横线粗细</label>
-<input id="letterRulerThickness" max="4" min="0.5" oninput="saveLetterSettings()" step="0.5" type="range" value="1"/>
-<span id="letterRulerThicknessVal">1px</span>
-</div>
-<div class="settings-row">
-<label>横线间距</label>
-<input id="letterRulerGap" max="40" min="20" oninput="saveLetterSettings()" type="range" value="28"/>
-<span id="letterRulerGapVal">28px</span>
 </div>
 <div class="settings-row">
 <label>自定义字体</label>
@@ -8142,6 +7924,45 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <div id="customFontList_letter" style="margin:4px 0 8px;"></div>
 <div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
+<div class="section-subtitle">详情悬浮框</div>
+<div class="settings-row">
+<label>悬浮框宽度</label>
+<input id="letterModalWidth" max="95" min="40" oninput="saveLetterSettings()" step="1" type="range" value="86"/>
+<span id="letterModalWidthVal">86%</span>
+</div>
+<div class="settings-row">
+<label>悬浮框高度</label>
+<input id="letterModalHeight" max="90" min="40" oninput="saveLetterSettings()" step="1" type="range" value="52"/>
+<span id="letterModalHeightVal">52vh</span>
+</div>
+<div class="settings-row ios-switch-row">
+<span class="ios-switch-label">关闭毛玻璃效果</span>
+<span class="ios-switch"><input id="letterModalNoGlass" onchange="saveLetterSettings()" type="checkbox"/><span class="ios-switch-slider"></span></span>
+</div>
+<div class="settings-row">
+<label>悬浮框背景颜色</label>
+<input id="letterModalBg" oninput="saveLetterSettings()" type="color" value="#ffffff"/>
+</div>
+<div class="settings-row">
+<label>悬浮框边框颜色</label>
+<input id="letterModalBorderColor" oninput="saveLetterSettings()" type="color" value="#e0e0e0"/>
+</div>
+<div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
+<div class="section-subtitle">横线</div>
+<div class="settings-row ios-switch-row">
+<span class="ios-switch-label">显示横线</span>
+<span class="ios-switch"><input id="letterRulerEnabled" onchange="saveLetterSettings()" type="checkbox" checked="checked"/><span class="ios-switch-slider"></span></span>
+</div>
+<div class="settings-row">
+<label>横线粗细</label>
+<input id="letterRulerThickness" max="4" min="0.5" oninput="saveLetterSettings()" step="0.5" type="range" value="1"/>
+<span id="letterRulerThicknessVal">1px</span>
+</div>
+<div class="settings-row">
+<label>横线颜色</label>
+<input id="letterRulerColor" oninput="saveLetterSettings()" type="color" value="#e0e0e0"/>
+</div>
+<div style="border-top:1px solid #f0f0f0;margin:12px 0;"></div>
 <div class="section-subtitle">阅读</div>
 <div class="settings-row ios-switch-row">
 <span class="ios-switch-label">一句一显示</span>
@@ -8151,7 +7972,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="css-preview-box" id="letterCssPreview"></div>
 <div class="subsection-title" style="margin-top: 12px;">自定义CSS（影响整个信封）</div>
 <textarea id="letterCustomCss" oninput="saveLetterSettings()" placeholder="在此输入自定义CSS，影响整个信封页面&#10;可用类名参考上方&#10;例如：.letter-item { border-radius: 24px; }" style="width:100%;min-height:120px;font-size:12px;font-family:monospace;border:1px solid #85DBF9;border-radius:8px;padding:8px;background:#f7fbff;color:#333;resize:vertical;outline:none;"></textarea>
-<div style="font-size:10px;color:#999;margin-top:4px;line-height:1.5;">类名说明：.letter-item=信件卡片 .letter-title=信件标题 .letter-preview=信件预览 .letter-date=信件日期 .letter-page=信封页面 .letter-tabs=标签栏 .letter-tab=标签项 .letter-fab=悬浮按钮 .letter-detail-modal=详情弹窗 .envelope-body=信纸主体 .envelope-flap=信封封口 .envelope-ruler-layer=横线层 .envelope-text=信纸文字 .envelope-body-bg=信纸背景图 .envelope-body-inner=信纸内容区</div>
+<div style="font-size:10px;color:#999;margin-top:4px;line-height:1.5;">类名说明：.letter-item=信件卡片 .letter-title=信件标题 .letter-preview=信件预览 .letter-date=信件日期 .letter-page=信封页面 .letter-tabs=标签栏 .letter-tab=标签项 .letter-fab=悬浮按钮 .letter-detail-modal=详情弹窗 .letter-detail-text=详情文本 .letter-page-header=顶部区域 .letter-page-back=返回键 .letter-page-menu=菜单键</div>
 </div></div>
 </div>
 <div class="modal-btns">
@@ -8757,39 +8578,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 const parsed = JSON.parse(raw);
                 function mergeDeep(target, source) {
                     for (const key in source) {
-                        // 如果源字段是对象但不是数组
                         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                            // 如果目标字段不存在或不是对象,创建新对象
-                            if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
-                                target[key] = {};
-                            }
-                            target[key] = mergeDeep(target[key], source[key]);
-                        } 
-                        // 如果源字段是数组
-                        else if (Array.isArray(source[key])) {
-                            // 直接使用源数组,不合并(保留用户数据)
+                            target[key] = mergeDeep(target[key] || {}, source[key]);
+                        } else if (!(key in target)) {
                             target[key] = source[key];
                         }
-                        // 如果目标没有该字段,使用源字段
-                        else if (!(key in target)) {
-                            target[key] = source[key];
-                        }
-                        // 如果都有且都不是对象/数组,保留目标值(保留用户设置)
                     }
                     return target;
                 }
                 const merged = mergeDeep(parsed, JSON.parse(JSON.stringify(defaultData)));
-                // 确保联系人数据完整
-                if (!merged.contactList) {
-                    merged.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
-                }
-                if (!merged.contactList.contacts) {
-                    merged.contactList.contacts = [];
-                }
-                if (!merged.contactList.groups) {
-                    merged.contactList.groups = [];
-                }
-                console.log('联系人数据检查:', merged.contactList.contacts.length, '个联系人');
                 // 兼容旧版拍一拍数据
                 if (Array.isArray(merged.nudgeCards) && merged.nudgeCards.length > 0 && typeof merged.nudgeCards[0] === 'string') {
                     merged.specialCards.nudge = merged.nudgeCards.map(t => ({text: t, hidden: false}));
@@ -8841,39 +8638,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 const parsed = JSON.parse(json);
                 function mergeDeep(target, source) {
                     for (const key in source) {
-                        // 如果源字段是对象但不是数组
                         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                            // 如果目标字段不存在或不是对象,创建新对象
-                            if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
-                                target[key] = {};
-                            }
-                            target[key] = mergeDeep(target[key], source[key]);
-                        } 
-                        // 如果源字段是数组
-                        else if (Array.isArray(source[key])) {
-                            // 直接使用源数组,不合并(保留用户数据)
+                            target[key] = mergeDeep(target[key] || {}, source[key]);
+                        } else if (!(key in target)) {
                             target[key] = source[key];
                         }
-                        // 如果目标没有该字段,使用源字段
-                        else if (!(key in target)) {
-                            target[key] = source[key];
-                        }
-                        // 如果都有且都不是对象/数组,保留目标值(保留用户设置)
                     }
                     return target;
                 }
                 const merged = mergeDeep(parsed, JSON.parse(JSON.stringify(defaultData)));
-                // 确保联系人数据完整
-                if (!merged.contactList) {
-                    merged.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
-                }
-                if (!merged.contactList.contacts) {
-                    merged.contactList.contacts = [];
-                }
-                if (!merged.contactList.groups) {
-                    merged.contactList.groups = [];
-                }
-                console.log('联系人数据检查:', merged.contactList.contacts.length, '个联系人');
                 // 迁移旧版统一设置到分方设置
                 if (merged.chatSettings) {
                     const cs = merged.chatSettings;
@@ -9427,15 +9200,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 appData.letter.settings.bgImage = src;
                 saveData();
                 renderLetterList();
-                closeAllModals();
-            } else if (currentEditType === 'envelopeBg') {
-                appData.letter.settings.envelopeBgImage = src;
-                saveData();
-                const bgEl = document.getElementById('envelopeBodyBg');
-                if (bgEl) {
-                    bgEl.style.backgroundImage = 'url(' + src + ')';
-                    bgEl.style.opacity = appData.letter.settings.envelopeBgOpacity || 1;
-                }
                 closeAllModals();
             } else if (currentEditType === 'globalChatWallpaper' || currentEditType === 'globalDesktopWallpaper') {
                 appData.globalSettings.chatWallpaper = src;
@@ -10432,10 +10196,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 bubble.textContent = msg.content;
             } else if (msg.type === 'image') {
                 bubble.className += ' media-msg';
-                bubble.innerHTML = `<img src="${msg.content}" alt="" onclick="previewImage(this.src)" style="cursor:pointer;">`;
+                bubble.innerHTML = `<img src="${msg.content}" alt="">`;
             } else if (msg.type === 'video') {
                 bubble.className += ' media-msg';
-                bubble.innerHTML = `<video src="${msg.content}" controls onclick="playVideo(this.src)" style="cursor:pointer;"></video>`;
+                bubble.innerHTML = `<video src="${msg.content}" controls></video>`;
             } else if (msg.type === 'emoji') {
                 bubble.innerHTML = `<img src="${msg.content}" style="width:80px;">`;
                 bubble.style.background = 'transparent';
@@ -14227,21 +13991,21 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         });
     }
 
-    // dd对方回复单人日记
+    // 召唤对方回复单人日记
     function summonSingleDiaryReply(diaryId, btn) {
         const diary = appData.diary.singleList.find(d => d.id === diaryId);
         if (!diary) return;
         if (diary.reply) return; // 已有回复
-        if (diary.summoned) return; // 已dd过
+        if (diary.summoned) return; // 已召唤过
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         diary.summoned = true;
         diary.pendingReplyAt = Date.now() + replyTime * 60 * 1000;
         saveData();
         if (btn) {
             btn.classList.add('summoned');
-            btn.textContent = '已dd';
+            btn.textContent = '已召唤';
         }
-        addSystemMsg('已dd' + (appData.chatSettings.otherNickname || '对方') + '回复日记，预计' + replyTime + '分钟后回复');
+        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '回复日记，预计' + replyTime + '分钟后回复');
         scheduleDiaryReply(diaryId, replyTime * 60 * 1000);
     }
 
@@ -14535,11 +14299,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
     }
 
-    // dd对方填写双人日记
+    // 召唤对方填写双人日记
     function summonDoubleDiaryOther(index, btn) {
         const entry = appData.diary.doubleList[index];
         if (!entry) return;
-        if (entry.summoned) return; // 已经dd过
+        if (entry.summoned) return; // 已经召唤过
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         entry.summoned = true;
         entry.summonedAt = Date.now();
@@ -14548,16 +14312,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // 更新按钮状态
         if (btn) {
             btn.classList.add('summoned');
-            btn.textContent = '已dd';
+            btn.textContent = '已召唤';
         }
-        addSystemMsg('已dd' + (appData.chatSettings.otherNickname || '对方') + '填写日记，预计' + replyTime + '分钟后回复');
+        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '填写日记，预计' + replyTime + '分钟后回复');
         // 定时触发对方填写
         setTimeout(() => {
             generateSummonedDoubleDiary(entry);
         }, replyTime * 60 * 1000);
     }
 
-    // dd后生成对方双人日记数据
+    // 召唤后生成对方双人日记数据
     function generateSummonedDoubleDiary(entry) {
         if (!entry || hasDoubleDiaryData(entry.otherData)) return;
         const data = generateDoubleDiaryData();
@@ -14567,11 +14331,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         delete entry.summonedAt;
         delete entry.summonReplyAt;
         saveData();
-        addSystemMsg(appData.chatSettings.otherNickname + '已响应dd，更新了今日日记');
+        addSystemMsg(appData.chatSettings.otherNickname + '已响应召唤，更新了今日日记');
         if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
     }
 
-    // 检查未完成的dd（页面刷新后恢复）
+    // 检查未完成的召唤（页面刷新后恢复）
     function checkPendingSummons() {
         const now = Date.now();
         appData.diary.doubleList.forEach(entry => {
@@ -14775,12 +14539,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             replyLabel.style.display = 'flex';
             replyLabel.style.alignItems = 'center';
             replyLabel.innerHTML = '<span>' + (diary.reply ? '对方的回复：' : '等待回复...') + '</span>';
-            // dd对方按钮 - 没有回复时显示
+            // 召唤对方按钮 - 没有回复时显示
             if (!diary.reply) {
                 const summonBtn = document.createElement('button');
                 summonBtn.className = 'diary-summon-btn' + (diary.summoned ? ' summoned' : '');
                 const otherNick = appData.chatSettings.otherNickname || '对方';
-                summonBtn.textContent = diary.summoned ? '已dd' : 'dd' + otherNick;
+                summonBtn.textContent = diary.summoned ? '已召唤' : '召唤' + otherNick;
                 summonBtn.onclick = (e) => {
                     e.stopPropagation();
                     summonSingleDiaryReply(diary.id, summonBtn);
@@ -14809,7 +14573,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         return card;
     }
 
-    // 双人日记卡片：拆分为独立可滚动卡片，dd提示仅在"我写了但对方没写"时出现
+    // 双人日记卡片：拆分为独立可滚动卡片，召唤提示仅在"我写了但对方没写"时出现
     function ensureTodayDoubleDiaryEntry() {
         if (!appData.diary) appData.diary = {singleList:[], doubleList:[], currentTab:'single', settings:{}};
         if (!Array.isArray(appData.diary.doubleList)) appData.diary.doubleList = [];
@@ -14925,7 +14689,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
         const body = document.createElement('div');
         body.className = 'dd-detail-section';
-        body.innerHTML = '<div style="text-align:center;color:#d68a8a;font-size:13px;padding:10px 0;">快dd ' + escapeHtml(otherNick) + ' 来写今日日记吧~</div>';
+        body.innerHTML = '<div style="text-align:center;color:#d68a8a;font-size:13px;padding:10px 0;">快召唤 ' + escapeHtml(otherNick) + ' 来写今日日记吧~</div>';
         card.appendChild(body);
 
         const footer = document.createElement('div');
@@ -14933,7 +14697,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         footer.style.justifyContent = 'center';
         const summonBtn = document.createElement('button');
         summonBtn.className = 'dd-summon-btn' + (entry.summoned ? ' summoned' : '');
-        summonBtn.textContent = entry.summoned ? '已dd' : 'dd' + otherNick;
+        summonBtn.textContent = entry.summoned ? '已召唤' : '召唤' + otherNick;
         summonBtn.onclick = (e) => {
             e.stopPropagation();
             summonDoubleDiaryOther(index, summonBtn);
@@ -15251,17 +15015,27 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const diary = list[index];
         if (!diary) return;
         appData.currentViewingDiary = { index: index, tab: tab };
+        const senderNick = diary.sender === 'mine' ? appData.chatSettings.myNickname : appData.chatSettings.otherNickname;
+        const senderAvatar = diary.sender === 'mine' ? (appData.chatSettings.myAvatar || '') : (appData.chatSettings.otherAvatar || '');
+        document.getElementById('diaryDetailTitle').textContent = senderNick + ' 的日记';
+        const detailContent = document.getElementById('diaryDetailContent');
         const s = appData.diary.settings;
         const dateStr = diary.dateStr || getDiaryDateStr(diary.time);
-        const detailContent = document.getElementById('diaryDetailContent');
         if (detailContent) {
             const weatherIcon = renderDiaryIconImg('weather', diary.weather);
             const moodIcon = renderDiaryIconImg('mood', diary.mood);
             let html =
+                '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px;">' +
+                '<div style="width:48px;height:48px;border-radius:50%;background:#e0ecf5;overflow:hidden;margin-bottom:6px;">' +
+                (senderAvatar ? '<img src="'+senderAvatar+'" style="width:100%;height:100%;object-fit:cover;" alt="">' : '') +
+                '</div>' +
+                '<div style="font-size:13px;color:#4a90d9;font-weight:500;">'+escapeHtml(senderNick)+'</div>' +
+                '</div>' +
+                '<div style="width:100%;border-top:1px dashed #c8ddf0;margin-bottom:12px;"></div>' +
                 '<div style="font-size:13px;font-weight:600;color:#4a90d9;padding-bottom:6px;border-bottom:1px dashed #c8ddf0;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a90d9" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>'+escapeHtml(diary.tag || '未分类')+'</div>' +
-                '<div style="display:flex;align-items:center;font-size:12px;color:#7a9cc6;gap:18px;padding-bottom:6px;border-bottom:1px dashed #e0ecf5;margin-bottom:8px;">' +
-                '<span style="display:flex;align-items:center;gap:4px;">'+weatherIcon+(diary.weather || '—')+'</span>' +
-                '<span style="display:flex;align-items:center;gap:4px;">'+moodIcon+(diary.mood || '—')+'</span>' +
+                '<div style="display:flex;align-items:center;font-size:12px;color:#7a9cc6;gap:12px;padding-bottom:6px;border-bottom:1px dashed #e0ecf5;margin-bottom:8px;">' +
+                '<span style="display:flex;align-items:center;gap:3px;">'+weatherIcon+(diary.weather || '—')+'</span>' +
+                '<span style="display:flex;align-items:center;gap:3px;">'+moodIcon+(diary.mood || '—')+'</span>' +
                 '<span style="margin-left:auto;">'+dateStr+'</span>' +
                 '</div>';
             // 日记正文
@@ -15287,23 +15061,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const modalContent = document.querySelector('#diaryDetailModal .modal-content');
         applyDetailModalStyle(modalContent, s);
         if (modalContent) {
-            if (s.bgImage) { 
-                modalContent.style.background = 'url('+s.bgImage+') center/cover no-repeat';
-                modalContent.style.position = 'relative';
-                // 应用背景透明度
-                const existingOverlay = modalContent.querySelector('.diary-bg-overlay');
-                if (!existingOverlay) {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'diary-bg-overlay';
-                    overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;background:'+(s.modalBg || s.cardBg || '#fff')+';opacity:'+(s.bgOpacity !== undefined ? 1 - s.bgOpacity : 0)+';z-index:0;border-radius:inherit;';
-                    modalContent.insertBefore(overlay, modalContent.firstChild);
-                } else {
-                    existingOverlay.style.opacity = s.bgOpacity !== undefined ? 1 - s.bgOpacity : 0;
-                    existingOverlay.style.background = s.modalBg || s.cardBg || '#fff';
-                }
-            } else if (!s.modalBg) { 
-                modalContent.style.background = s.cardBg || '#fff'; 
-            }
+            if (s.bgImage) { modalContent.style.background = 'url('+s.bgImage+') center/cover no-repeat'; }
+            else if (!s.modalBg) { modalContent.style.background = s.cardBg || '#fff'; }
             modalContent.style.color = s.textColor || '#4a5568';
             if (s.fontFamily) modalContent.style.fontFamily = s.fontFamily;
         }
@@ -15671,8 +15430,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('diaryCardBorderColor').value = s.cardBorderColor || '#c8ddf0';
         document.getElementById('diaryTextColor').value = s.textColor || '#1a1a1a';
         document.getElementById('diaryFontSize').value = s.fontSize || 14;
-        document.getElementById('diaryBgOpacity').value = s.bgOpacity !== undefined ? s.bgOpacity : 1;
-        document.getElementById('diaryBgOpacityVal').textContent = Math.round((s.bgOpacity !== undefined ? s.bgOpacity : 1) * 100) + '%';
         document.getElementById('diarySpliceMin').value = s.spliceMin;
         document.getElementById('diarySpliceMax').value = s.spliceMax;
         document.getElementById('diaryUrgeProb').value = s.urgeProb;
@@ -15681,6 +15438,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('diaryModalWidthVal').textContent = Math.min(s.modalWidth || 86, 95) + '%';
         document.getElementById('diaryModalHeight').value = Math.min(s.modalHeight || 70, 90);
         document.getElementById('diaryModalHeightVal').textContent = Math.min(s.modalHeight || 70, 90) + 'vh';
+        document.getElementById('diaryModalNoGlass').checked = !!s.modalNoGlass;
         document.getElementById('diaryModalBg').value = s.modalBg || s.cardBg || '#ffffff';
         document.getElementById('diaryModalBorderColor').value = s.modalBorderColor || '#e0e0e0';
         document.getElementById('diaryRulerEnabled').checked = s.rulerEnabled !== false;
@@ -16003,13 +15761,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         s.cardBorderColor = document.getElementById('diaryCardBorderColor').value;
         s.textColor = document.getElementById('diaryTextColor').value;
         s.fontSize = parseInt(document.getElementById('diaryFontSize').value);
-        s.bgOpacity = parseFloat(document.getElementById('diaryBgOpacity').value);
         s.spliceMin = parseInt(document.getElementById('diarySpliceMin').value);
         s.spliceMax = parseInt(document.getElementById('diarySpliceMax').value);
         s.urgeProb = parseInt(document.getElementById('diaryUrgeProb').value);
         s.replyProb = parseInt(document.getElementById('diaryReplyProb').value);
         s.modalWidth = parseInt(document.getElementById('diaryModalWidth').value);
         s.modalHeight = parseInt(document.getElementById('diaryModalHeight').value);
+        s.modalNoGlass = document.getElementById('diaryModalNoGlass').checked;
         s.modalBg = document.getElementById('diaryModalBg').value;
         s.modalBorderColor = document.getElementById('diaryModalBorderColor').value;
         s.rulerEnabled = document.getElementById('diaryRulerEnabled').checked;
@@ -16023,7 +15781,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('diaryModalWidthVal').textContent = s.modalWidth + '%';
         document.getElementById('diaryModalHeightVal').textContent = s.modalHeight + 'vh';
         document.getElementById('diaryRulerThicknessVal').textContent = s.rulerThickness + 'px';
-        document.getElementById('diaryBgOpacityVal').textContent = Math.round(s.bgOpacity * 100) + '%';
         saveData();
         applyDiaryCustomCss();
         applyDiaryTheme();
@@ -16071,21 +15828,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         saveData();
         renderDiaryList();
     }
-    function uploadEnvelopeBg() {
-        currentEditType = 'envelopeBg';
-        document.getElementById('fileInput').click();
-    }
-    function resetEnvelopeBg() {
-        appData.letter.settings.envelopeBgImage = '';
-        appData.letter.settings.envelopeBgOpacity = 1;
-        saveData();
-        const bgEl = document.getElementById('envelopeBodyBg');
-        if (bgEl) {
-            bgEl.style.backgroundImage = '';
-            bgEl.style.opacity = '1';
-        }
-        renderLetterList();
-    }
     function uploadLetterBg() {
         currentEditType = 'letterBg';
         document.getElementById('fileInput').click();
@@ -16115,60 +15857,26 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         s.cardBorderColor = document.getElementById('letterCardBorderColor').value;
         s.textColor = document.getElementById('letterTextColor').value;
         s.fontSize = parseInt(document.getElementById('letterFontSize').value);
-        s.envelopeBgOpacity = parseFloat(document.getElementById('envelopeBgOpacity').value);
-        s.envelopeHeight = parseInt(document.getElementById('envelopeHeight').value);
-        s.floatBoxWidth = parseInt(document.getElementById('letterFloatBoxWidth').value);
-        s.floatBoxHeight = parseInt(document.getElementById('letterFloatBoxHeight').value);
-        s.envelopeBorderColor = document.getElementById('envelopeBorderColor').value;
-        s.envelopeBgColor = document.getElementById('envelopeBgColor').value;
+        s.modalWidth = parseInt(document.getElementById('letterModalWidth').value);
+        s.modalHeight = parseInt(document.getElementById('letterModalHeight').value);
+        s.modalNoGlass = document.getElementById('letterModalNoGlass').checked;
+        s.modalBg = document.getElementById('letterModalBg').value;
+        s.modalBorderColor = document.getElementById('letterModalBorderColor').value;
         s.rulerEnabled = document.getElementById('letterRulerEnabled').checked;
         s.rulerThickness = parseFloat(document.getElementById('letterRulerThickness').value);
-        s.rulerGap = parseInt(document.getElementById('letterRulerGap').value);
-        s.rulerColor = document.getElementById('letterRulerColor').value;
+        s.rulerColor = hexToRgba(document.getElementById('letterRulerColor').value, 0.15);
         s.sentenceMode = document.getElementById('letterSentenceMode').checked;
         const letterCssTextarea = document.getElementById('letterCustomCss');
         if (letterCssTextarea) s.customCss = letterCssTextarea.value;
         document.getElementById('letterFontSizeVal').textContent = s.fontSize;
+        document.getElementById('letterModalWidthVal').textContent = s.modalWidth + '%';
+        document.getElementById('letterModalHeightVal').textContent = s.modalHeight + 'vh';
         document.getElementById('letterRulerThicknessVal').textContent = s.rulerThickness + 'px';
-        document.getElementById('letterRulerGapVal').textContent = s.rulerGap + 'px';
-        document.getElementById('envelopeBgOpacityVal').textContent = Math.round(s.envelopeBgOpacity * 100) + '%';
-        document.getElementById('envelopeHeightVal').textContent = s.envelopeHeight + 'px';
-        document.getElementById('letterFloatBoxWidthVal').textContent = s.floatBoxWidth + '%';
-        document.getElementById('letterFloatBoxHeightVal').textContent = s.floatBoxHeight + 'vh';
         saveData();
         applyLetterCustomCss();
         applyLetterTheme();
-        applyEnvelopeStyles();
         _debouncedLetterListRender();
       } catch (e) { console.error('saveLetterSettings失败:', e); }
-    }
-    function applyEnvelopeStyles() {
-        const s = appData.letter.settings;
-        // 应用信纸样式到CSS变量
-        let styleEl = document.getElementById('envelopeDynamicStyle');
-        if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = 'envelopeDynamicStyle';
-            document.head.appendChild(styleEl);
-        }
-        const lineH = s.rulerGap || 28;
-        // 横线完全关闭时不显示任何横线
-        const rulerStyle = s.rulerEnabled !== false 
-            ? `background-image: repeating-linear-gradient(to bottom, transparent, transparent ${lineH}px, ${s.rulerColor || '#e0e0e0'} ${lineH}px, ${s.rulerColor || '#e0e0e0'} ${lineH + (s.rulerThickness || 1)}px);`
-            : 'background-image: none !important; display: none;';
-        const floatBoxWidth = s.floatBoxWidth || 86;
-        const floatBoxHeight = s.floatBoxHeight || 52;
-        styleEl.textContent = `
-            .letter-detail-modal .modal-content { background: ${s.envelopeBgColor || '#fff'}; border-color: ${s.envelopeBorderColor || '#c8ddf0'}; width: ${floatBoxWidth}%; max-height: ${floatBoxHeight}vh; }
-            .envelope-body { background: ${s.envelopeBgColor || '#FFFFFF'}; }
-            .envelope-ruler-layer { ${rulerStyle} }
-            .envelope-text { color: ${s.textColor || '#333'}; font-size: ${s.fontSize || 14}px; line-height: ${lineH}px; }
-        `;
-        // 直接设置横线层的显示状态
-        const rulerLayer = document.getElementById('envelopeRulerLayer');
-        if (rulerLayer) {
-            rulerLayer.style.display = s.rulerEnabled !== false ? 'block' : 'none';
-        }
     }
     function applyLetterCustomCss() {
         const s = appData.letter.settings;
@@ -16431,8 +16139,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             });
 
             item.addEventListener('click', (e) => {
-                // 防止swipe状态触发点击
-                if (isSwiping) return;
                 if (isSwipedOpen) {
                     item.style.transition = 'transform 0.3s ease';
                     item.style.transform = 'translateX(0)';
@@ -16484,31 +16190,36 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const letter = list[index];
         if (!letter) return;
         appData.currentViewingLetter = { index: index, tab: tab };
-        const s = appData.letter.settings;
+        const senderNick = letter.sender === 'mine' ? appData.chatSettings.myNickname : appData.chatSettings.otherNickname;
+        const senderAvatar = letter.sender === 'mine' ? (appData.chatSettings.myAvatar || '') : (appData.chatSettings.otherAvatar || '');
         document.getElementById('letterDetailTitle').textContent = letter.title || '信件详情';
-        renderLetterEnvelopePages(letter.content, s);
+        const detailContent = document.getElementById('letterDetailContent');
+        const s = appData.letter.settings;
+        if (detailContent) {
+            detailContent.innerHTML =
+                '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px;">' +
+                '<div style="width:48px;height:48px;border-radius:50%;background:var(--color-light-gray);overflow:hidden;margin-bottom:6px;">' +
+                (senderAvatar ? '<img src="'+senderAvatar+'" style="width:100%;height:100%;object-fit:cover;" alt="">' : '') +
+                '</div>' +
+                '<div style="font-size:13px;color:var(--color-deep-black);font-weight:500;">'+senderNick+'</div>' +
+                '</div>' +
+                '<div style="width:100%;border-top:1px dashed var(--color-light-gray);margin-bottom:12px;"></div>' +
+                '<div id="letterDetailText" class="'+(s.rulerEnabled!==false?'letter-detail-ruled':'')+'" style="color:'+(s.textColor||'#1a1a1a')+';'+(s.fontFamily?'font-family:'+s.fontFamily+';':'')+'font-size:'+(s.fontSize||14)+'px;--ruler-gap:'+(s.rulerGap||32)+'px;--ruler-thickness:'+(s.rulerThickness||1)+'px;--ruler-color:'+(s.rulerColor||'rgba(0,0,0,0.15)')+';">'+renderDetailTextHtml(letter.content, s)+'</div>';
+        } else {
+            document.getElementById('letterDetailText').textContent = letter.content;
+        }
         const favBtn = document.getElementById('toggleFavBtn');
         favBtn.textContent = letter.favorite ? '取消收藏' : '收藏';
-        // 应用信封背景图片和透明度
-        const bgEl = document.getElementById('envelopeBodyBg');
-        if (bgEl) {
-            if (s.envelopeBgImage) {
-                bgEl.style.backgroundImage = 'url(' + s.envelopeBgImage + ')';
-                bgEl.style.opacity = s.envelopeBgOpacity !== undefined ? s.envelopeBgOpacity : 1;
-            } else {
-                bgEl.style.backgroundImage = '';
-                bgEl.style.opacity = '1';
-            }
-        }
-        // 应用展开高度
-        const bodyInner = document.querySelector('#letterDetailModal .envelope-body-inner');
-        if (bodyInner) {
-            bodyInner.style.minHeight = (s.envelopeHeight || 300) + 'px';
-        }
-        // 应用信纸样式
-        applyEnvelopeStyles();
         document.getElementById('letterDetailModal').classList.add('show');
         document.getElementById('overlay').classList.add('show');
+        const letterModalContent = document.querySelector('#letterDetailModal .modal-content');
+        applyDetailModalStyle(letterModalContent, s);
+        if (letterModalContent) {
+            if (s.bgImage) { letterModalContent.style.background = 'url('+s.bgImage+') center/cover no-repeat'; }
+            else if (!s.modalBg) { letterModalContent.style.background = s.cardBg || 'var(--color-white)'; }
+            letterModalContent.style.color = s.textColor || '#1a1a1a';
+            if (s.fontFamily) letterModalContent.style.fontFamily = s.fontFamily;
+        }
         const nextBtn = document.getElementById('letterNextSentenceBtn');
         if (nextBtn) {
             nextBtn.style.display = (s.sentenceMode && splitSentences(letter.content).length > 1) ? 'inline' : 'none';
@@ -16534,59 +16245,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             if (btn) btn.style.display = 'none';
         }
     }
-    var _letterEnvelopePages = [];
-    var _letterEnvelopeCurrentPage = 0;
-    function renderLetterEnvelopePages(content, s) {
-        const container = document.getElementById('letterEnvelopeContent');
-        if (!container) return;
-        s = s || appData.letter.settings || {};
-        const maxChars = 240;
-        const text = content || '';
-        _letterEnvelopePages = [];
-        if (!text) {
-            _letterEnvelopePages.push('');
-        } else {
-            let start = 0;
-            while (start < text.length) {
-                let end = Math.min(start + maxChars, text.length);
-                // 优先在换行处截断
-                if (end < text.length) {
-                    const lastNl = text.lastIndexOf('\n', end);
-                    if (lastNl > start + maxChars * 0.5) end = lastNl;
-                }
-                _letterEnvelopePages.push(text.slice(start, end));
-                start = end;
-            }
-        }
-        _letterEnvelopeCurrentPage = 0;
-        const lineH = s.rulerGap || 28;
-        const styleStr = 'color:'+(s.textColor||'#333')+';'+(s.fontFamily?'font-family:'+s.fontFamily+';':'')+'font-size:'+(s.fontSize||14)+'px;line-height:'+lineH+'px;';
-        container.innerHTML = _letterEnvelopePages.map(function(p, i){
-            return '<div class="envelope-page '+(i===0?'active':'')+'" data-page="'+i+'"><div class="envelope-text" style="'+styleStr+'">'+escapeHtml(p)+'</div></div>';
-        }).join('');
-        updateLetterPageControls();
-    }
-    function updateLetterPageControls() {
-        const pages = document.querySelectorAll('#letterEnvelopeContent .envelope-page');
-        pages.forEach(function(el, i){
-            el.classList.toggle('active', i === _letterEnvelopeCurrentPage);
-        });
-        const prev = document.getElementById('letterPrevPageBtn');
-        const next = document.getElementById('letterNextPageBtn');
-        const ind = document.getElementById('letterPageIndicator');
-        if (prev) prev.disabled = _letterEnvelopeCurrentPage <= 0;
-        if (next) next.disabled = _letterEnvelopeCurrentPage >= _letterEnvelopePages.length - 1;
-        if (ind) ind.textContent = (_letterEnvelopePages.length ? (_letterEnvelopeCurrentPage + 1) : 0) + ' / ' + _letterEnvelopePages.length;
-        const paging = document.querySelector('#letterDetailModal .envelope-paging');
-        if (paging) paging.style.display = _letterEnvelopePages.length > 1 ? 'flex' : 'none';
-    }
-    function showLetterPage(delta) {
-        const newPage = _letterEnvelopeCurrentPage + delta;
-        if (newPage < 0 || newPage >= _letterEnvelopePages.length) return;
-        _letterEnvelopeCurrentPage = newPage;
-        updateLetterPageControls();
-    }
-
     function closeLetterDetail() {
         document.getElementById('letterDetailModal').classList.remove('show');
         document.getElementById('overlay').classList.remove('show');
@@ -16641,18 +16299,17 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('letterTextColor').value = s.textColor || '#1a1a1a';
         document.getElementById('letterFontSize').value = s.fontSize || 14;
         document.getElementById('letterFontSizeVal').textContent = s.fontSize || 14;
-        document.getElementById('envelopeBgOpacity').value = s.envelopeBgOpacity !== undefined ? s.envelopeBgOpacity : 1;
-        document.getElementById('envelopeBgOpacityVal').textContent = Math.round((s.envelopeBgOpacity !== undefined ? s.envelopeBgOpacity : 1) * 100) + '%';
-        document.getElementById('envelopeHeight').value = s.envelopeHeight || 300;
-        document.getElementById('envelopeHeightVal').textContent = (s.envelopeHeight || 300) + 'px';
-        document.getElementById('envelopeBorderColor').value = s.envelopeBorderColor || '#FFB6C1';
-        document.getElementById('envelopeBgColor').value = s.envelopeBgColor || '#FFFFFF';
+        document.getElementById('letterModalWidth').value = Math.min(s.modalWidth || 86, 95);
+        document.getElementById('letterModalWidthVal').textContent = Math.min(s.modalWidth || 86, 95) + '%';
+        document.getElementById('letterModalHeight').value = Math.min(s.modalHeight || 70, 90);
+        document.getElementById('letterModalHeightVal').textContent = Math.min(s.modalHeight || 70, 90) + 'vh';
+        document.getElementById('letterModalNoGlass').checked = !!s.modalNoGlass;
+        document.getElementById('letterModalBg').value = s.modalBg || s.cardBg || '#ffffff';
+        document.getElementById('letterModalBorderColor').value = s.modalBorderColor || '#e0e0e0';
         document.getElementById('letterRulerEnabled').checked = s.rulerEnabled !== false;
         document.getElementById('letterRulerThickness').value = s.rulerThickness || 1;
         document.getElementById('letterRulerThicknessVal').textContent = (s.rulerThickness || 1) + 'px';
-        document.getElementById('letterRulerGap').value = s.rulerGap || 28;
-        document.getElementById('letterRulerGapVal').textContent = (s.rulerGap || 28) + 'px';
-        document.getElementById('letterRulerColor').value = s.rulerColor || '#e0e0e0';
+        document.getElementById('letterRulerColor').value = rgbToHexForColorInput(s.rulerColor || 'rgba(0,0,0,0.15)');
         document.getElementById('letterSentenceMode').checked = !!s.sentenceMode;
         const letterCssTextarea = document.getElementById('letterCustomCss');
         if (letterCssTextarea) letterCssTextarea.value = s.customCss || '';
@@ -16664,7 +16321,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function closeLetterSettings() {
         document.getElementById('letterSettingsModal').classList.remove('show');
         document.getElementById('overlay').classList.remove('show');
-        applyEnvelopeStyles();
     }
     function openSendLetter() {
         document.getElementById('letterTitle').value = '';
@@ -19580,14 +19236,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             var t = d.theme;
             if (!t.warmColors) t.warmColors = SW_WARM_DEF.slice();
             if (!t.coolColors) t.coolColors = SW_COOL_DEF.slice();
-            if (t.returnKeyColor === undefined) t.returnKeyColor = '#1a1a1a';
-            if (t.menuKeyColor === undefined) t.menuKeyColor = '#1a1a1a';
-            if (t.returnKeyImage === undefined) t.returnKeyImage = '';
-            if (t.menuKeyImage === undefined) t.menuKeyImage = '';
-            if (t.fontColor === undefined) t.fontColor = '#222222';
-            if (t.bgColor === undefined) t.bgColor = '#eef1f5';
-            if (t.glassEnabled === undefined) t.glassEnabled = true;
-            if (t.glassBgColor === undefined) t.glassBgColor = 'rgba(255,255,255,0.5)';
         } catch(e){ console.error('[写歌] init', e); }
     }
     function swSave(){ try{ if(typeof saveData==='function') saveData(); }catch(e){} }
@@ -19782,13 +19430,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function swApplyTheme(){
         var page=document.getElementById('songwriteAppPage'); if(!page) return;
         var t=swTheme();
-        page.style.setProperty('--sw-return-bg', t.returnKeyColor||'#1a1a1a');
-        page.style.setProperty('--sw-menu-bg', t.menuKeyColor||'#1a1a1a');
-        page.style.setProperty('--sw-return-img', t.returnKeyImage?('url('+t.returnKeyImage+')'):'none');
-        page.style.setProperty('--sw-menu-img', t.menuKeyImage?('url('+t.menuKeyImage+')'):'none');
-        page.style.setProperty('--sw-font', t.fontColor||'#222222');
-        page.style.setProperty('--sw-glass-bg', t.glassBgColor||'rgba(255,255,255,0.5)');
-        page.classList.toggle('sw-no-glass', t.glassEnabled === false);
+        page.style.setProperty('--sw-btn-bg', t.btnColor||'#1a1a1a');
+        page.style.setProperty('--sw-accent', t.btnColor||'#1a1a1a');
+        page.style.setProperty('--sw-btn-text', t.btnTextColor||'#ffffff');
+        page.style.setProperty('--sw-font', t.fontColor||'');
+        page.style.setProperty('--sw-btn-img', t.btnImage?('url('+t.btnImage+')'):'none');
         if(t.bgImage){ page.style.background='url('+t.bgImage+') center/cover no-repeat'; }
         else if(t.bgColor){ page.style.background=t.bgColor; }
         else { page.style.background='linear-gradient(160deg,#eef1f5,#f7f7fa)'; }
@@ -20618,30 +20264,21 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         var m=document.createElement('div'); m.className='sw-modal'; m.id='swMenuModal';
         m.innerHTML='<div class="sw-modal-card">'+
             '<div class="sw-modal-title">界面自定义</div>'+
-            '<div class="sw-menu-item" onclick="swMenuPick(\'returnKeyColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>修改返回键颜色</div><div class="sw-color-pick"><input type="color" id="swReturnKeyColor" value="'+(t.returnKeyColor||'#1a1a1a')+'" onchange="swSetReturnKeyColor(this.value)"><button class="sw-reset-btn" onclick="event.stopPropagation();swResetReturnColor()">恢复默认</button></div></div>'+
-            '<div class="sw-menu-item" onclick="swMenuPick(\'menuKeyColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>修改菜单键颜色</div><div class="sw-color-pick"><input type="color" id="swMenuKeyColor" value="'+(t.menuKeyColor||'#1a1a1a')+'" onchange="swSetMenuKeyColor(this.value)"><button class="sw-reset-btn" onclick="event.stopPropagation();swResetMenuColor()">恢复默认</button></div></div>'+
-            '<div class="sw-menu-item"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>修改返回键（上传图片）</div><div class="sw-color-pick" onclick="swUploadReturnKeyImg()"><span class="mi-r" id="swReturnImgStatus">'+(t.returnKeyImage?'已设置':'默认')+'</span><button class="sw-reset-btn" onclick="event.stopPropagation();swResetReturnImage()">恢复默认</button></div></div>'+
-            '<div class="sw-menu-item"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>修改菜单键（上传图片）</div><div class="sw-color-pick" onclick="swUploadMenuKeyImg()"><span class="mi-r" id="swMenuImgStatus">'+(t.menuKeyImage?'已设置':'默认')+'</span><button class="sw-reset-btn" onclick="event.stopPropagation();swResetMenuImage()">恢复默认</button></div></div>'+
-            '<div class="sw-menu-item" onclick="swMenuPick(\'bgColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>修改背景颜色</div><div class="sw-color-pick"><input type="color" id="swBgColor" value="'+(t.bgColor||'#eef1f5')+'" onchange="swSetBgColor(this.value)"><button class="sw-reset-btn" onclick="event.stopPropagation();swResetBgColor()">恢复默认</button></div></div>'+
-            '<div class="sw-menu-item" onclick="swMenuPick(\'fontColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>修改字体颜色</div><div class="sw-color-pick"><input type="color" id="swFontColor" value="'+(t.fontColor||'#222222')+'" onchange="swSetFontColor(this.value)"><button class="sw-reset-btn" onclick="event.stopPropagation();swResetFontColor()">恢复默认</button></div></div>'+
-            '<div class="sw-menu-item ios-switch-row"><span class="ios-switch-label">开启毛玻璃效果</span><span class="ios-switch"><input id="swGlassEnabled" type="checkbox" '+(t.glassEnabled!==false?'checked':'')+' onchange="swSetGlassEnabled(this.checked)"><span class="ios-switch-slider"></span></span></div>'+
-            '<div class="sw-menu-item" onclick="swMenuPick(\'glassBg\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>修改背景颜色（毛玻璃背景）</div><div class="sw-color-pick"><input type="color" id="swGlassBg" value="'+(t.glassBgColor?swRgbaToHex(t.glassBgColor):'#ffffff')+'" onchange="swSetGlassBg(this.value)"><button class="sw-reset-btn" onclick="event.stopPropagation();swResetGlassBg()">恢复默认</button></div></div>'+
+            '<div class="sw-menu-item" onclick="swMenuPick(\'btnColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="8" rx="3"/></svg>修改按钮颜色</div><div class="sw-color-pick"><input type="color" id="swBtnColor" value="'+(t.btnColor||'#1a1a1a')+'" onchange="swSetBtnColor(this.value)"></div></div>'+
+            '<div class="sw-menu-item" onclick="swMenuPick(\'btnTextColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>修改按钮文字颜色</div><div class="sw-color-pick"><input type="color" id="swBtnTextColor" value="'+(t.btnTextColor||'#ffffff')+'" onchange="swSetBtnTextColor(this.value)"></div></div>'+
+            '<div class="sw-menu-item" onclick="swMenuPick(\'bgColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>修改背景颜色</div><div class="sw-color-pick"><input type="color" id="swBgColor" value="'+(t.bgColor||'#eef1f5')+'" onchange="swSetBgColor(this.value)"></div></div>'+
+            '<div class="sw-menu-item" onclick="swUploadBtnImg()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>修改按钮（上传图片）</div><div class="mi-r">'+(t.btnImage?'已设置':'默认')+'</div></div>'+
+            '<div class="sw-menu-item" onclick="swUploadBgImg()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>修改背景（上传图片）</div><div class="mi-r">'+(t.bgImage?'已设置':'默认')+'</div></div>'+
+            '<div class="sw-menu-item" onclick="swMenuPick(\'fontColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>修改字体颜色</div><div class="sw-color-pick"><input type="color" id="swFontColor" value="'+(t.fontColor||'#222222')+'" onchange="swSetFontColor(this.value)"></div></div>'+
             '<div class="sw-sec-h">绘画区域内置颜色</div>'+
             '<div class="sw-glass small" style="margin:0 4px 8px;"><div style="font-size:12px;color:#8a8a8a;margin-bottom:6px;">暖色系</div><div class="sw-pal-row" id="swWarmRow"></div></div>'+
             '<div class="sw-glass small" style="margin:0 4px 8px;"><div style="font-size:12px;color:#8a8a8a;margin-bottom:6px;">冷色系</div><div class="sw-pal-row" id="swCoolRow"></div></div>'+
-            '<div class="sw-close-row"><div class="sw-btn" style="flex:1;margin-top:0;" onclick="swCloseMenu()">完成</div></div>'+
+            '<div class="sw-close-row"><div class="sw-btn ghost" style="flex:1;margin-top:0;" onclick="swRestoreTheme()">恢复默认</div><div class="sw-btn" style="flex:1;margin-top:0;" onclick="swCloseMenu()">完成</div></div>'+
             '</div>';
         document.body.appendChild(m);
         m.addEventListener('click', function(e){ if(e.target===m) swCloseMenu(); });
         swRenderPalettes();
     }
-    function swRgbaToHex(rgba){
-        var m=String(rgba).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if(!m) return '#ffffff';
-        function h(x){ var v=parseInt(x,10).toString(16); return v.length===1?'0'+v:v; }
-        return '#'+h(m[1])+h(m[2])+h(m[3]);
-    }
-    function swMenuPick(){ /* 占位：颜色用内联 onchange */ }
     function swRenderPalettes(){
         var t=swTheme();
         var renderRow=function(id, arr, key){
@@ -20655,34 +20292,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     }
     function swPalAdd(key){ var c=prompt('输入颜色（如 #FF6B6B）：','#FF8866'); if(c){ var t=swTheme(); var arr=key==='warm'?(t.warmColors||(t.warmColors=[])):(t.coolColors||(t.coolColors=[])); arr.push(c); swSave(); swRenderPalettes(); } }
     function swPalRemove(key,i){ var t=swTheme(); var arr=key==='warm'?t.warmColors:t.coolColors; if(arr){ arr.splice(i,1); swSave(); swRenderPalettes(); } }
-    function swSetReturnKeyColor(v){ swTheme().returnKeyColor=v; swSave(); swApplyTheme(); }
-    function swSetMenuKeyColor(v){ swTheme().menuKeyColor=v; swSave(); swApplyTheme(); }
+    function swMenuPick(){ /* 占位：颜色用内联 onchange */ }
+    function swSetBtnColor(v){ swTheme().btnColor=v; swSave(); swApplyTheme(); }
+    function swSetBtnTextColor(v){ swTheme().btnTextColor=v; swSave(); swApplyTheme(); }
     function swSetBgColor(v){ swTheme().bgColor=v; swTheme().bgImage=''; swSave(); swApplyTheme(); swRefreshMenuStatus(); }
     function swSetFontColor(v){ swTheme().fontColor=v; swSave(); swApplyTheme(); }
-    function swSetGlassEnabled(v){ swTheme().glassEnabled=!!v; swSave(); swApplyTheme(); }
-    function swSetGlassBg(v){ swTheme().glassBgColor=swHexToRgba(v,0.5); swSave(); swApplyTheme(); }
-    function swHexToRgba(hex,a){ var c=hex.replace('#',''); if(c.length===3)c=c.split('').map(function(x){return x+x;}).join(''); var r=parseInt(c.substring(0,2),16),g=parseInt(c.substring(2,4),16),b=parseInt(c.substring(4,6),16); return 'rgba('+r+','+g+','+b+','+a+')'; }
-    function swUploadReturnKeyImg(){ var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=function(){ var f=inp.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ swTheme().returnKeyImage=r.result; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }; r.readAsDataURL(f); }; inp.click(); }
-    function swUploadMenuKeyImg(){ var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=function(){ var f=inp.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ swTheme().menuKeyImage=r.result; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }; r.readAsDataURL(f); }; inp.click(); }
-    function swResetReturnColor(){ swTheme().returnKeyColor='#1a1a1a'; swSave(); swApplyTheme(); var el=document.getElementById('swReturnKeyColor'); if(el) el.value='#1a1a1a'; }
-    function swResetMenuColor(){ swTheme().menuKeyColor='#1a1a1a'; swSave(); swApplyTheme(); var el=document.getElementById('swMenuKeyColor'); if(el) el.value='#1a1a1a'; }
-    function swResetReturnImage(){ swTheme().returnKeyImage=''; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }
-    function swResetMenuImage(){ swTheme().menuKeyImage=''; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }
-    function swResetFontColor(){ swTheme().fontColor='#222222'; swSave(); swApplyTheme(); var el=document.getElementById('swFontColor'); if(el) el.value='#222222'; }
-    function swResetGlassBg(){ swTheme().glassBgColor='rgba(255,255,255,0.5)'; swSave(); swApplyTheme(); var el=document.getElementById('swGlassBg'); if(el) el.value='#ffffff'; }
-    function swResetBgColor(){ swTheme().bgColor='#eef1f5'; swTheme().bgImage=''; swSave(); swApplyTheme(); swRefreshMenuStatus(); }
-    function swResetReturnKey(){ swTheme().returnKeyColor='#1a1a1a'; swTheme().returnKeyImage=''; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }
-    function swResetMenuKey(){ swTheme().menuKeyColor='#1a1a1a'; swTheme().menuKeyImage=''; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }
-    function swRestoreTheme(){ appData.songwriteData.theme={ warmColors:SW_WARM_DEF.slice(), coolColors:SW_COOL_DEF.slice(), returnKeyColor:'#1a1a1a', menuKeyColor:'#1a1a1a', returnKeyImage:'', menuKeyImage:'', fontColor:'#222222', bgColor:'#eef1f5', glassEnabled:true, glassBgColor:'rgba(255,255,255,0.5)' }; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); swToast('已恢复默认'); }
-    function swRefreshMenuStatus(){
-        var t=swTheme();
-        var bg=document.getElementById('swBgColor'); if(bg) bg.value=t.bgColor||'#eef1f5';
-        var rc=document.getElementById('swReturnKeyColor'); if(rc) rc.value=t.returnKeyColor||'#1a1a1a';
-        var mc=document.getElementById('swMenuKeyColor'); if(mc) mc.value=t.menuKeyColor||'#1a1a1a';
-        var fc=document.getElementById('swFontColor'); if(fc) fc.value=t.fontColor||'#222222';
-        var gb=document.getElementById('swGlassBg'); if(gb) gb.value=swRgbaToHex(t.glassBgColor||'rgba(255,255,255,0.5)');
-        var ge=document.getElementById('swGlassEnabled'); if(ge) ge.checked=t.glassEnabled!==false;
-    }
+    function swRefreshMenuStatus(){ var t=swTheme(); var bg=document.getElementById('swBgColor'); if(bg) bg.value=t.bgColor||'#eef1f5'; }
+    function swUploadBtnImg(){ var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=function(){ var f=inp.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ swTheme().btnImage=r.result; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }; r.readAsDataURL(f); }; inp.click(); }
+    function swUploadBgImg(){ var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=function(){ var f=inp.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ swTheme().bgImage=r.result; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); }; r.readAsDataURL(f); }; inp.click(); }
+    function swRestoreTheme(){ appData.songwriteData.theme={ warmColors:SW_WARM_DEF.slice(), coolColors:SW_COOL_DEF.slice() }; swSave(); swApplyTheme(); swCloseMenu(); swOpenMenu(); swToast('已恢复默认'); }
     function swCloseMenu(){ var m=document.getElementById('swMenuModal'); if(m) m.remove(); }
 
     /* ===== 轻提示 ===== */
@@ -22172,21 +21790,21 @@ function mlsjIconClock() {
       myEl.innerHTML = photo.myMessage ? escapeHtml(photo.myMessage) : '<span class="xcyj-dim">暂无留言</span>';
     }
 
-    // dd按钮与状态
+    // 召唤按钮与状态
     var sBtn = document.getElementById("xcyjSummonBtn");
     var st = document.getElementById("xcyjSummonStatus");
     if (photo.summonTime) {
       var left = 10 * 60 * 1000 - (Date.now() - photo.summonTime);
-      if (sBtn) { sBtn.textContent = "dd中…"; sBtn.disabled = true; }
+      if (sBtn) { sBtn.textContent = "召唤中…"; sBtn.disabled = true; }
       if (st) st.textContent = left > 0 ? "对方正在赶来，约 " + Math.ceil(left / 60000) + " 分钟" : "留言已送达";
     } else if (photo.autoGenScheduled) {
-      if (sBtn) { sBtn.textContent = "dd对方留言"; sBtn.disabled = false; }
+      if (sBtn) { sBtn.textContent = "召唤对方留言"; sBtn.disabled = false; }
       if (st) {
         var left2 = 2 * 3600 * 1000 - (Date.now() - photo.hisMessageTime);
         st.textContent = left2 > 0 ? "对方将在约 " + Math.ceil(left2 / 3600000) + " 小时后留言" : "对方即将留言";
       }
     } else {
-      if (sBtn) { sBtn.textContent = "dd对方留言"; sBtn.disabled = !!photo.hisMessageManual; }
+      if (sBtn) { sBtn.textContent = "召唤对方留言"; sBtn.disabled = !!photo.hisMessageManual; }
       if (st) st.textContent = photo.hisMessageManual ? "（已手动编辑）" : "";
     }
   }
@@ -22240,24 +21858,24 @@ function mlsjIconClock() {
   }
 
   /* =========================================================
-   * 模块十二：dd对方留言（10 分钟内送达）
+   * 模块十二：召唤对方留言（10 分钟内送达）
    * ========================================================= */
   function summonHisMessage() {
     var photo = getCurrentPhoto();
     if (!photo) return;
-    if (photo.summonTime) { showToast("已在dd中，请稍候"); return; }
+    if (photo.summonTime) { showToast("已在召唤中，请稍候"); return; }
     var card = getRandomWordCard();
     if (!card) { showToast("字卡库为空，请先添加字卡"); return; }
     photo.summonTime = Date.now();
-    photo.autoGenScheduled = false; // dd后取消 2h 自动流程
+    photo.autoGenScheduled = false; // 召唤后取消 2h 自动流程
     albumSave();
     renderDetail(photo.id);
-    showToast("已dd，约10分钟内送达");
+    showToast("已召唤，约10分钟内送达");
     // 定时器会在 10 分钟后自动填充（见 checkAutoMessages）
   }
 
   /* =========================================================
-   * 模块十三：自动留言检查（2h 自动 / 10min dd）
+   * 模块十三：自动留言检查（2h 自动 / 10min 召唤）
    * ========================================================= */
   function checkAutoMessages() {
     var photos = (appData && appData.albumData && appData.albumData.photos) || [];
@@ -22282,10 +21900,10 @@ function mlsjIconClock() {
           // 字卡库为空时保留 autoGenScheduled=true，待后续补充字卡后重试
         }
       }
-      // 规则二：dd 10 分钟后送达（仅当未被手动编辑）
+      // 规则二：召唤 10 分钟后送达（仅当未被手动编辑）
       if (photo.summonTime && (now - photo.summonTime > 10 * 60 * 1000)) {
         if (photo.hisMessageManual) {
-          photo.summonTime = null; // 已手动编辑，取消dd
+          photo.summonTime = null; // 已手动编辑，取消召唤
         } else {
           var c2 = getRandomWordCard();
           if (c2) { photo.hisMessage = c2; photo.summonTime = null; changed = true; }
@@ -26573,23 +26191,6 @@ setInterval(function () {
 }, 1000);
 setInterval(function () { try { shopProcessPendingCards(); } catch (e) {} }, 3000);
 
-
-    // 图片预览函数
-    function previewImage(src) {
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
-        modal.innerHTML = '<img src="'+src+'" style="max-width:95%;max-height:95%;object-fit:contain;" onclick="this.parentElement.remove()">';
-        modal.onclick = function(e) { if(e.target === modal) modal.remove(); };
-        document.body.appendChild(modal);
-    }
-    // 视频预览函数
-    function playVideo(src) {
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
-        modal.innerHTML = '<video src="'+src+'" controls autoplay style="max-width:95%;max-height:95%;"></video>';
-        modal.onclick = function(e) { if(e.target === modal) modal.remove(); };
-        document.body.appendChild(modal);
-    }
 </script>
 </body>
 </html>
