@@ -1,5 +1,8 @@
 // Service Worker - 后台保活与消息通知
-const CACHE_NAME = 'qianyi-cache-v1';
+// 版本号使用 Date.now()：每次 SW 重新安装都会生成新缓存名，
+// 配合注册时的自动时间戳，强制 iOS Safari 拉取最新资源，
+// 解决苹果用户必须开梯子才能访问（旧缓存不刷新）的问题。
+const CACHE_NAME = 'qianyi-cache-' + Date.now();
 const SILENT_AUDIO = './silent.mp3';
 
 // 安装时缓存静音音频
@@ -12,9 +15,15 @@ self.addEventListener('install', function(event) {
     );
 });
 
-// 激活时接管
+// 激活时接管，并清理旧版本缓存（清除历史缓存，确保苹果用户拿到最新资源）
 self.addEventListener('activate', function(event) {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then(function(keys) {
+            return Promise.all(keys.map(function(k) {
+                if (k !== CACHE_NAME) { return caches.delete(k); }
+            }));
+        }).then(function() { return self.clients.claim(); })
+    );
 });
 
 // 接收主线程消息
