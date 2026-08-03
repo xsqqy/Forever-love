@@ -3445,7 +3445,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .dd-summon-btn:hover { opacity: 0.85; }
         .dd-summon-btn.summoned { background: #ccc; cursor: not-allowed; }
-        /* 单人日记召唤按钮 */
+        /* 单人日记dd按钮 */
         .diary-summon-btn {
             display: inline-block;
             padding: 3px 10px;
@@ -7648,7 +7648,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
           <div class="xcyj-detail-label">他的留言</div>
           <div class="xcyj-detail-text" id="xcyjDetailHis"></div>
           <div class="xcyj-detail-actions">
-            <button class="xcyj-mini-btn" id="xcyjSummonBtn" onclick="summonHisMessage()">召唤对方留言</button>
+            <button class="xcyj-mini-btn" id="xcyjSummonBtn" onclick="summonHisMessage()">dd对方留言</button>
             <button class="xcyj-mini-btn" onclick="editHisMessage()">编辑</button>
           </div>
           <div class="xcyj-detail-status" id="xcyjSummonStatus"></div>
@@ -11269,6 +11269,27 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             content: text
         });
     }
+    // 添加系统消息到【主聊天】（不受当前联系人上下文影响）
+    // 日记、相册等全局功能的提醒应始终出现在主聊天界面。
+    // 旧实现直接调用 addSystemMsg → addMessage，msg.contactId 会被自动赋值为
+    // _activeContactId || _lastChatContactId，若用户刚从联系人聊天进入日记页，
+    // 系统消息会被写入该联系人的独立记录，导致主聊天界面看不到提醒。
+    function addSystemMsgToMain(text, subtype) {
+        var _savedActive = _activeContactId;
+        var _savedLast = _lastChatContactId;
+        _activeContactId = null;
+        _lastChatContactId = null;
+        try {
+            addMessage({
+                id: Date.now(),
+                type: 'system',
+                subtype: subtype || '',
+                content: text
+            });
+        } catch (e) { console.error('addSystemMsgToMain失败:', e); }
+        _activeContactId = _savedActive;
+        _lastChatContactId = _savedLast;
+    }
 
     // ===== 表情面板 =====
     function toggleEmojiPanel() {
@@ -14455,7 +14476,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 diary.summoned = false;
                 saveData();
                 // 在聊天界面提醒对方已回复日记
-                addSystemMsg((appData.chatSettings.otherNickname || '对方') + '已回复你的日记，快去看看吧');
+                addSystemMsgToMain((appData.chatSettings.otherNickname || '对方') + '已回复你的日记，快去看看吧');
                 if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
             }
         }, delay);
@@ -14477,21 +14498,21 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         });
     }
 
-    // 召唤对方回复单人日记
+    // dd对方回复单人日记
     function summonSingleDiaryReply(diaryId, btn) {
         const diary = appData.diary.singleList.find(d => d.id === diaryId);
         if (!diary) return;
         if (diary.reply) return; // 已有回复
-        if (diary.summoned) return; // 已召唤过
+        if (diary.summoned) return; // 已dd过
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         diary.summoned = true;
         diary.pendingReplyAt = Date.now() + replyTime * 60 * 1000;
         saveData();
         if (btn) {
             btn.classList.add('summoned');
-            btn.textContent = '已召唤';
+            btn.textContent = '已dd';
         }
-        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '回复日记，预计' + replyTime + '分钟后回复');
+        addSystemMsgToMain('已dd' + (appData.chatSettings.otherNickname || '对方') + '回复日记，预计' + replyTime + '分钟后回复');
         scheduleDiaryReply(diaryId, replyTime * 60 * 1000);
     }
 
@@ -14765,7 +14786,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         saveDataSync();
         // 在聊天界面提醒（小字区域）
-        addSystemMsg(appData.chatSettings.otherNickname + '已更新今日日记，你也快快去吧');
+        addSystemMsgToMain(appData.chatSettings.otherNickname + '已更新今日日记，你也快快去吧');
         // 存储通知状态
         appData.diary.settings.doubleDiaryNotifyPending = true;
         saveDataSync();
@@ -14782,16 +14803,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     '日记写了吗？不许偷懒哦~',
                     '我都写完了，你什么时候写呀？'
                 ];
-                addSystemMsg(appData.chatSettings.otherNickname + '：' + urgeMessages[Math.floor(Math.random() * urgeMessages.length)]);
+                addSystemMsgToMain(appData.chatSettings.otherNickname + '：' + urgeMessages[Math.floor(Math.random() * urgeMessages.length)]);
             }, Math.random() * 7200000 + 1800000); // 30分钟到2.5小时后催更
         }
     }
 
-    // 召唤对方填写双人日记
+    // dd对方填写双人日记
     function summonDoubleDiaryOther(index, btn) {
         const entry = appData.diary.doubleList[index];
         if (!entry) return;
-        if (entry.summoned) return; // 已经召唤过
+        if (entry.summoned) return; // 已经dd过
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         entry.summoned = true;
         entry.summonedAt = Date.now();
@@ -14800,16 +14821,16 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // 更新按钮状态
         if (btn) {
             btn.classList.add('summoned');
-            btn.textContent = '已召唤';
+            btn.textContent = '已dd';
         }
-        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '填写日记，预计' + replyTime + '分钟后回复');
+        addSystemMsgToMain('已dd' + (appData.chatSettings.otherNickname || '对方') + '填写日记，预计' + replyTime + '分钟后回复');
         // 定时触发对方填写
         setTimeout(() => {
             generateSummonedDoubleDiary(entry);
         }, replyTime * 60 * 1000);
     }
 
-    // 召唤后生成对方双人日记数据
+    // dd后生成对方双人日记数据
     function generateSummonedDoubleDiary(entry) {
         if (!entry || hasDoubleDiaryData(entry.otherData)) return;
         const data = generateDoubleDiaryData();
@@ -14819,7 +14840,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         delete entry.summonedAt;
         delete entry.summonReplyAt;
         saveDataSync();
-        addSystemMsg(appData.chatSettings.otherNickname + '已响应召唤，更新了今日日记');
+        addSystemMsgToMain(appData.chatSettings.otherNickname + '已响应dd，更新了今日日记');
         // 设置通知待处理状态，使用户重新上线后弹出提醒框
         appData.diary.settings.doubleDiaryNotifyPending = true;
         saveDataSync();
@@ -14830,7 +14851,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         if (document.getElementById('diaryPage').style.display === 'flex') renderDiaryList();
     }
 
-    // 检查未完成的召唤（页面刷新后恢复）
+    // 检查未完成的dd（页面刷新后恢复）
     function checkPendingSummons() {
         const now = Date.now();
         appData.diary.doubleList.forEach(entry => {
@@ -15035,12 +15056,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             replyLabel.style.display = 'flex';
             replyLabel.style.alignItems = 'center';
             replyLabel.innerHTML = '<span>' + (diary.reply ? '对方的回复：' : '等待回复...') + '</span>';
-            // 召唤对方按钮 - 没有回复时显示
+            // dd对方按钮 - 没有回复时显示
             if (!diary.reply) {
                 const summonBtn = document.createElement('button');
                 summonBtn.className = 'diary-summon-btn' + (diary.summoned ? ' summoned' : '');
                 const otherNick = appData.chatSettings.otherNickname || '对方';
-                summonBtn.textContent = diary.summoned ? '已召唤' : '召唤' + otherNick;
+                summonBtn.textContent = diary.summoned ? '已dd' : 'dd' + otherNick;
                 summonBtn.onclick = (e) => {
                     e.stopPropagation();
                     summonSingleDiaryReply(diary.id, summonBtn);
@@ -15069,7 +15090,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         return card;
     }
 
-    // 双人日记卡片：拆分为独立可滚动卡片，召唤提示仅在"我写了但对方没写"时出现
+    // 双人日记卡片：拆分为独立可滚动卡片，dd提示仅在"我写了但对方没写"时出现
     function ensureTodayDoubleDiaryEntry() {
         if (!appData.diary) appData.diary = {singleList:[], doubleList:[], currentTab:'single', settings:{}};
         if (!Array.isArray(appData.diary.doubleList)) appData.diary.doubleList = [];
@@ -15185,7 +15206,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
         const body = document.createElement('div');
         body.className = 'dd-detail-section';
-        body.innerHTML = '<div style="text-align:center;color:#d68a8a;font-size:13px;padding:10px 0;">快召唤 ' + escapeHtml(otherNick) + ' 来写今日日记吧~</div>';
+        body.innerHTML = '<div style="text-align:center;color:#d68a8a;font-size:13px;padding:10px 0;">快dd ' + escapeHtml(otherNick) + ' 来写今日日记吧~</div>';
         card.appendChild(body);
 
         const footer = document.createElement('div');
@@ -15193,7 +15214,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         footer.style.justifyContent = 'center';
         const summonBtn = document.createElement('button');
         summonBtn.className = 'dd-summon-btn' + (entry.summoned ? ' summoned' : '');
-        summonBtn.textContent = entry.summoned ? '已召唤' : '召唤' + otherNick;
+        summonBtn.textContent = entry.summoned ? '已dd' : 'dd' + otherNick;
         summonBtn.onclick = (e) => {
             e.stopPropagation();
             summonDoubleDiaryOther(index, summonBtn);
@@ -18598,7 +18619,17 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
            包含：chatSettings, emojis, wordCards, contactWordCards, specialCards, chatHistory,
            moments, diary, letter, beautifyPresets, colors, shop, doubleDiaryNotifications,
            以及所有其他 appData 中的字段，确保事无巨细全保存 */
-        exportObj.full = JSON.parse(JSON.stringify(appData));
+        // 序列化前强制切换到主聊天上下文：appData.chatHistory 是 getter，
+        // 若当前处于联系人聊天中，getter 会返回该联系人的记录而非主聊天记录，
+        // 导致主聊天记录在备份中丢失。saveDataSync 内部虽也做了同样处理，
+        // 但在 finally 中已恢复原值，此处必须独立处理。
+        var _savedActiveId = _activeContactId;
+        _activeContactId = null;
+        try {
+            exportObj.full = JSON.parse(JSON.stringify(appData));
+        } finally {
+            _activeContactId = _savedActiveId;
+        }
         // 收集 localStorage 中的辅助数据（翻翻乐最高记录、AI伴侣聊天历史等）
         const extra = {};
         try {
@@ -22817,21 +22848,21 @@ function mlsjIconClock() {
       myEl.innerHTML = photo.myMessage ? escapeHtml(photo.myMessage) : '<span class="xcyj-dim">暂无留言</span>';
     }
 
-    // 召唤按钮与状态
+    // dd按钮与状态
     var sBtn = document.getElementById("xcyjSummonBtn");
     var st = document.getElementById("xcyjSummonStatus");
     if (photo.summonTime) {
       var left = 10 * 60 * 1000 - (Date.now() - photo.summonTime);
-      if (sBtn) { sBtn.textContent = "召唤中…"; sBtn.disabled = true; }
+      if (sBtn) { sBtn.textContent = "dd中…"; sBtn.disabled = true; }
       if (st) st.textContent = left > 0 ? "对方正在赶来，约 " + Math.ceil(left / 60000) + " 分钟" : "留言已送达";
     } else if (photo.autoGenScheduled) {
-      if (sBtn) { sBtn.textContent = "召唤对方留言"; sBtn.disabled = false; }
+      if (sBtn) { sBtn.textContent = "dd对方留言"; sBtn.disabled = false; }
       if (st) {
         var left2 = 2 * 3600 * 1000 - (Date.now() - photo.hisMessageTime);
         st.textContent = left2 > 0 ? "对方将在约 " + Math.ceil(left2 / 3600000) + " 小时后留言" : "对方即将留言";
       }
     } else {
-      if (sBtn) { sBtn.textContent = "召唤对方留言"; sBtn.disabled = !!photo.hisMessageManual; }
+      if (sBtn) { sBtn.textContent = "dd对方留言"; sBtn.disabled = !!photo.hisMessageManual; }
       if (st) st.textContent = photo.hisMessageManual ? "（已手动编辑）" : "";
     }
   }
@@ -22885,28 +22916,28 @@ function mlsjIconClock() {
   }
 
   /* =========================================================
-   * 模块十二：召唤对方留言（10 分钟内送达）
+   * 模块十二：dd对方留言（10 分钟内送达）
    * ========================================================= */
   function summonHisMessage() {
     var photo = getCurrentPhoto();
     if (!photo) return;
-    if (photo.summonTime) { showToast("已在召唤中，请稍候"); return; }
+    if (photo.summonTime) { showToast("已在dd中，请稍候"); return; }
     var card = getRandomWordCard();
     if (!card) { showToast("字卡库为空，请先添加字卡"); return; }
     photo.summonTime = Date.now();
-    photo.autoGenScheduled = false; // 召唤后取消 2h 自动流程
+    photo.autoGenScheduled = false; // dd后取消 2h 自动流程
     albumSave();
     renderDetail(photo.id);
-    showToast("已召唤，约10分钟内送达");
+    showToast("已dd，约10分钟内送达");
     // 在聊天界面小字区域提醒
     if (typeof addSystemMsg === 'function') {
-        addSystemMsg('已召唤' + (appData.chatSettings.otherNickname || '对方') + '留言相册寄语，预计10分钟内回复');
+        addSystemMsg('已dd' + (appData.chatSettings.otherNickname || '对方') + '留言相册寄语，预计10分钟内回复');
     }
     // 定时器会在 10 分钟后自动填充（见 checkAutoMessages）
   }
 
   /* =========================================================
-   * 模块十三：自动留言检查（2h 自动 / 10min 召唤）
+   * 模块十三：自动留言检查（2h 自动 / 10min dd）
    * ========================================================= */
   function checkAutoMessages() {
     var photos = (appData && appData.albumData && appData.albumData.photos) || [];
@@ -22931,10 +22962,10 @@ function mlsjIconClock() {
           // 字卡库为空时保留 autoGenScheduled=true，待后续补充字卡后重试
         }
       }
-      // 规则二：召唤 10 分钟后送达（仅当未被手动编辑）
+      // 规则二：dd 10 分钟后送达（仅当未被手动编辑）
       if (photo.summonTime && (now - photo.summonTime > 10 * 60 * 1000)) {
         if (photo.hisMessageManual) {
-          photo.summonTime = null; // 已手动编辑，取消召唤
+          photo.summonTime = null; // 已手动编辑，取消dd
         } else {
           var c2 = getRandomWordCard();
           if (c2) { photo.hisMessage = c2; photo.summonTime = null; changed = true; }
@@ -24518,12 +24549,13 @@ function mlsjIconClock() {
                 openChatFromNotification();
             }
         });
-        // 控制器变更（新 SW 接管）后自动刷新一次，加载最新资源
+        // 控制器变更（新 SW 接管）：仅静默接管，【不再自动刷新页面】。
+        // 旧逻辑在 controllerchange 时调用 location.reload()，叠加下方无节流的
+        // visibilitychange→reg.update()，在安卓上会形成"检测更新→skipWaiting→接管→刷新"
+        // 的死循环：界面在旧版/新版间反复闪烁，滑动中途被强制刷新、甚至被踢回桌面。
+        // 新 SW 静默激活后，最新前端资源在用户下一次自然访问时由浏览器 HTTP 缓存校验生效。
         navigator.serviceWorker.addEventListener('controllerchange', function() {
-            // 首次安装（之前无 controller）不刷新，仅在有更新接管时刷新
-            if (!_hadControllerAtStart) { _hadControllerAtStart = true; return; }
-            if (_swReloaded) return; _swReloaded = true;
-            try { window.location.reload(); } catch(e) {}
+            // 仅记录接管事件，不刷新页面，彻底打断刷新死循环
         });
         window.addEventListener('load', function() {
             // 自动时间戳：每个构建版本首次访问时用 Date.now() 生成一次并缓存到 localStorage，
@@ -24554,35 +24586,31 @@ function mlsjIconClock() {
                         }).catch(function(){});
                     }
 
-                    // ===== PWA 自动更新 =====
-                    // 通知处于 waiting 状态的新 SW 立即接管
-                    var _triggerSkipWaiting = function() {
-                        if (reg.waiting) {
-                            try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch(e) {}
-                        }
-                    };
-                    reg.addEventListener('updatefound', function() {
-                        var nw = reg.installing;
-                        if (!nw) return;
-                        nw.addEventListener('statechange', function() {
-                            // 新版本安装完成 → 触发跳过等待，随即通过 controllerchange 自动刷新
-                            if (nw.state === 'installed') _triggerSkipWaiting();
-                        });
-                    });
-                    // 页面加载时若已有等待接管的新 SW，立即触发刷新
-                    _triggerSkipWaiting();
+                    // ===== PWA 自动更新（静默模式）=====
+                    // SW 在 install 中已调用 self.skipWaiting()，新版本会自动激活；
+                    // 配合上方 controllerchange 的"不刷新"策略，整个更新过程在后台静默完成，
+                    // 不再打断用户操作。最新前端资源在用户下一次自然访问时由浏览器 HTTP 缓存校验生效。
+                    // （移除原先 updatefound→SKIP_WAITING→controllerchange→reload 的链路，
+                    //   该链路在安卓上导致反复刷新与强制回桌面；同时移除页面加载即触发的 _triggerSkipWaiting。）
                 })
                 .catch(function(err) {
                     console.warn('[PWA] SW注册失败:', err);
                 });
         });
-        // 从后台切回前台时主动检查更新，重新进入网站即可自动获取最新版本
+        // 从后台切回前台时检查更新——【严格节流：每小时最多一次】。
+        // 原实现无节流，安卓上频繁的 visibilitychange（输入法弹收、浏览器顶栏显隐、切换应用）
+        // 会反复触发 reg.update()，叠加旧的 controllerchange→reload 形成刷新死循环。
+        var _SW_LAST_UPDATE_KEY = 'swLastUpdateCheck';
         document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible' && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.getRegistration().then(function(reg) {
-                    if (reg) { try { reg.update(); } catch(e) {} }
-                }).catch(function(){});
-            }
+            if (document.visibilityState !== 'visible' || !navigator.serviceWorker.controller) return;
+            try {
+                var last = parseInt(localStorage.getItem(_SW_LAST_UPDATE_KEY) || '0', 10);
+                if (Date.now() - last < 60 * 60 * 1000) return; // 1 小时内不再检查
+                localStorage.setItem(_SW_LAST_UPDATE_KEY, String(Date.now()));
+            } catch(e) {}
+            navigator.serviceWorker.getRegistration().then(function(reg) {
+                if (reg) { try { reg.update(); } catch(e) {} }
+            }).catch(function(){});
         });
     }
 
@@ -24625,7 +24653,7 @@ function mlsjIconClock() {
                 // 返回前台时补发离开期间应产生的消息（触发顶部通知）
                 catchUpBackgroundMessages();
             }
-            // 返回前台时检查所有待处理的定时任务（双人日记通知、召唤回复、日记/信件回复、每日自动写信、相册寄语自动留言）
+            // 返回前台时检查所有待处理的定时任务（双人日记通知、dd回复、日记/信件回复、每日自动写信、相册寄语自动留言）
             setTimeout(function() {
                 try { if (typeof checkDoubleDiaryNotification === 'function') checkDoubleDiaryNotification(); } catch(e) {}
                 try { if (typeof checkPendingSummons === 'function') checkPendingSummons(); } catch(e) {}
