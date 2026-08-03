@@ -4054,6 +4054,19 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode .sw-name-input{background:rgba(70,70,70,0.5);border-color:rgba(255,255,255,0.12);color:#e8e8e8;}
         .sw-name-input:focus{border-color:var(--sw-accent);}
 
+        /* 合作者选择列表 */
+        .sw-partner-list{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+        .sw-partner-item{display:flex;align-items:center;gap:14px;padding:14px 18px;border:1.5px solid rgba(0,0,0,0.08);border-radius:16px;background:rgba(255,255,255,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;transition:all .18s;color:var(--sw-font);}
+        .sw-partner-item:hover{border-color:var(--sw-accent);transform:translateX(4px);}
+        html.dark-mode .sw-partner-item{background:rgba(70,70,70,0.45);border-color:rgba(255,255,255,0.1);}
+        .sw-partner-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.06);color:var(--sw-font);flex-shrink:0;overflow:hidden;}
+        html.dark-mode .sw-partner-avatar{background:rgba(255,255,255,0.1);}
+        .sw-partner-name{flex:1;font-size:16px;font-weight:500;color:var(--sw-font);}
+        .sw-partner-tag{font-size:11px;color:#999;padding:2px 8px;border-radius:8px;background:rgba(0,0,0,0.05);}
+        html.dark-mode .sw-partner-tag{background:rgba(255,255,255,0.1);color:#aaa;}
+        .sw-partner-add{font-size:24px;font-weight:300;color:var(--sw-accent);}
+        .sw-partner-custom{border-style:dashed;}
+
         /* 倒计时 */
         .sw-countdown{font-size:14px;color:#8a8a8a;text-align:center;margin:6px 0 4px;}
         .sw-countdown b{color:var(--sw-accent);font-size:18px;margin:0 2px;}
@@ -4082,6 +4095,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-tool{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sw-font);}
         html.dark-mode .sw-tool{background:rgba(70,70,70,0.5);border-color:rgba(255,255,255,0.1);}
         .sw-tool.on{background:var(--sw-accent);color:#fff;border-color:var(--sw-accent);}
+
+        /* 音频恢复浮层（录屏/系统中断后 AudioContext 被挂起时显示） */
+        .sw-audio-fix{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:rgba(0,0,0,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;padding:28px 32px;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,0.4);max-width:300px;display:none;}
+        .sw-audio-fix.show{display:block;animation:swFadeIn .25s ease;}
+        @keyframes swFadeIn{from{opacity:0;transform:translate(-50%,-46%);}to{opacity:1;transform:translate(-50%,-50%);}}
+        .sw-audio-fix-ic{font-size:40px;margin-bottom:10px;line-height:1;}
+        .sw-audio-fix-tx{color:#fff;font-size:15px;line-height:1.6;margin-bottom:18px;}
+        .sw-audio-fix-btn{display:inline-block;padding:12px 28px;background:#ff6b35;color:#fff;border-radius:12px;font-size:15px;cursor:pointer;border:none;font-family:var(--font-family);transition:transform .12s;}
+        .sw-audio-fix-btn:active{transform:scale(0.96);}
 
         /* 回合 / 进度 */
         .sw-turn{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--sw-font);margin:4px 0 8px;}
@@ -4187,6 +4209,97 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .bal-side .lbl{font-size:12px;color:#666;margin-bottom:4px;}
         .bal-side .val{font-size:26px;font-weight:600;color:var(--text-color);}
         .bal-rec{font-size:13px;color:#4a4a4a;padding:6px 0;border-bottom:1px solid #f0f0f0;}
+
+    /* ========== 词库管理 App 样式 ========== */
+    .wordlib-page {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 500; display: none; flex-direction: column;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        background: linear-gradient(160deg, #f5f7fa 0%, #eef1f5 100%);
+    }
+    .wordlib-header {
+        flex-shrink: 0; padding: 16px 20px 12px;
+        background: rgba(255,255,255,0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        display: flex; align-items: center; gap: 12px;
+    }
+    .wordlib-back { cursor: pointer; color: #4a90d9; display: flex; align-items: center; }
+    .wordlib-title { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+    .wordlib-subtitle { font-size: 12px; color: #999; margin-left: auto; }
+    .wordlib-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .wordlib-cats {
+        flex-shrink: 0; display: flex; gap: 6px; padding: 10px 16px; overflow-x: auto;
+        background: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .wordlib-cats::-webkit-scrollbar { display: none; }
+    .wordlib-cat {
+        flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        background: rgba(255,255,255,0.6); color: #666; cursor: pointer; transition: all .18s;
+        border: 1px solid transparent; white-space: nowrap;
+    }
+    .wordlib-cat.active { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+    .wordlib-cat .cat-count { font-size: 11px; opacity: 0.7; margin-left: 4px; }
+    .wordlib-content { flex: 1; overflow-y: auto; padding: 16px; }
+    .wordlib-section { margin-bottom: 20px; }
+    .wordlib-section-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .wordlib-add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .wordlib-add-input {
+        flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px;
+        outline: none; background: #fff; font-family: inherit;
+    }
+    .wordlib-add-input:focus { border-color: #4a90d9; }
+    .wordlib-add-btn {
+        padding: 10px 18px; border: none; border-radius: 10px; font-size: 14px; font-weight: 500;
+        background: #4a90d9; color: #fff; cursor: pointer; white-space: nowrap; font-family: inherit;
+    }
+    .wordlib-add-btn:active { opacity: 0.8; }
+    .wordlib-batch-area { margin-bottom: 16px; }
+    .wordlib-batch-toggle {
+        font-size: 13px; color: #4a90d9; cursor: pointer; padding: 6px 0; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .wordlib-batch-box { display: none; margin-top: 8px; }
+    .wordlib-batch-box.show { display: block; }
+    .wordlib-batch-textarea {
+        width: 100%; min-height: 100px; padding: 12px; border: 1px solid #ddd; border-radius: 10px;
+        font-size: 13px; outline: none; resize: vertical; font-family: inherit; box-sizing: border-box;
+    }
+    .wordlib-batch-textarea:focus { border-color: #4a90d9; }
+    .wordlib-batch-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+    .wordlib-batch-btn {
+        margin-top: 8px; padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px;
+        background: #4a90d9; color: #fff; cursor: pointer; font-family: inherit;
+    }
+    .wordlib-word-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .wordlib-word {
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px;
+        font-size: 13px; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.06); color: #333;
+    }
+    .wordlib-word.preset { background: #f0f4f8; border-color: #d0dbe6; color: #666; }
+    .wordlib-word.preset .wordlib-word-del { display: none; }
+    .wordlib-word-del {
+        cursor: pointer; color: #e0607a; font-size: 14px; line-height: 1; display: flex; align-items: center;
+    }
+    .wordlib-empty { font-size: 13px; color: #ccc; padding: 20px 0; text-align: center; }
+    .wordlib-clear-btn {
+        margin-top: 12px; padding: 6px 14px; border: 1px solid #e0607a; border-radius: 8px; font-size: 12px;
+        background: transparent; color: #e0607a; cursor: pointer; font-family: inherit;
+    }
+    .wordlib-clear-btn:active { background: #fff0f3; }
+    .wordlib-stats { font-size: 12px; color: #999; margin-bottom: 10px; }
+    html.dark-mode .wordlib-page { background: linear-gradient(160deg, #1a1a1a 0%, #222 100%); }
+    html.dark-mode .wordlib-header { background: rgba(45,45,45,0.75); border-color: rgba(255,255,255,0.08); }
+    html.dark-mode .wordlib-title { color: #e0e0e0; }
+    html.dark-mode .wordlib-subtitle { color: #777; }
+    html.dark-mode .wordlib-back { color: #6ab0f3; }
+    html.dark-mode .wordlib-cats { background: rgba(45,45,45,0.5); border-color: rgba(255,255,255,0.05); }
+    html.dark-mode .wordlib-cat { background: rgba(70,70,70,0.5); color: #aaa; }
+    html.dark-mode .wordlib-cat.active { background: #4a90d9; color: #fff; }
+    html.dark-mode .wordlib-add-input { background: #2d2d2d; border-color: #444; color: #e0e0e0; }
+    html.dark-mode .wordlib-batch-textarea { background: #2d2d2d; border-color: #444; color: #e0e0e0; }
+    html.dark-mode .wordlib-word { background: rgba(70,70,70,0.5); border-color: rgba(255,255,255,0.08); color: #ddd; }
+    html.dark-mode .wordlib-word.preset { background: #2a2a2a; border-color: #3a3a3a; color: #888; }
+    html.dark-mode .wordlib-section-title { color: #e0e0e0; }
+    html.dark-mode .wordlib-content { color: #ccc; }
 
     /* ========== Ta的传讯 App 样式 (可爱手帐BlackBerry风) ========== */
     .ta-app-page {
@@ -4469,6 +4582,26 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     .ta-msg-time {
         font-size: 9px; color: rgba(120,160,200,0.5); margin-top: 2px;
     }
+    /* 摩斯密码气泡 */
+    .ta-morse-bubble { display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:120px; }
+    .ta-morse-text { font-family:'Courier New',monospace; font-size:13px; letter-spacing:1px; color:#3a5a7a; word-break:keep-all; }
+    .ta-morse-flash {
+        display:inline-block; width:10px; height:10px; border-radius:50%;
+        background:rgba(168,212,255,0.3); transition:background 0.05s;
+    }
+    .ta-morse-flash.on { background:#5ba8f5; box-shadow:0 0 8px rgba(91,168,245,0.8); }
+    .ta-decode-btn {
+        padding:4px 14px; border:none; border-radius:10px; font-size:11px;
+        background:rgba(91,168,245,0.15); color:#5ba8f5; cursor:pointer;
+        font-family:inherit; align-self:flex-end;
+    }
+    .ta-decode-btn:active { background:rgba(91,168,245,0.3); }
+    .ta-morse-decoded { font-size:13px; color:#3a5a7a; font-style:italic; }
+    html.dark-mode .ta-morse-text { color:#c8d8e8; }
+    html.dark-mode .ta-morse-flash { background:rgba(168,212,255,0.2); }
+    html.dark-mode .ta-morse-flash.on { background:#7bc0ff; box-shadow:0 0 8px rgba(123,192,255,0.8); }
+    html.dark-mode .ta-decode-btn { background:rgba(123,192,255,0.15); color:#7bc0ff; }
+    html.dark-mode .ta-morse-decoded { color:#e0e8f0; }
     /* 打字指示 */
     .ta-typing-indicator {
         align-self: flex-start; padding: 7px 12px;
@@ -6033,6 +6166,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <div class="app-name" onclick="event.stopPropagation(); editAppName(this)">Ta的传讯</div>
 </div>
+<div class="app-item" data-app="wordlib">
+<div class="app-icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6"/><path d="M9 11h6"/></svg>
+<img alt="" class="custom-image"/>
+</div>
+<div class="app-name" onclick="event.stopPropagation(); editAppName(this)">词库管理</div>
+</div>
 <div class="app-item" data-app="settings">
 <div class="app-icon">
 <svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -7300,6 +7440,20 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         </div>
     </div>
 </div>
+<!-- 词库管理页面 -->
+<div class="wordlib-page" id="wordlibAppPage">
+    <div class="wordlib-header">
+        <div class="wordlib-back" onclick="closeWordLibApp()">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </div>
+        <div class="wordlib-title">词库管理</div>
+        <div class="wordlib-subtitle">为Ta的传讯扩展摩斯密码词汇</div>
+    </div>
+    <div class="wordlib-body" id="wordlibBody">
+        <div class="wordlib-cats" id="wordlibCats"></div>
+        <div class="wordlib-content" id="wordlibContent"></div>
+    </div>
+</div>
 <!-- 次元购物城页面 -->
 <div class="shop-page" id="shopAppPage">
 <div class="shop-header">次元购物城</div>
@@ -7322,6 +7476,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <!-- 一起写歌页面 -->
 <div class="settings-page" id="songwriteAppPage" style="z-index:350;">
 <div class="settings-content" id="songwriteAppContent" style="padding:16px;position:relative;"></div>
+<div class="sw-audio-fix" id="swAudioFix">
+<div class="sw-audio-fix-ic">🔇</div>
+<div class="sw-audio-fix-tx">音频被系统中断（可能是录屏）<br>点击下方按钮恢复声音</div>
+<div class="sw-audio-fix-btn" onclick="swForceResumeAudio()">点击恢复音频</div>
+</div>
 </div>
 <!-- 余额页面 -->
 <div class="settings-page" id="balanceAppPage" style="z-index:350;">
@@ -8148,7 +8307,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().catch(()=>{});
     }
-    const CURRENT_DATA_VERSION = 4;
+    const CURRENT_DATA_VERSION = 5;
     const defaultData = {
         dataVersion: 1,
         periodData: {},
@@ -8349,6 +8508,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             lastDate: '',
             updates: [],
             currentText: ''
+        },
+        taWordLib: {
+            subj: [], verb: [], obj: [], adj: [], adv: [], noun: [], poss: [], greet: []
         },
         selectedCards: [],
         videoBg: '',
@@ -8825,6 +8987,25 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 }
             } catch(e) { console.error('[迁移 v3→v4] 失败:', e); }
             version = 4;
+        }
+
+        /* ---- v4 → v5: 一起写歌余额Bug补偿 ----
+           因「一起写歌」创作完成后余额未更新的Bug，为每一位用户补发 5200 元，
+           双方各自 +5200，网站更新即到账余额。仅在首次升级到 v5 时执行一次。 */
+        if (version < 5) {
+            try {
+                if (!data.balanceData) data.balanceData = { mine: 0, other: 0, records: [] };
+                if (!Array.isArray(data.balanceData.records)) data.balanceData.records = [];
+                data.balanceData.mine = (data.balanceData.mine || 0) + 5200;
+                data.balanceData.other = (data.balanceData.other || 0) + 5200;
+                data.balanceData.records.push({
+                    text: '一起写歌余额Bug补偿（双方+5200）',
+                    time: Date.now()
+                });
+                upgraded = true;
+                console.log('[迁移 v4→v5] 已为双方各补发 5200 元');
+            } catch(e) { console.error('[迁移 v4→v5] 失败:', e); }
+            version = 5;
         }
 
         data.dataVersion = version;
@@ -19545,7 +19726,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         {key:'harpsichord',name:'古钢琴',en:'Harpsi.',wave:'sawtooth',oct:1,sustain:false,svg:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="10" rx="1.5"/><line x1="8" y1="7" x2="8" y2="17"/><line x1="13" y1="7" x2="13" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/></svg>'}
     ];
     var SW_TIME_OPTS = [
+        {label:'5秒',  sec:5,   strokes:5,   pct:0.35, reward:200},
         {label:'30秒', sec:30,  strokes:30,  pct:0.40, reward:1000},
+        {label:'45秒', sec:45,  strokes:45,  pct:0.42, reward:1500},
         {label:'60秒', sec:60,  strokes:60,  pct:0.45, reward:3000},
         {label:'2分钟',sec:120, strokes:120, pct:0.50, reward:4000},
         {label:'3分钟',sec:180, strokes:180, pct:0.60, reward:5000}
@@ -19582,7 +19765,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         curInst:'piano', curColor:'#FFFFFF', eraseMode:false,
         drawTimer:null, phaseTimer:null, taTimer:null,
         audioCtx:null, osc:null, curStroke:null, strokeStart:0,
-        drawing:false, _melodyTouchId:null
+        drawing:false, _melodyTouchId:null,
+        /* 长按发声相关 */
+        pressTimer:null, longPress:false, pressStartTime:0,
+        glowAnim:null, glowPos:null, glowParticles:[], glowRipples:[],
+        /* 合作者选择 */
+        partnerName:'',       // 选定的合作者昵称
+        partnerId:null        // 选定的合作者联系人 ID
     };
     var swNavStack = [];
 
@@ -19603,7 +19792,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function swSave(){ try{ if(typeof saveData==='function') saveData(); }catch(e){} }
     function swTheme(){ return appData.songwriteData.theme; }
     function swMe(){ return (appData.chatSettings && appData.chatSettings.myNickname) || '我'; }
-    function swOther(){ return (appData.chatSettings && appData.chatSettings.otherNickname) || '对方'; }
+    function swOther(){ return swState.partnerName || (appData.chatSettings && appData.chatSettings.otherNickname) || '对方'; }
     function swInstByKey(k){ var i=SW_INSTS.find(function(x){return x.key===k;}); return i||SW_INSTS[0]; }
     function swInstName(k){ return swInstByKey(k).name; }
     function swTimeLabel(sec){ var o=SW_TIME_OPTS.find(function(x){return x.sec===sec;}); return o?o.label:sec+'秒'; }
@@ -19611,40 +19800,275 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function swVisibleLib(){ return appData.songwriteData.library.filter(function(c){return !c.hidden;}).map(function(c){return c.text;}); }
 
     /* ---- 音频 ---- */
-    function swAudio(){ if(!swState.audioCtx){ try{ swState.audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return swState.audioCtx; }
-    function swResumeAudio(){ var c=swAudio(); if(c&&c.state==='suspended'){ c.resume(); } }
+    /* 共享 AudioContext：优先复用保活系统的 context，避免 iOS 多 AudioContext 冲突 */
+    function swAudio(){
+        if(!swState.audioCtx){
+            try {
+                if(typeof _silentAudio!=='undefined' && _silentAudio && _silentAudio._ctx){
+                    swState.audioCtx=_silentAudio._ctx;
+                }
+            } catch(e) {}
+            if(!swState.audioCtx){
+                try{ swState.audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ console.error('[写歌] AudioContext创建失败:', e); }
+            }
+        }
+        return swState.audioCtx;
+    }
+    function swResumeAudio(){
+        var c=swAudio(); if(!c) return;
+        /* 仅尝试 resume，不创建新 context（新 context 必须在用户手势中创建，见 swForceResumeAudio） */
+        if(c.state!=='running'){
+            var p=c.resume();
+            if(p&&typeof p.then==='function'){
+                p.then(function(){
+                    var fix=document.getElementById('swAudioFix'); if(fix) fix.classList.remove('show');
+                }).catch(function(e){
+                    console.warn('[写歌] AudioContext resume failed:', e);
+                });
+            }
+        }
+    }
+    /* 强制恢复音频：在用户手势（点击恢复按钮）上下文中调用。
+       核心策略：关闭旧 context → 同步创建新 context → 同步重建播放器音频链。
+       iOS 后台回来后旧 context 常进入"僵尸"状态，resume() 静默失败，必须重建。*/
+    function swForceResumeAudio(){
+        /* 1. 关闭旧 context（同步，在用户手势内） */
+        var oldCtx=swState.audioCtx;
+        if(oldCtx){
+            try{ oldCtx.close(); }catch(e){}
+        }
+        /* 2. 同步创建新 AudioContext（在用户手势中创建，iOS 会直接进入 running 状态） */
+        var newCtx=null;
+        try{
+            newCtx=new (window.AudioContext||window.webkitAudioContext)();
+            swState.audioCtx=newCtx;
+            console.log('[写歌] 已创建新 AudioContext, state=', newCtx.state);
+        }catch(e){
+            console.error('[写歌] 创建 AudioContext 失败:', e);
+            var tx=document.querySelector('.sw-audio-fix-tx');
+            if(tx) tx.innerHTML='恢复失败，请刷新页面后重试';
+            return;
+        }
+        /* 3. 同步更新保活系统指向新 context */
+        if(typeof _silentAudio!=='undefined'){
+            _silentAudio={_ctx:newCtx,_osc:null,_gain:null};
+            _audioKeepAliveStarted=true;
+        }
+        /* 4. 同步重建播放器音频链（新 context 上的新节点） */
+        swPlayer._masterGain=null; swPlayer._convolver=null; swPlayer._wetGain=null;
+        swSetupPlayerAudio();
+        /* 恢复之前的混响设置 */
+        var savedReverb='none';
+        try{ savedReverb=localStorage.getItem('swReverbType')||'none'; }catch(e){}
+        if(savedReverb!=='none'){ swSetReverb(savedReverb); }
+        /* 5. 如果新 context 不是 running（极少见），尝试 resume */
+        if(newCtx.state!=='running'){
+            var p=newCtx.resume();
+            if(p&&typeof p.then==='function'){
+                p.then(function(){
+                    console.log('[写歌] 新 AudioContext resume 成功, state=', newCtx.state);
+                }).catch(function(e){ console.error('[写歌] 新 context resume 失败:', e); });
+            }
+        }
+        /* 6. 隐藏修复浮层 */
+        var fix=document.getElementById('swAudioFix'); if(fix) fix.classList.remove('show');
+        /* 恢复浮层文案为默认值（防止上次失败改过文案） */
+        var tx2=document.querySelector('.sw-audio-fix-tx');
+        if(tx2) tx2.innerHTML='音频被系统中断（可能是录屏）<br>点击下方按钮恢复声音';
+    }
+    /* 显示音频修复浮层 */
+    function swShowAudioFix(){
+        var fix=document.getElementById('swAudioFix');
+        if(fix) fix.classList.add('show');
+    }
+    /* 音频健康检查：定期检测 AudioContext 状态，被中断时自动显示修复浮层 */
+    var _swAudioMonitor=null;
+    function swStartAudioMonitor(){
+        swStopAudioMonitor();
+        _swAudioMonitor=setInterval(function(){
+            var page=document.getElementById('songwriteAppPage');
+            if(!page || page.style.display==='none'){ return; }
+            var c=swState.audioCtx;
+            if(c && (c.state==='suspended'||c.state==='interrupted')){
+                /* 自动尝试一次静默恢复（可能失败，因为不在用户手势中） */
+                swResumeAudio();
+                /* 如果仍然不是 running，显示修复浮层等用户点击 */
+                setTimeout(function(){
+                    var c2=swState.audioCtx;
+                    if(c2 && c2.state!=='running'){ swShowAudioFix(); }
+                }, 500);
+            }
+        }, 2000);
+    }
+    function swStopAudioMonitor(){
+        if(_swAudioMonitor){ clearInterval(_swAudioMonitor); _swAudioMonitor=null; }
+    }
     /* y(0=顶..canvasH=底) → C大调7音阶量化频率（C4~B4，上=高音，下=低音） */
     function swY2Freq(y, h){ h=h||swState.canvasH||300; var region=Math.floor(Math.max(0,Math.min(1,y/h))*7); if(region>6)region=6; return SW_SCALE[region]; }
     function swFreqToNote(freq){ var midi=Math.round(69+12*Math.log2(freq/440)); var n=SW_NOTE_NAMES[((midi%12)+12)%12]; var oct=Math.floor(midi/12)-1; return n+oct; }
-    /* 启动一个固定时长(0.3s)的音符，自动停止，无连续滑音 */
-    function swStartOsc(freq, instKey, duration, destNode){
+    /* 各乐器泛音配置：partials=[[倍频,振幅],...]，wave 主波形，attack 起音(秒)，
+       decay 衰减(秒，0=持续发声)，release 释放(秒)，vibrato 颤音Hz(0=无)，
+       oct 八度倍率，noise 拨弦噪声，detune 失谐 cents，sweep 扫频。*/
+    var SW_INST_HARM = {
+        piano:       {partials:[[1,1],[2,0.45],[3,0.20],[4,0.12],[5,0.06],[6,0.03]], wave:'triangle',  attack:0.003, decay:0.50, release:0.08, vibrato:0, peak:0.30, filter:{type:'lowpass',freq:5000,q:0.7}},
+        epiano:      {partials:[[1,1],[2,0.35],[3,0.15],[4,0.08]],                   wave:'sine',      attack:0.004, decay:0.60, release:0.12, vibrato:0, peak:0.28, filter:{type:'lowpass',freq:3500,q:1.2}},
+        guitar:      {partials:[[1,1],[2,0.25],[3,0.12],[4,0.06],[5,0.03]],          wave:'sawtooth',  attack:0.002, decay:0.35, release:0.05, vibrato:0, noise:true, peak:0.25, filter:{type:'lowpass',freq:3000,q:1.5}},
+        strings:     {partials:[[1,1],[2,0.35],[3,0.18],[4,0.08]],                   wave:'sawtooth',  attack:0.06,  decay:0,    release:0.60, vibrato:5, peak:0.22, filter:{type:'lowpass',freq:4000,q:0.5}},
+        organ:       {partials:[[1,1],[2,0.50],[3,0.30],[4,0.15]],                   wave:'sine',      attack:0.02,  decay:0,    release:0.10, vibrato:5.5, peak:0.25, filter:{type:'lowpass',freq:5000,q:0.3}},
+        bass:        {partials:[[1,1],[2,0.12],[3,0.04]],                            wave:'triangle',  attack:0.005, decay:0.35, release:0.05, vibrato:0, oct:0.5, peak:0.30, filter:{type:'lowpass',freq:800,q:0.8}},
+        synth:       {partials:[[1,1]],                                             wave:'sawtooth',  attack:0.02,  decay:0,    release:0.35, vibrato:0, detune:12, sweep:true, peak:0.22, filter:{type:'lowpass',freq:2500,q:3}},
+        flute:       {partials:[[1,1],[2,0.25],[3,0.08]],                           wave:'sine',      attack:0.08,  decay:0,    release:0.25, vibrato:5, peak:0.25, filter:{type:'lowpass',freq:4500,q:0.5}},
+        harmonica:   {partials:[[1,1],[2,0.18],[3,0.06]],                           wave:'triangle',  attack:0.004, decay:0.25, release:0.04, vibrato:5.5, peak:0.26, filter:{type:'lowpass',freq:3500,q:0.8}},
+        harpsichord: {partials:[[1,1],[2,0.12],[3,0.04],[4,0.02]],                  wave:'sawtooth',  attack:0.001, decay:0.20, release:0.03, vibrato:0, peak:0.24, filter:{type:'lowpass',freq:6000,q:0.5}}
+    };
+    /* 构建一个音符的振荡器组：多泛音叠加 + 滤波器塑形 + 颤音 + 拨弦噪声/失谐扫频，返回 voice 对象 */
+    function swBuildVoice(freq, instKey, destNode, opts){
+        opts=opts||{};
         var ctx=swAudio(); if(!ctx) return null;
+        if(ctx.state!=='running'){ swResumeAudio(); }
         var inst=swInstByKey(instKey);
-        var osc=ctx.createOscillator(); var gain=ctx.createGain();
-        osc.type=inst.wave; osc.frequency.value=freq*inst.oct;
+        var cfg=SW_INST_HARM[instKey]||SW_INST_HARM['piano'];
         var now=ctx.currentTime;
-        var dur=duration||0.3;
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.22, now+0.02);
-        gain.gain.setValueAtTime(0.22, now+dur-0.05);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
-        osc.connect(gain);
-        var dest=destNode||ctx.destination;
-        gain.connect(dest);
-        /* 播放器混响支路 */
-        if(swPlayer._convolver && swPlayer._wetGain && swPlayer._reverbType!=='none'){
-            gain.connect(swPlayer._convolver);
+        var peak=(opts.volMult!=null?opts.volMult:1)*(cfg.peak||0.28);
+        var attack=cfg.attack||0.005;
+        var release=cfg.release||0.05;
+        var oct=(cfg.oct!=null)?cfg.oct:(inst.oct||1);
+        var baseFreq=freq*oct;
+        var partials=cfg.partials||[[1,1]];
+        var totalAmp=partials.reduce(function(s,p){return s+(p[1]||0);},0)||1;
+
+        /* 包络增益 */
+        var master=ctx.createGain();
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.linearRampToValueAtTime(peak, now+attack);
+
+        /* 滤波器：为每种乐器塑形音色，去掉刺耳的高频泛音 */
+        var filterNode=null;
+        if(cfg.filter){
+            try{
+                filterNode=ctx.createBiquadFilter();
+                filterNode.type=cfg.filter.type||'lowpass';
+                filterNode.frequency.value=cfg.filter.freq||5000;
+                filterNode.Q.value=cfg.filter.q||0.5;
+                filterNode.connect(master);
+            }catch(e){ filterNode=null; }
         }
-        osc.start(now);
-        osc.stop(now+dur+0.02);
-        return {osc:osc, gain:gain, inst:inst, stopped:false};
+        var voiceDest=filterNode||master;
+
+        var autoStopAt=0;
+        if(opts.sustain){
+            master.gain.setValueAtTime(peak, now+attack+0.002);
+        } else {
+            var dur=opts.duration||0.3;
+            if(cfg.decay>0){
+                var dec=Math.min(cfg.decay, dur);
+                master.gain.setValueAtTime(peak, now+attack);
+                master.gain.exponentialRampToValueAtTime(0.001, now+attack+dec);
+                autoStopAt=now+attack+dec+0.05;
+            } else {
+                master.gain.setValueAtTime(peak, now+Math.max(attack, dur-release));
+                master.gain.exponentialRampToValueAtTime(0.001, now+dur);
+                autoStopAt=now+dur+0.02;
+            }
+        }
+        var dest=destNode||ctx.destination;
+        master.connect(dest);
+        if(swPlayer._convolver && swPlayer._wetGain && swPlayer._reverbType!=='none'){
+            master.connect(swPlayer._convolver);
+        }
+        var oscs=[], gains=[];
+        partials.forEach(function(p){
+            var mult=p[0], amp=(p[1]||0)/totalAmp;
+            if(cfg.detune){
+                [-cfg.detune, cfg.detune].forEach(function(c){
+                    var o=ctx.createOscillator(); o.type=cfg.wave;
+                    o.frequency.value=baseFreq*mult; o.detune.value=c;
+                    if(cfg.sweep && !opts.sustain){ o.frequency.linearRampToValueAtTime(baseFreq*mult*1.3, now+(opts.duration||0.3)); }
+                    var g=ctx.createGain(); g.gain.value=amp*0.5;
+                    o.connect(g); g.connect(voiceDest); oscs.push(o); gains.push(g);
+                });
+            } else {
+                var o=ctx.createOscillator(); o.type=cfg.wave; o.frequency.value=baseFreq*mult;
+                var g=ctx.createGain(); g.gain.value=amp;
+                o.connect(g); g.connect(voiceDest); oscs.push(o); gains.push(g);
+            }
+        });
+        var lfo=null;
+        if(cfg.vibrato){
+            lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=cfg.vibrato;
+            var lfoGain=ctx.createGain(); lfoGain.gain.value=Math.max(2, baseFreq*0.008);
+            lfo.connect(lfoGain); oscs.forEach(function(o){ lfoGain.connect(o.frequency); });
+            lfo.start(now);
+        }
+        var noiseSrc=null;
+        if(cfg.noise){
+            try{
+                var buf=ctx.createBuffer(1, Math.floor(ctx.sampleRate*0.03), ctx.sampleRate);
+                var dat=buf.getChannelData(0);
+                for(var i=0;i<dat.length;i++){ dat[i]=(Math.random()*2-1)*Math.pow(1-i/dat.length,3); }
+                noiseSrc=ctx.createBufferSource(); noiseSrc.buffer=buf;
+                var ng=ctx.createGain(); ng.gain.value=0.08;
+                var bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=baseFreq*2;
+                noiseSrc.connect(bp); bp.connect(ng); ng.connect(voiceDest);
+                noiseSrc.start(now);
+            }catch(e){}
+        }
+        oscs.forEach(function(o){ o.start(now); });
+        if(autoStopAt){
+            oscs.forEach(function(o){ try{o.stop(autoStopAt);}catch(e){} });
+            if(lfo){ try{lfo.stop(autoStopAt);}catch(e){} }
+            if(noiseSrc){ try{noiseSrc.stop(autoStopAt);}catch(e){} }
+        }
+        var voice={ osc:oscs[0], gain:master, inst:inst, stopped:false,
+            _oscs:oscs, _lfo:lfo, _noise:noiseSrc, _ctx:ctx, _release:release, _oct:oct, _partials:partials, _detune:cfg.detune, _filter:filterNode };
+        voice.setFreq=function(f){
+            var bf=f*oct, t=ctx.currentTime;
+            var idx=0;
+            partials.forEach(function(p){
+                var mult=p[0];
+                if(cfg.detune){
+                    if(oscs[idx]) oscs[idx].frequency.setTargetAtTime(bf*mult, t, 0.02);
+                    if(oscs[idx+1]) oscs[idx+1].frequency.setTargetAtTime(bf*mult, t, 0.02);
+                    idx+=2;
+                } else {
+                    if(oscs[idx]) oscs[idx].frequency.setTargetAtTime(bf*mult, t, 0.02);
+                    idx+=1;
+                }
+            });
+            if(filterNode && cfg.filter){
+                filterNode.frequency.setTargetAtTime(cfg.filter.freq, t, 0.02);
+            }
+        };
+        return voice;
     }
-    function swStopOsc(voice){ if(!voice||voice.stopped) return; voice.stopped=true; try{ var ctx=swState.audioCtx||swAudio(); var now=ctx.currentTime; voice.gain.gain.cancelScheduledValues(now); voice.gain.gain.setValueAtTime(voice.gain.gain.value, now); voice.gain.gain.exponentialRampToValueAtTime(0.0001, now+0.05); voice.osc.stop(now+0.06); }catch(e){} }
+    /* 启动一个固定时长音符，自动停止（回放/短按使用） */
+    function swStartOsc(freq, instKey, duration, destNode){
+        return swBuildVoice(freq, instKey, destNode, {duration:duration||0.3, sustain:false});
+    }
+    /* 启动持续音（长按使用），不自动停止，音量为短音的 0.7 倍，可用 voice.setFreq 滑音 */
+    function swStartSustain(freq, instKey, destNode, volMult){
+        return swBuildVoice(freq, instKey, destNode, {sustain:true, volMult:(volMult!=null?volMult:0.7)});
+    }
+    function swStopOsc(voice){
+        if(!voice||voice.stopped) return; voice.stopped=true;
+        try{
+            var ctx=voice._ctx||swState.audioCtx||swAudio(); var now=ctx.currentTime;
+            var rel=voice._release||0.05;
+            voice.gain.gain.cancelScheduledValues(now);
+            voice.gain.gain.setValueAtTime(Math.max(voice.gain.gain.value,0.0001), now);
+            voice.gain.gain.exponentialRampToValueAtTime(0.0001, now+rel);
+            var stopAt=now+rel+0.02;
+            (voice._oscs||[voice.osc]).forEach(function(o){ try{o.stop(stopAt);}catch(e){} });
+            if(voice._lfo){ try{voice._lfo.stop(stopAt);}catch(e){} }
+            if(voice._noise){ try{voice._noise.stop(stopAt);}catch(e){} }
+        }catch(e){}
+    }
 
     /* ---- 鼓点 / 和弦合成 ---- */
     /* 打击垫音效：hi-hat（白噪声短促）/ kick（低频正弦衰减） */
     function swPlayDrum(type){
         var ctx=swAudio(); if(!ctx) return;
+        if(ctx.state!=='running'){ swResumeAudio(); }
         var now=ctx.currentTime;
         if(type==='hihat'){
             // Hi-hat: white noise burst, very short
@@ -19674,6 +20098,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     /* 和弦伴奏：根音 + 大三度 + 纯五度 */
     function swPlayChord(rootFreq, duration){
         var ctx=swAudio(); if(!ctx) return;
+        if(ctx.state!=='running'){ swResumeAudio(); }
         var now=ctx.currentTime;
         // Major chord: root, major third, fifth
         var freqs=[rootFreq, rootFreq*1.26, rootFreq*1.498];
@@ -19783,10 +20208,51 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         if(swState.drawTimer){ clearInterval(swState.drawTimer); swState.drawTimer=null; }
         if(swState.phaseTimer){ clearInterval(swState.phaseTimer); swState.phaseTimer=null; }
         if(swState.taTimer){ clearTimeout(swState.taTimer); swState.taTimer=null; }
+        if(swState.pressTimer){ clearTimeout(swState.pressTimer); swState.pressTimer=null; }
         if(swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+        swStopGlow();
+        swState.longPress=false;
     }
-    function openSongwriteApp(){ swInitData(); swApplyTheme(); document.getElementById('songwriteAppPage').style.display='flex'; swNavStack=[]; swShowStart(); }
-    function closeSongwriteApp(){ swCleanup(); swStopPlayer(); document.getElementById('songwriteAppPage').style.display='none'; }
+    function openSongwriteApp(){
+        swInitData(); swApplyTheme(); swResumeAudio();
+        document.getElementById('songwriteAppPage').style.display='flex'; swNavStack=[]; swShowStart();
+        /* 启动音频健康监测：录屏/系统中断后自动检测并提示恢复 */
+        swStartAudioMonitor();
+        /* iOS Safari:在 app 页面首次触摸时确保音频解锁。
+           如果 context 不是 running，直接强制重建（在用户手势内，成功率最高） */
+        var page=document.getElementById('songwriteAppPage');
+        if(page && !page._swAudioUnlock){
+            page._swAudioUnlock=true;
+            var unlock=function(){
+                var c=swAudio();
+                if(!c || c.state!=='running'){
+                    /* context 不在运行状态，直接强制重建（在用户手势内同步执行） */
+                    swForceResumeAudio();
+                }
+            };
+            page.addEventListener('touchstart',unlock,{once:true,passive:true});
+            page.addEventListener('mousedown',unlock,{once:true});
+        }
+        /* 离开网站再回来时：AudioContext 会被浏览器挂起，监听 visibilitychange 恢复 */
+        if(!window._swVisHandler){
+            window._swVisHandler=true;
+            document.addEventListener('visibilitychange',function(){
+                if(!document.hidden){
+                    /* 页面重新可见：尝试恢复现有 context（不置空 audioCtx，避免播放器节点脱节）。
+                       注意：visibilitychange 不是用户手势，resume 可能失败，失败后由监测器弹修复浮层 */
+                    setTimeout(function(){
+                        swResumeAudio();
+                        /* 检查状态，如果仍非 running 则显示修复浮层 */
+                        setTimeout(function(){
+                            var c=swState.audioCtx;
+                            if(c && c.state!=='running'){ swShowAudioFix(); }
+                        }, 600);
+                    }, 100);
+                }
+            });
+        }
+    }
+    function closeSongwriteApp(){ swCleanup(); swStopPlayer(); swStopAudioMonitor(); var fix=document.getElementById('swAudioFix'); if(fix) fix.classList.remove('show'); document.getElementById('songwriteAppPage').style.display='none'; }
 
     /* ---- 主题 ---- */
     function swApplyTheme(){
@@ -19812,16 +20278,77 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
     /* ---- 起始页 ---- */
     function swShowStart(){
-        swCleanup(); swState.title='';
+        swCleanup(); swState.title=''; swState.partnerName=''; swState.partnerId=null;
         var h=swTopbar('一起写歌');
         h+='<div class="sw-wrap" style="text-align:center;padding-top:36px;">';
         h+='<div class="sw-glass"><div class="sw-title">一起写一首我们的歌</div><div class="sw-glass-text">从歌名到旋律，每一笔都由你们共同落下</div></div>';
-        h+='<div class="sw-btn" style="max-width:240px;" onclick="swPushNav(swShowStart);swStep1()">开始写歌</div>';
+        h+='<div class="sw-btn" style="max-width:240px;" onclick="swPushNav(swShowStart);swSelectPartner()">开始写歌</div>';
         h+='<div class="sw-btn ghost" style="max-width:240px;" onclick="swPushNav(swShowStart);swShowSongs()">我的歌单</div>';
         h+='<div class="sw-btn ghost" style="max-width:240px;" onclick="swPushNav(swShowStart);swShowLibrary()">字库管理</div>';
         h+='</div>';
         swRender(h);
     }
+
+    /* ---- 选择合作者 ---- */
+    function swSelectPartner(){
+        swCleanup();
+        var h=swTopbar('选择合作者');
+        h+='<div class="sw-wrap"><div class="sw-step">选择和谁一起写歌</div>';
+        h+='<div class="sw-glass"><div class="sw-title">邀请谁一起创作？</div><div class="sw-glass-text">选择一位联系人，与Ta共同谱写旋律</div></div>';
+        var contacts = [];
+        try {
+            contacts = (appData.contactList && appData.contactList.contacts) || [];
+        } catch(e) {}
+        h+='<div class="sw-partner-list" id="swPartnerList">';
+        /* 已有联系人：有几个显示几个，不再额外添加「默认对方」 */
+        if (contacts.length > 0) {
+            for (var i = 0; i < contacts.length; i++) {
+                var c = contacts[i];
+                if (!c || !c.id) continue;
+                var cname = c.name || c.nickname || '联系人';
+                h+='<div class="sw-partner-item" onclick="swSetPartner(\''+c.id+'\',\''+swEsc(cname)+'\')">';
+                h+='<div class="sw-partner-avatar">'+swPartnerAvatar(c.avatar||'')+'</div>';
+                h+='<div class="sw-partner-name">'+swEsc(cname)+'</div>';
+                h+='</div>';
+            }
+        } else {
+            h+='<div class="sw-glass" style="text-align:center;padding:30px 0;"><div class="sw-glass-text">还没有联系人，请先在聊天中添加联系人</div></div>';
+        }
+        /* 手动输入 */
+        h+='<div class="sw-partner-item sw-partner-custom" onclick="swCustomPartner()">';
+        h+='<div class="sw-partner-avatar sw-partner-add">+</div>';
+        h+='<div class="sw-partner-name">自定义昵称</div>';
+        h+='</div>';
+        h+='</div>';
+        h+='</div>';
+        swRender(h);
+    }
+    function swSetPartner(id, name){
+        swState.partnerId = id || null;
+        swState.partnerName = name || '';
+        swStep1();
+    }
+    function swCustomPartner(){
+        var h=swTopbar('自定义合作者');
+        h+='<div class="sw-wrap"><div class="sw-step">输入合作者昵称</div>';
+        h+='<div class="sw-glass"><div class="sw-glass-text">请输入你想一起写歌的人的昵称</div>';
+        h+='<input class="sw-name-input" id="swCustomPartnerInput" maxlength="20" placeholder="输入昵称" onkeydown="if(event.key===\'Enter\')swConfirmCustomPartner()"/>';
+        h+='<div class="sw-btn" style="max-width:180px;" onclick="swConfirmCustomPartner()">确定</div></div></div>';
+        swRender(h, function(){ var inp=document.getElementById('swCustomPartnerInput'); if(inp){ inp.focus(); setTimeout(function(){ inp.focus(); },100); } });
+    }
+    function swConfirmCustomPartner(){
+        var inp=document.getElementById('swCustomPartnerInput');
+        var v=inp.value.trim();
+        if(!v){ swToast('请输入昵称'); return; }
+        swState.partnerId=null;
+        swState.partnerName=v;
+        swStep1();
+    }
+    function swPartnerAvatar(avatar){
+        if(avatar) return '<img src="'+avatar+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>';
+        return '<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-8 2-8 6v2h16v-2c0-4-4-6-8-6z"/></svg>';
+    }
+    function swEsc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
     /* ===== 第一步：确定歌名字数 ===== */
     function swStep1(){
@@ -20052,11 +20579,13 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         swState.canvasW=Math.min(Math.round(vw*0.92), Math.round(swState.canvasH*1.5));
         var h=swRoundHeader('请开始你的绘画');
         h+='<div class="sw-countdown" id="swPhaseCd"></div>';
-        h+='<div class="sw-canvas-wrap"><div class="sw-canvas-box"><canvas class="sw-canvas" id="swDrawCanvas"></canvas></div>';
+        h+='<div class="sw-canvas-wrap"><div class="sw-canvas-box"><canvas class="sw-canvas" id="swDrawCanvas"></canvas><canvas id="swGlowCanvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:2;"></canvas></div>';
         h+='<div class="sw-canvas-tools">';
         h+='<div class="sw-tool on" id="swToolPen" onclick="swToggleErase(false)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg></div>';
         h+='<div class="sw-tool" id="swToolEraser" onclick="swToggleErase(true)"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 20H7L3 16a2 2 0 010-3l9-9a2 2 0 013 0l6 6a2 2 0 010 3l-5 5"/><path d="M15 7l-8 8"/></svg></div>';
-        h+='</div></div></div>';
+        h+='</div>';
+        h+='<div class="sw-btn ghost" style="max-width:200px;margin-top:12px;font-size:13px;padding:8px 16px;" onclick="swEarlyFinish()">提前结束创作</div>';
+        h+='</div></div>';
         swRender(h, function(){ swInitDrawCanvas(); });
         swRunPhase(10, function(){ swEndRound(); });
     }
@@ -20070,6 +20599,14 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         /* 70/30 分区背景：上 70% 旋律区，下 30% 打击垫 */
         swDrawCanvasBg(ctx);
         swState._cv=cv; swState._ctx=ctx; swState.drawing=false; swState._melodyTouchId=null;
+        /* 光晕叠加层：独立 canvas，每帧清空重绘，不影响主画布笔触 */
+        var glowCv=document.getElementById('swGlowCanvas');
+        if(glowCv){
+            glowCv.style.width=swState.canvasW+'px'; glowCv.style.height=swState.canvasH+'px';
+            glowCv.width=swState.canvasW*dpr; glowCv.height=swState.canvasH*dpr;
+            swState._glowCv=glowCv; swState._glowCtx=glowCv.getContext('2d');
+            swState._glowCtx.scale(dpr,dpr);
+        }
         var inDrumArea=function(y){ return y > swState.canvasH*0.7; };
         var getPos=function(e, touch){
             var r=cv.getBoundingClientRect(); var cx, cy;
@@ -20121,7 +20658,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         swState.eraseMode=on;
         var p=document.getElementById('swToolPen'), e=document.getElementById('swToolEraser');
         if(p) p.classList.toggle('on',!on); if(e) e.classList.toggle('on',on);
-        if(on && swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+        if(on){
+            if(swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+            if(swState.pressTimer){ clearTimeout(swState.pressTimer); swState.pressTimer=null; }
+            swStopGlow();
+            swState.longPress=false;
+        }
     }
     function swBeginStroke(p){
         /* 下 30% 区域：打击垫，不开始笔触，改为创建鼓点 */
@@ -20129,6 +20671,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         swState.drawing=true; swState.strokeStart=performance.now();
         /* 无重叠：先停掉上一个还在响的音符 */
         if(swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+        swState.longPress=false; swState.pressStartTime=performance.now();
+        if(swState.pressTimer){ clearTimeout(swState.pressTimer); swState.pressTimer=null; }
         var ctx=swState._ctx;
         if(swState.eraseMode){
             ctx.globalCompositeOperation='destination-out';
@@ -20137,8 +20681,17 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             ctx.globalCompositeOperation='source-over';
             ctx.strokeStyle=swState.curColor; ctx.lineWidth=4;
             ctx.beginPath(); ctx.moveTo(p.x,p.y);
-            /* 固定0.3s音符，量化音高，无滑音 */
-            var f=swY2Freq(p.y); swState.osc=swStartOsc(f, swState.curInst, 0.3);
+            /* 立即播放短音（0.3s自动停止），同时启动长按检测 */
+            var f0=swY2Freq(p.y);
+            swState.osc=swStartOsc(f0, swState.curInst, 0.3);
+            /* 长按检测：500ms 后切换为持续音模式，音量为短音的 0.7 倍 */
+            swState.pressTimer=setTimeout(function(){
+                if(!swState.drawing) return;
+                swState.longPress=true;
+                if(swState.osc){ swStopOsc(swState.osc); }
+                swState.osc=swStartSustain(f0, swState.curInst, null, 0.7);
+                swStartGlow(p);
+            }, 500);
         }
         swState.curStroke={ author:swState.curAuthor, instrument:swState.curInst, color:swState.curColor, erase:swState.eraseMode, points:[{x:p.x,y:p.y}], timestamps:[0] };
     }
@@ -20147,21 +20700,114 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         if(swState.eraseMode){ ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
         else { ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
         swState.curStroke.points.push({x:p.x,y:p.y}); swState.curStroke.timestamps.push(parseFloat(t.toFixed(3)));
+        /* 长按模式下：音高跟随手指滑动 */
+        if(swState.longPress && swState.osc && swState.osc.setFreq){
+            var f=swY2Freq(p.y);
+            swState.osc.setFreq(f);
+        }
+        /* 更新光晕位置 */
+        if(swState.longPress){ swState.glowPos={x:p.x,y:p.y}; }
     }
     function swEndStroke(){
         if(!swState.drawing) return; swState.drawing=false;
         var ctx=swState._ctx; ctx.globalCompositeOperation='source-over';
-        /* 音符自动0.3s后停止，无需手动停 */
+        /* 清除长按定时器 */
+        if(swState.pressTimer){ clearTimeout(swState.pressTimer); swState.pressTimer=null; }
+        if(!swState.longPress && !swState.eraseMode){
+            /* 短按（500ms内抬起）：触发0.3秒短音 */
+            if(swState.curStroke && swState.curStroke.points.length){
+                var lastP=swState.curStroke.points[swState.curStroke.points.length-1];
+                var f=swY2Freq(lastP.y);
+                if(swState.osc){ swStopOsc(swState.osc); }
+                swState.osc=swStartOsc(f, swState.curInst, 0.3);
+            }
+        } else if(swState.longPress){
+            /* 长按结束：停止持续音 + 光晕 */
+            if(swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+            swStopGlow();
+        }
+        swState.longPress=false;
         if(swState.curStroke && swState.curStroke.points.length){
             swState.roundStrokes.push(swState.curStroke);
         }
         swState.curStroke=null;
     }
+    /* 长按光晕效果：画布出现光晕扩散 + 手指周围光点跟随（独立叠加层） */
+    function swStartGlow(p){
+        swState.glowPos={x:p.x,y:p.y};
+        swState.glowParticles=[];
+        swState.glowRipples=[];
+        for(var i=0;i<8;i++){
+            swState.glowParticles.push({
+                angle:(Math.PI*2/8)*i+Math.random()*0.3,
+                radius:18+Math.random()*12,
+                speed:0.04+Math.random()*0.03,
+                alpha:0.8,
+                size:2.5+Math.random()*2
+            });
+        }
+        if(swState.glowAnim) cancelAnimationFrame(swState.glowAnim);
+        swGlowLoop();
+    }
+    function swGlowLoop(){
+        if(!swState.longPress || !swState._glowCtx){ return; }
+        var gctx=swState._glowCtx;
+        var W=swState.canvasW, H=swState.canvasH;
+        gctx.clearRect(0,0,W,H);
+        var p=swState.glowPos||{x:0,y:0};
+        /* 随机产生扩散波纹 */
+        if(Math.random()<0.18){
+            swState.glowRipples.push({x:p.x,y:p.y,r:10,alpha:0.5});
+        }
+        /* 波纹扩散动画 */
+        for(var i=swState.glowRipples.length-1;i>=0;i--){
+            var rp=swState.glowRipples[i];
+            rp.r+=2; rp.alpha-=0.018;
+            if(rp.alpha<=0){ swState.glowRipples.splice(i,1); continue; }
+            gctx.beginPath();
+            gctx.arc(rp.x,rp.y,rp.r,0,Math.PI*2);
+            gctx.strokeStyle='rgba(255,255,255,'+rp.alpha+')';
+            gctx.lineWidth=2; gctx.stroke();
+        }
+        /* 中心径向光晕 */
+        var grad=gctx.createRadialGradient(p.x,p.y,0,p.x,p.y,35);
+        grad.addColorStop(0,'rgba(255,255,255,0.35)');
+        grad.addColorStop(0.5,'rgba(255,255,255,0.12)');
+        grad.addColorStop(1,'rgba(255,255,255,0)');
+        gctx.fillStyle=grad;
+        gctx.fillRect(p.x-35,p.y-35,70,70);
+        /* 光点环绕手指 */
+        swState.glowParticles.forEach(function(pt){
+            pt.angle+=pt.speed;
+            var px=p.x+Math.cos(pt.angle)*pt.radius;
+            var py=p.y+Math.sin(pt.angle)*pt.radius;
+            gctx.beginPath();
+            gctx.arc(px,py,pt.size,0,Math.PI*2);
+            gctx.fillStyle='rgba(255,255,255,'+pt.alpha+')';
+            gctx.fill();
+            /* 光点外发光 */
+            gctx.beginPath();
+            gctx.arc(px,py,pt.size*2,0,Math.PI*2);
+            gctx.fillStyle='rgba(255,255,255,'+(pt.alpha*0.25)+')';
+            gctx.fill();
+        });
+        swState.glowAnim=requestAnimationFrame(swGlowLoop);
+    }
+    function swStopGlow(){
+        if(swState.glowAnim){ cancelAnimationFrame(swState.glowAnim); swState.glowAnim=null; }
+        if(swState._glowCtx){ try{ swState._glowCtx.clearRect(0,0,swState.canvasW,swState.canvasH); }catch(e){} }
+        swState.glowPos=null;
+        swState.glowParticles=[];
+        swState.glowRipples=[];
+    }
     function swEndRound(){
         swEndStroke();
         if(swState.phaseTimer){ clearInterval(swState.phaseTimer); swState.phaseTimer=null; }
         if(swState._upHandler){ window.removeEventListener('mouseup', swState._upHandler); swState._upHandler=null; }
+        if(swState.pressTimer){ clearTimeout(swState.pressTimer); swState.pressTimer=null; }
         if(swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+        swStopGlow();
+        swState.longPress=false;
         // 把本回合笔触并入总数据
         swState.roundStrokes.forEach(function(s){ swState.strokes.push(s); });
         swNextRound();
@@ -20262,6 +20908,20 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         swState.taTimer=setTimeout(function(){ swNextRound(); }, 600);
     }
 
+    /* 提前结束创作：保存当前笔触后直接进入完结界面 */
+    function swEarlyFinish(){
+        swEndStroke();
+        if(swState.phaseTimer){ clearInterval(swState.phaseTimer); swState.phaseTimer=null; }
+        if(swState.pressTimer){ clearTimeout(swState.pressTimer); swState.pressTimer=null; }
+        if(swState.osc){ swStopOsc(swState.osc); swState.osc=null; }
+        swStopGlow();
+        if(swState._upHandler){ window.removeEventListener('mouseup', swState._upHandler); swState._upHandler=null; }
+        /* 保存当前回合的笔触 */
+        swState.roundStrokes.forEach(function(s){ swState.strokes.push(s); });
+        swState.roundStrokes=[];
+        swFinishCreation();
+    }
+
     /* ===== 创作完成 → 保存 ===== */
     function swFinishCreation(){
         swCleanup();
@@ -20291,6 +20951,14 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         };
         swTranslateSong(song);
         appData.songwriteData.songs.push(song); swSave();
+        // 创作完成赚钱逻辑：根据选择的总时长，双方各自获得对应金额，直接存入余额App
+        var _swReward = (swState.timeOpt && swState.timeOpt.reward) ? swState.timeOpt.reward : 0;
+        if (_swReward > 0) {
+            try {
+                addBalanceRecord('mine', _swReward, '一起写歌创作·' + (swState.timeOpt.label || ''));
+                addBalanceRecord('other', _swReward, '一起写歌创作·' + (swState.timeOpt.label || ''));
+            } catch(e) { console.error('[写歌]余额发放失败:', e); }
+        }
         var melody=song.strokes.filter(function(s){return !s.erase;}).map(function(s){ var mid=s.points[Math.floor(s.points.length/2)]||s.points[0]; return swFreqToNote(swY2Freq(mid.y, song.canvasH)); }).join(' ');
         var h=swTopbar(song.title);
         h+='<div class="sw-wrap"><div class="sw-step">第 4 步 / 共 4 步</div>';
@@ -20299,6 +20967,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         h+='<div class="rw"><span class="k">歌曲名称</span><span class="v">'+song.title+'</span></div>';
         h+='<div class="rw"><span class="k">创作者</span><span class="v">'+song.authors.join(' + ')+'</span></div>';
         h+='<div class="rw"><span class="k">创作时长</span><span class="v">'+song.durationLabel+'</span></div>';
+        h+='<div class="rw"><span class="k">创作收益</span><span class="v" style="color:#2e7d32;font-weight:600;">双方各 +¥'+(_swReward||0)+'</span></div>';
         h+='<div class="rw"><span class="k">绘画次数</span><span class="v">'+song.totalStrokes+' 次</span></div>';
         h+='<div class="rw"><span class="k">笔触数</span><span class="v">'+song.strokes.length+'</span></div>';
         h+='<div class="rw"><span class="k">创作日期</span><span class="v">'+song.date+'</span></div>';
@@ -20516,7 +21185,17 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function swToggleLoop(){ swPlayer.loop=!swPlayer.loop; var b=document.getElementById('swLoopBtn'); if(b) b.classList.toggle('on',swPlayer.loop); }
     function swPlay(){
         if(swPlayer.t>=swPlayer.duration) swPlayer.t=0;
-        swResumeAudio();
+        /* 播放按钮点击是用户手势：如果 context 不在 running，直接强制重建 */
+        var c=swAudio();
+        if(!c || c.state!=='running'){
+            swForceResumeAudio();
+            c=swState.audioCtx;
+        }
+        /* 仍然不是 running 则提示用户 */
+        if(!c || c.state!=='running'){
+            swShowAudioFix();
+            return;
+        }
         swPlayer.playing=true; swUpdatePlayIcon();
         swPlayer._perf0=performance.now(); swPlayer._t0=swPlayer.t;
         swReplayFrame();
@@ -22826,55 +23505,126 @@ function mlsjIconClock() {
             }
         }
 
-        /* ---------- 消息生成（四种方式各25%） ---------- */
-        function taGenMessage() {
-            const r = Math.random();
-            if (r < 0.25) return taGenRandom();
-            else if (r < 0.5) return taGenPinyinDigit();
-            else if (r < 0.75) return taGenChinese();
-            else return taGenPinyinChinese();
-        }
-        // 方式一：纯随机字符
-        function taGenRandom() {
-            let s = '';
-            const len = taRand(6, 15);
-            for (let i = 0; i < len; i++) s += CHARS[Math.floor(Math.random() * CHARS.length)];
-            return s;
-        }
-        // 方式二：拼音+数字
-        function taGenPinyinDigit() {
-            const count = taRand(3, 8);
-            let s = '';
-            for (let i = 0; i < count; i++) {
-                if (Math.random() < 0.3) s += Math.floor(Math.random() * 10);
-                else s += PINYIN_KEYS[Math.floor(Math.random() * PINYIN_KEYS.length)];
+        /* ---------- 摩斯密码表 ---------- */
+        const MORSE_TABLE = {
+            'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....',
+            'I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.',
+            'Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-',
+            'Y':'-.--','Z':'--..',
+            '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-',
+            '5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'
+        };
+        /* 英文回复短语池（系统生成英文回复，转为摩斯密码发送） */
+        const MORSE_PHRASES = [
+            'I LOVE YOU','I MISS YOU','YOU ARE MY WORLD','FOREVER YOURS',
+            'MY HEART IS YOURS','YOU COMPLETE ME','TOGETHER FOREVER',
+            'YOU ARE MY SUNSHINE','ALWAYS BY YOUR SIDE','MY ONE AND ONLY',
+            'I NEED YOU','YOU ARE BEAUTIFUL','HOLD MY HAND','NEVER LET GO',
+            'DREAM OF YOU','YOU ARE MY EVERYTHING','STAY WITH ME',
+            'I CHOOSE YOU','YOU ARE MY HOME','LOVE CONQUERS ALL',
+            'BE MY VALENTINE','YOU LIGHT UP MY LIFE','I AM YOURS',
+            'YOU MAKE ME HAPPY','THINKING OF YOU','YOU ARE MY STAR',
+            'I CANNOT STOP LOVING YOU','YOU ARE MY DESTINY','MY LOVE GROWS',
+            'WITH ALL MY HEART','YOU ARE MY ANGEL'
+        ];
+
+        /* ---------- 随机句子生成（词库拼接，上万种组合） ---------- */
+        /* 按词性分库，每条消息从各词库随机抽词，按模板拼成有意义的英文句子 */
+        /* 预设词库（不可删除），用户自定义词库通过词库管理 App 添加到 appData.taWordLib */
+        const MW_PRESET = {
+            subj:  ['I','YOU','WE','MY HEART','MY SOUL','THE MOON','THE STARS',
+                    'TIME','LOVE','DESTINY','THE WIND','THE OCEAN','EVERY STAR'],
+            verb:  ['LOVE','MISS','NEED','WANT','HOLD','DREAM','CHERISH','ADMIRE',
+                    'DESIRE','TREASURE','EMBRACE','FOLLOW','TRUST','BELIEVE',
+                    'SEEK','GUIDE','PROTECT','REMEMBER','WAIT','SING'],
+            obj:   ['YOU','ME','US','FOREVER','ALWAYS','YOUR SMILE','YOUR EYES',
+                    'YOUR HEART','YOUR HAND','OUR LOVE','THIS MOMENT','TONIGHT',
+                    'YOU DEEPLY','YOUR VOICE','YOUR SOUL'],
+            adj:   ['BEAUTIFUL','WONDERFUL','PERFECT','ENDLESS','ETERNAL','GENTLE',
+                    'SWEET','DEAR','PRECIOUS','WARM','BRIGHT','RADIANT','TENDER',
+                    'FLAWLESS','DIVINE','MAGICAL','PURE','SHINING','LOVELY'],
+            adv:   ['ALWAYS','FOREVER','DEEPLY','TRULY','MADLY','COMPLETELY',
+                    'TENDERLY','ENDLESSLY','SILENTLY','BRAVELY','SOFTLY',
+                    'CLOSELY','STEADFASTLY'],
+            noun:  ['HEART','SOUL','WORLD','STAR','DREAM','HOME','ANGEL','DESTINY',
+                    'LIGHT','LIFE','SUNSHINE','RAINBOW','MELODY','OCEAN','FLAME',
+                    'BLOSSOM','HORIZON','SYMPHONY','COMFORT','SANCTUARY'],
+            poss:  ['MY','YOUR','OUR'],
+            greet: ['HELLO','DEAR','DARLING','SWEETHEART','BELOVED']
+        };
+        /* 运行时获取合并后的词库（预设 + 用户自定义），每次调用都读取最新数据 */
+        const MW = new Proxy({}, {
+            get: function(target, prop) {
+                var preset = MW_PRESET[prop] || [];
+                var user = [];
+                try {
+                    if (typeof appData !== 'undefined' && appData.taWordLib && appData.taWordLib[prop]) {
+                        user = appData.taWordLib[prop];
+                    }
+                } catch(e) {}
+                return preset.concat(user);
             }
-            return s;
-        }
-        // 方式三：随机中文词组合
-        function taGenChinese() {
-            const count = taRand(3, 8);
-            let s = '';
-            for (let i = 0; i < count; i++) {
-                s += PINYIN_TABLE[PINYIN_KEYS[Math.floor(Math.random() * PINYIN_KEYS.length)]];
-            }
-            return s;
-        }
-        // 方式四：拼音转中文
-        function taGenPinyinChinese() {
-            const count = taRand(3, 8);
-            let pinyin = '';
-            let chinese = '';
-            for (let i = 0; i < count; i++) {
-                const py = PINYIN_KEYS[Math.floor(Math.random() * PINYIN_KEYS.length)];
-                pinyin += py;
-                chinese += PINYIN_TABLE[py];
-            }
-            return chinese;
+        });
+        function mwPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        /* 随机选一个模板填词，每个模板产生不同句式 */
+        function taGenRandomSentence() {
+            var templates = [
+                function() { return mwPick(MW.subj) + ' ' + mwPick(MW.verb) + ' ' + mwPick(MW.obj) + ' ' + mwPick(MW.adv); },
+                function() { return 'YOU ARE ' + mwPick(MW.adj); },
+                function() { return 'YOU ARE ' + mwPick(MW.poss) + ' ' + mwPick(MW.noun); },
+                function() { return mwPick(MW.adv).toUpperCase() + ' ' + mwPick(MW.verb) + ' YOU'; },
+                function() { return 'LET US ' + mwPick(MW.verb) + ' ' + mwPick(MW.adv); },
+                function() { return 'NEVER ' + mwPick(MW.verb) + ' ' + mwPick(MW.obj); },
+                function() { return 'I WILL ' + mwPick(MW.verb) + ' YOU ' + mwPick(MW.adv); },
+                function() { return mwPick(MW.poss).toUpperCase() + ' ' + mwPick(MW.noun) + ' IS ' + mwPick(MW.adj); },
+                function() { return 'EVERY ' + mwPick(MW.noun) + ' WHISPERS ' + mwPick(MW.obj); },
+                function() { return mwPick(MW.greet) + ' ' + mwPick(MW.subj) + ' ' + mwPick(MW.verb) + ' ' + mwPick(MW.obj); },
+                function() { return 'YOU MAKE ME ' + mwPick(MW.adj).toUpperCase(); },
+                function() { return mwPick(MW.subj) + ' KNOWS ' + mwPick(MW.obj); },
+                function() { return 'STAY ' + mwPick(MW.adv) + ' WITH ' + mwPick(MW.obj); },
+                function() { return 'THE ' + mwPick(MW.noun) + ' ' + mwPick(MW.verb) + ' ' + mwPick(MW.adv); },
+                function() { return mwPick(MW.poss).toUpperCase() + ' ' + mwPick(MW.noun) + ' ' + mwPick(MW.verb) + ' ' + mwPick(MW.adv); },
+                function() { return 'IN ' + mwPick(MW.poss).toUpperCase() + ' ' + mwPick(MW.noun) + ' I ' + mwPick(MW.verb); },
+                function() { return 'COME ' + mwPick(MW.adv) + ' TO ' + mwPick(MW.obj); },
+                function() { return mwPick(MW.obj).toUpperCase() + ' IS ' + mwPick(MW.poss) + ' ' + mwPick(MW.noun); }
+            ];
+            return templates[Math.floor(Math.random() * templates.length)]();
         }
 
-        /* ---------- 打字动画 ---------- */
-        function taTypeMessage(text, callback) {
+        /* 将英文文本转为摩斯密码字符串，单词间用 / 分隔，字符间用空格分隔 */
+        function taTextToMorse(text) {
+            return text.split(' ').map(function(word) {
+                return word.split('').map(function(ch) {
+                    return MORSE_TABLE[ch.toUpperCase()] || '';
+                }).filter(function(s){return s;}).join(' ');
+            }).filter(function(s){return s;}).join(' / ');
+        }
+
+        /* ---------- 消息生成（摩斯密码） ---------- */
+        /* 60% 随机拼接，30% 固定短语池，10% 双句拼接，保证强随机性 */
+        function taGenMessage() {
+            var english = '';
+            var r = Math.random();
+            if (r < 0.6) {
+                /* 随机拼接：单句或双句 */
+                english = taGenRandomSentence();
+                if (Math.random() < 0.25) {
+                    english += ' AND ' + taGenRandomSentence();
+                }
+            } else if (r < 0.9) {
+                /* 固定短语池 */
+                english = MORSE_PHRASES[Math.floor(Math.random() * MORSE_PHRASES.length)];
+            } else {
+                /* 双句拼接：短语 + 随机句 */
+                english = MORSE_PHRASES[Math.floor(Math.random() * MORSE_PHRASES.length)]
+                        + ' AND ' + taGenRandomSentence();
+            }
+            return { english: english, morse: taTextToMorse(english) };
+        }
+
+        /* ---------- 摩斯密码打字动画 ---------- */
+        /* 点（.）短闪200ms，划（-）长闪600ms，字符间隔400ms，单词间隔（/）800ms */
+        function taTypeMessage(msgData, callback) {
             taTypingActive = true;
             const typingEl = taEl('taTyping');
             const typingTextEl = taEl('taTypingText');
@@ -22885,7 +23635,7 @@ function mlsjIconClock() {
             const row = document.createElement('div');
             row.className = 'ta-msg-row them';
             const bubble = document.createElement('div');
-            bubble.className = 'ta-msg-bubble';
+            bubble.className = 'ta-msg-bubble ta-morse-bubble';
             const timeEl = document.createElement('div');
             timeEl.className = 'ta-msg-time';
             const now = new Date();
@@ -22893,25 +23643,80 @@ function mlsjIconClock() {
             row.appendChild(bubble);
             row.appendChild(timeEl);
             container.insertBefore(row, typingEl);
-            let idx = 0;
-            function typeNext() {
-                if (idx < text.length) {
-                    bubble.textContent += text[idx];
-                    idx++;
-                    const delay = taRand(80, 150);
-                    const t = setTimeout(typeNext, delay);
-                    taTimers.push(t);
-                } else {
+
+            var morse = msgData.morse || '';
+            var english = msgData.english || '';
+            var morseEl = document.createElement('span');
+            morseEl.className = 'ta-morse-text';
+            bubble.appendChild(morseEl);
+            // 闪烁指示器
+            var flashEl = document.createElement('span');
+            flashEl.className = 'ta-morse-flash';
+            bubble.appendChild(flashEl);
+
+            var idx = 0;
+            function flashNext() {
+                if (idx >= morse.length) {
+                    // 动画完成，隐藏打字指示器，添加解码按钮
                     typingEl.style.display = 'none';
                     taTypingActive = false;
-                    // 保存消息
-                    taSaveMsg('them', text);
-                    // 滚动到底部
+                    flashEl.style.display = 'none';
+                    // 解码按钮
+                    var decodeBtn = document.createElement('button');
+                    decodeBtn.className = 'ta-decode-btn';
+                    decodeBtn.textContent = '解码';
+                    decodeBtn.onclick = function() {
+                        // 替换气泡内容为英文原文
+                        bubble.innerHTML = '';
+                        var decodedEl = document.createElement('span');
+                        decodedEl.className = 'ta-morse-decoded';
+                        decodedEl.textContent = english;
+                        bubble.appendChild(decodedEl);
+                    };
+                    bubble.appendChild(decodeBtn);
+                    // 存储摩斯密码（未解码状态）
+                    taSaveMsg('them', morse, english);
                     container.scrollTop = container.scrollHeight;
                     if (callback) callback();
+                    return;
+                }
+                var ch = morse[idx];
+                if (ch === '.') {
+                    morseEl.textContent += ch;
+                    flashEl.classList.add('on');
+                    var t = setTimeout(function() {
+                        flashEl.classList.remove('on');
+                        idx++;
+                        var t2 = setTimeout(flashNext, 200); // 点短闪200ms后间隔
+                        taTimers.push(t2);
+                    }, 200);
+                    taTimers.push(t);
+                } else if (ch === '-') {
+                    morseEl.textContent += ch;
+                    flashEl.classList.add('on');
+                    var t = setTimeout(function() {
+                        flashEl.classList.remove('on');
+                        idx++;
+                        var t2 = setTimeout(flashNext, 200); // 划长闪600ms后间隔
+                        taTimers.push(t2);
+                    }, 600);
+                    taTimers.push(t);
+                } else if (ch === ' ') {
+                    morseEl.textContent += ' ';
+                    idx++;
+                    var t = setTimeout(flashNext, 400); // 字符间隔400ms
+                    taTimers.push(t);
+                } else if (ch === '/') {
+                    morseEl.textContent += ' / ';
+                    idx++;
+                    var t = setTimeout(flashNext, 800); // 单词间隔800ms
+                    taTimers.push(t);
+                } else {
+                    idx++;
+                    flashNext();
                 }
             }
-            typeNext();
+            flashNext();
         }
 
         /* ---------- 自动发消息循环 ---------- */
@@ -22929,11 +23734,13 @@ function mlsjIconClock() {
         }
 
         /* ---------- 存储消息 ---------- */
-        function taSaveMsg(from, text) {
+        function taSaveMsg(from, text, extra) {
             try {
                 const key = 'ta_chat_' + taPartnerName;
                 let history = JSON.parse(localStorage.getItem(key) || '[]');
-                history.push({ from, text, time: Date.now() });
+                var entry = { from: from, text: text, time: Date.now() };
+                if (extra) entry.extra = extra; // extra: 摩斯密码原文或英文原文
+                history.push(entry);
                 // 最多保留200条
                 if (history.length > 200) history = history.slice(-200);
                 localStorage.setItem(key, JSON.stringify(history));
@@ -22956,7 +23763,33 @@ function mlsjIconClock() {
                 row.className = 'ta-msg-row ' + (m.from === 'me' ? 'me' : 'them');
                 const bubble = document.createElement('div');
                 bubble.className = 'ta-msg-bubble';
-                bubble.textContent = m.text;
+                if (m.from === 'me') {
+                    bubble.textContent = m.text;
+                } else {
+                    // 对方消息：显示摩斯密码 + 解码按钮
+                    bubble.className = 'ta-msg-bubble ta-morse-bubble';
+                    if (m.extra) {
+                        // 有 extra = 摩斯密码消息
+                        var morseEl = document.createElement('span');
+                        morseEl.className = 'ta-morse-text';
+                        morseEl.textContent = m.text;
+                        bubble.appendChild(morseEl);
+                        var decodeBtn = document.createElement('button');
+                        decodeBtn.className = 'ta-decode-btn';
+                        decodeBtn.textContent = '解码';
+                        decodeBtn.onclick = function() {
+                            bubble.innerHTML = '';
+                            var decodedEl = document.createElement('span');
+                            decodedEl.className = 'ta-morse-decoded';
+                            decodedEl.textContent = m.extra;
+                            bubble.appendChild(decodedEl);
+                        };
+                        bubble.appendChild(decodeBtn);
+                    } else {
+                        // 无 extra = 普通文本
+                        bubble.textContent = m.text;
+                    }
+                }
                 const timeEl = document.createElement('div');
                 timeEl.className = 'ta-msg-time';
                 const d = new Date(m.time);
@@ -23086,6 +23919,16 @@ function mlsjIconClock() {
             container.insertBefore(row, typingEl);
             container.scrollTop = container.scrollHeight;
             taSaveMsg('me', text);
+            // 发送后系统生成摩斯密码回复
+            const replyDelay = taRand(2000, 4000);
+            const rt = setTimeout(() => {
+                if (taState !== 'chatting') return;
+                const msgData = taGenMessage();
+                taTypeMessage(msgData, () => {
+                    if (taState === 'chatting') taStartAutoMsg();
+                });
+            }, replyDelay);
+            taTimers.push(rt);
         };
 
         /* ---------- 输入框监听 ---------- */
@@ -23616,6 +24459,23 @@ function mlsjIconClock() {
         document.querySelector('[data-app="songwrite"]').addEventListener('click', openSongwriteApp);
         document.querySelector('[data-app="goban"]').addEventListener('click', openGobanApp);
         document.querySelector('[data-app="balance"]').addEventListener('click', openBalanceApp);
+        /* 词库管理：函数定义在后续 script 块，延迟绑定避免 ReferenceError */
+        setTimeout(function() {
+            var wlEl = document.querySelector('[data-app="wordlib"]');
+            if (wlEl) wlEl.addEventListener('click', function() {
+                if (typeof openWordLibApp === 'function') openWordLibApp();
+            });
+        }, 0);
+        /* 次元购物城：函数定义在后续 script 块，延迟绑定避免 ReferenceError */
+        setTimeout(function() {
+            var shopEl = document.querySelector('[data-app="shop"]');
+            if (shopEl && !shopEl._shopBound) {
+                shopEl._shopBound = true;
+                shopEl.addEventListener('click', function() {
+                    if (typeof openShopApp === 'function') openShopApp();
+                });
+            }
+        }, 0);
 
         // 模拟日记回复 + 定时检查朋友圈/信件
         setInterval(() => {
@@ -23666,8 +24526,25 @@ function mlsjIconClock() {
             try { window.location.reload(); } catch(e) {}
         });
         window.addEventListener('load', function() {
+            // 自动时间戳：每个构建版本首次访问时用 Date.now() 生成一次并缓存到 localStorage，
+            // 同一构建内复用同一时间戳（避免每次刷新都注册新 SW 导致 iOS 无限刷新）。
+            // 发布新版本时修改 _SW_BUILD 即可触发所有用户重新拉取最新 SW，
+            // 解决苹果用户因 sw.js 被缓存而必须开梯子才能访问的问题。
+            var _SW_BUILD = '20260802a';
+            var _SW_TS_KEY = 'swRegTs_' + _SW_BUILD;
+            var _SW_TS = '';
+            try { _SW_TS = localStorage.getItem(_SW_TS_KEY) || ''; } catch(e) {}
+            if (!_SW_TS) {
+                _SW_TS = String(Date.now());
+                try {
+                    localStorage.setItem(_SW_TS_KEY, _SW_TS);
+                    for (var _k in localStorage) {
+                        if (/^swRegTs_/.test(_k) && _k !== _SW_TS_KEY) { try { localStorage.removeItem(_k); } catch(e){} }
+                    }
+                } catch(e) {}
+            }
             // updateViaCache:'none' 确保每次都向服务器校验 sw.js 是否更新
-            navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
+            navigator.serviceWorker.register('./sw.js?v=' + _SW_TS, { scope: './', updateViaCache: 'none' })
                 .then(function(reg) {
                     _swReady = true;
                     // 尝试注册 Periodic Sync（实验性，大部分浏览器不支持也不报错）
@@ -25911,7 +26788,9 @@ if (typeof SHOP_PIXEL_ICONS !== 'undefined' && !SHOP_PIXEL_ICONS.love) {
         '.ssc-result{text-align:center;font-size:13px;padding:9px 0;border-radius:10px;font-weight:600;}' +
         '.ssc-result.ok{background:#e8f5e9;color:#2e7d32;}' +
         '.ssc-result.no{background:#fbe9e7;color:#c62828;}' +
-        '.ssc-gift{font-size:12px;color:#a0845a;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:6px 8px;margin-top:8px;line-height:1.5;}';
+        '.ssc-gift{font-size:12px;color:#a0845a;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:6px 8px;margin-top:8px;line-height:1.5;}' +
+        '.ssc-hint{font-size:13px;color:#555;line-height:1.6;margin-bottom:8px;padding:0 2px;}' +
+        '.ssc-contact-tag{font-size:12px;color:#999;text-align:center;margin-bottom:8px;padding:3px 10px;background:#f5f5f5;border-radius:10px;display:inline-block;margin-left:50%;transform:translateX(-50%);}';
     document.head.appendChild(s);
 })();
 
@@ -26024,67 +26903,149 @@ function shopConfirmLove(productId) {
         paid: false, debt: false, deliveryCardSent: false
     });
     if (payMethod === 'help') {
-        shopShareCardToChat({
-            sender: 'me', cardType: 'loveGift', orderId: oid,
-            product: { name: p.name, price: p.price, category: p.category, image: p.image || '' },
-            title: '分享给你的礼物', giftMessage: giftMsg,
-            respondAt: Date.now() + 15000
-        });
+        /* 找人代付：先选择联系人，再发送卡片 */
+        shopOpenLoveContactPicker(productId, oid, giftMsg);
+        saveData();
+        shopToast('请选择代付联系人');
+        return;
     }
     saveData();
     shopToast(payMethod === 'self' ? '已下单，发货时扣除你的余额' : '已下单，等待对方代付');
     shopSwitchTab('orders');
 }
-
-// 8. 求购（我求购，他付款）
-function shopRequestBuy(productId) {
+/* 爱意专属代付：联系人选择弹窗 */
+function shopOpenLoveContactPicker(productId, oid, giftMsg) {
     shopInitData();
-    var sd = appData.shopData;
     var p = shopFindProduct(productId);
     if (!p) { shopToast('商品不存在'); return; }
-    var oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-    sd.orders.push({
-        id: oid, items: [{ productId: p.id, name: p.name, price: p.price, qty: 1, image: p.image || '' }],
-        total: p.price, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
-        address: sd.otherAddr || { name: '', phone: '', addr: '' },
-        message: '', giftMessage: '',
-        orderType: 'request', buyer: 'me', payer: 'other', payStage: 'agree',
-        paid: false, debt: false, deliveryCardSent: false
-    });
-    shopShareCardToChat({
-        sender: 'me', cardType: 'request', orderId: oid,
+    var contacts = [];
+    try { contacts = (appData.contactList && appData.contactList.contacts) || []; } catch(e) {}
+    var overlay = shopModalOverlay();
+    var html = '<div class="shop-modal-card" onclick="event.stopPropagation();" style="max-width:360px;">';
+    html += '<div class="shop-modal-title">选择代付联系人</div>';
+    html += '<div style="font-size:13px;color:#888;margin-bottom:12px;text-align:center;">把代付请求发给谁？</div>';
+    html += '<div style="max-height:320px;overflow-y:auto;">';
+    if (contacts.length > 0) {
+        for (var i = 0; i < contacts.length; i++) {
+            var c = contacts[i];
+            if (!c || !c.id) continue;
+            var cname = c.name || c.nickname || '联系人';
+            var avatarHtml = c.avatar ? '<img src="' + shopEscape(c.avatar) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;"/>' : '<div style="width:40px;height:40px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="#999"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-8 2-8 6v2h16v-2c0-4-4-6-8-6z"/></svg></div>';
+            html += '<div class="shop-contact-pick" onclick="shopDoSendLoveCard(\'' + productId + '\',\'' + oid + '\',\'' + shopEscape(giftMsg).replace(/'/g,"\\'") + '\',\'' + c.id + '\',\'' + shopEscape(cname) + '\')" style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #eee;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:background .15s;" onmouseover="this.style.background=\'#f8f8f8\'" onmouseout="this.style.background=\'#fff\'">';
+            html += avatarHtml;
+            html += '<div style="flex:1;font-size:14px;color:#333;">' + shopEscape(cname) + '</div>';
+            html += '</div>';
+        }
+    } else {
+        html += '<div style="text-align:center;padding:30px 0;color:#999;font-size:13px;">还没有联系人，请先在聊天中添加联系人</div>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:14px;">';
+    html += '<button class="shop-mine-btn" style="background:#fff;color:#666;border:1px solid #eee;margin-top:0;flex:1;" onclick="shopCloseModal();shopSwitchTab(\'orders\');">取消</button>';
+    html += '</div></div>';
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+}
+/* 爱意专属代付：发送卡片到选定联系人 */
+function shopDoSendLoveCard(productId, oid, giftMsg, contactId, contactName) {
+    shopCloseModal();
+    shopInitData();
+    var p = shopFindProduct(productId);
+    if (!p) { shopToast('商品不存在'); return; }
+    var msg = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        type: 'shopShareCard',
+        sender: 'me',
+        cardType: 'loveGift',
+        orderId: oid,
         product: { name: p.name, price: p.price, category: p.category, image: p.image || '' },
-        title: '我想要这件商品，求你帮忙付款',
-        respondAt: Date.now() + 15000
-    });
+        title: '分享给你的礼物',
+        giftMessage: giftMsg || '',
+        status: 'pending',
+        respondAt: Date.now() + 15000,
+        contactId: contactId || null,
+        contactName: contactName || ''
+    };
+    if (contactId) msg.contactId = contactId;
+    addMessage(msg);
     saveData();
-    shopToast('求购卡片已分享，等待对方付款');
+    shopToast('代付请求已发送给' + (contactName || '对方'));
     shopSwitchTab('orders');
 }
 
-// 9. 我下单找他代付
+// 8. 求购（我求购，他付款）— 点击后不创建订单，仅发卡片，对方同意后才下单扣款
+function shopRequestBuy(productId) {
+    shopOpenContactPicker(productId, 'request');
+}
+
+// 9. 我下单找他代付 — 点击后不创建订单，仅发卡片，对方同意后才下单扣款
 function shopHelpPay(productId) {
+    shopOpenContactPicker(productId, 'helpPay');
+}
+
+// 8a/9a. 联系人选择弹窗 — 多联系人时选择发给谁
+function shopOpenContactPicker(productId, action) {
+    shopInitData();
+    var p = shopFindProduct(productId);
+    if (!p) { shopToast('商品不存在'); return; }
+    var contacts = [];
+    try { contacts = (appData.contactList && appData.contactList.contacts) || []; } catch(e) {}
+    var overlay = shopModalOverlay();
+    var html = '<div class="shop-modal-card" onclick="event.stopPropagation();" style="max-width:360px;">';
+    html += '<div class="shop-modal-title">选择联系人</div>';
+    html += '<div style="font-size:13px;color:#888;margin-bottom:12px;text-align:center;">' + (action === 'request' ? '求购请求发给谁？' : '代付请求发给谁？') + '</div>';
+    html += '<div style="max-height:320px;overflow-y:auto;">';
+    /* 已有联系人：有几个显示几个，不再额外添加「默认对方」 */
+    if (contacts.length > 0) {
+        for (var i = 0; i < contacts.length; i++) {
+            var c = contacts[i];
+            if (!c || !c.id) continue;
+            var cname = c.name || c.nickname || '联系人';
+            var avatarHtml = c.avatar ? '<img src="' + shopEscape(c.avatar) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;"/>' : '<div style="width:40px;height:40px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="#999"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4 0-8 2-8 6v2h16v-2c0-4-4-6-8-6z"/></svg></div>';
+            html += '<div class="shop-contact-pick" onclick="shopDoSendCard(\'' + productId + '\',\'' + action + '\',\'' + c.id + '\',\'' + shopEscape(cname) + '\')" style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #eee;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:background .15s;" onmouseover="this.style.background=\'#f8f8f8\'" onmouseout="this.style.background=\'#fff\'">';
+            html += avatarHtml;
+            html += '<div style="flex:1;font-size:14px;color:#333;">' + shopEscape(cname) + '</div>';
+            html += '</div>';
+        }
+    } else {
+        html += '<div style="text-align:center;padding:30px 0;color:#999;font-size:13px;">还没有联系人，请先在聊天中添加联系人</div>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:14px;">';
+    html += '<button class="shop-mine-btn" style="background:#fff;color:#666;border:1px solid #eee;margin-top:0;flex:1;" onclick="shopCloseModal()">取消</button>';
+    html += '</div></div>';
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+}
+
+// 实际发送卡片到选定的联系人
+function shopDoSendCard(productId, action, contactId, contactName) {
+    shopCloseModal();
     shopInitData();
     var sd = appData.shopData;
     var p = shopFindProduct(productId);
     if (!p) { shopToast('商品不存在'); return; }
-    var oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-    sd.orders.push({
-        id: oid, items: [{ productId: p.id, name: p.name, price: p.price, qty: 1, image: p.image || '' }],
-        total: p.price, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
-        address: sd.otherAddr || { name: '', phone: '', addr: '' },
-        message: '', giftMessage: '',
-        orderType: 'helpPay', buyer: 'me', payer: 'other', payStage: 'agree',
-        paid: false, debt: false, deliveryCardSent: false
-    });
-    shopShareCardToChat({
-        sender: 'me', cardType: 'helpPay', orderId: oid,
+    var cardType = action; // 'request' or 'helpPay'
+    var title = action === 'request' ? '求购请求' : '代付请求';
+    var msg = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        type: 'shopShareCard',
+        sender: 'me',
+        cardType: cardType,
+        orderId: null,
         product: { name: p.name, price: p.price, category: p.category, image: p.image || '' },
-        title: '请你帮我代付这件商品',
-        respondAt: Date.now() + 15000
-    });
+        title: title,
+        giftMessage: '',
+        status: 'pending',
+        respondAt: Date.now() + 15000,
+        contactId: contactId || null,
+        contactName: contactName || ''
+    };
+    /* 设置 contactId 让 addMessage 路由到正确的联系人聊天记录 */
+    if (contactId) msg.contactId = contactId;
+    addMessage(msg);
     saveData();
-    shopToast('代付卡片已分享，等待对方付款');
+    shopToast((action === 'request' ? '求购' : '代付') + '卡片已发送给' + (contactName || '对方'));
     shopSwitchTab('orders');
 }
 
@@ -26377,8 +27338,28 @@ function shopRestorePresetProduct(id) {
 function shopRenderShareCard(msg) {
     var p = msg.product || {};
     var icon = (p.image ? '<img src="' + shopEscape(p.image) + '">' : shopPixelIcon(p.category || 'life', 40));
+    /* 顶部标题：求购请求 / 代付请求 / 他找你代付 */
+    var cardTitle = msg.title || '';
+    if (msg.cardType === 'request') cardTitle = '求购请求';
+    else if (msg.cardType === 'helpPay') cardTitle = '代付请求';
+    else if (msg.cardType === 'heHelpPay') cardTitle = '他找你代付';
+    else if (msg.cardType === 'delivery') cardTitle = msg.title || '商品已送达';
+    else if (msg.cardType === 'loveGift') cardTitle = msg.title || '爱意礼物';
+    /* 获取卡片关联的联系人名称 */
+    var cardContactName = msg.contactName || '';
+    if (!cardContactName) {
+        cardContactName = (appData.chatSettings && appData.chatSettings.otherNickname) || '对方';
+    }
     var html = '<div class="shop-share-card">';
-    html += '<div class="ssc-title">' + shopEscape(msg.title || '') + '</div>';
+    html += '<div class="ssc-title">' + shopEscape(cardTitle) + '</div>';
+    /* 显示发给谁 */
+    if (msg.sender === 'me' && (msg.cardType === 'request' || msg.cardType === 'helpPay')) {
+        html += '<div class="ssc-contact-tag">发给：' + shopEscape(cardContactName) + '</div>';
+    }
+    /* 他找你代付：显示提示语 */
+    if (msg.cardType === 'heHelpPay' && msg.sender === 'other') {
+        html += '<div class="ssc-hint">' + shopEscape(cardContactName) + ' 想给你买 ' + shopEscape(p.name || '') + '，金额 ¥' + (p.price || 0) + '，你可以帮他代付吗？</div>';
+    }
     html += '<div class="ssc-body"><div class="ssc-icon">' + icon + '</div>';
     html += '<div class="ssc-info"><div class="ssc-name">' + shopEscape(p.name || '') + '</div>';
     html += '<div class="ssc-price">¥' + (p.price || 0) + '</div></div></div>';
@@ -26387,24 +27368,27 @@ function shopRenderShareCard(msg) {
     var st = msg.status || 'pending';
     if (st === 'pending') {
         if (msg.sender === 'other') {
-            // 他找我代付：我来选择
+            // 他找我代付：我来点击选择
             html += '<button class="ssc-btn agree" onclick="shopCardAction(' + msg.id + ',\'agree\')">同意代付</button>';
-            html += '<button class="ssc-btn reject" onclick="shopCardAction(' + msg.id + ',\'reject\')">拒绝</button>';
+            html += '<button class="ssc-btn reject" onclick="shopCardAction(' + msg.id + ',\'reject\')">拒绝代付</button>';
         } else {
-            // 对方自动选择，倒计时
+            // 我发出的求购/代付：对方自动选择，显示倒计时 + 按钮（仅展示）
             var left = Math.max(0, Math.ceil(((msg.respondAt || 0) - Date.now()) / 1000));
-            html += '<div class="ssc-count" data-respondat="' + (msg.respondAt || 0) + '">对方考虑中... ' + left + 's</div>';
+            html += '<button class="ssc-btn agree" disabled style="opacity:0.6;cursor:default;">同意</button>';
+            html += '<button class="ssc-btn reject" disabled style="opacity:0.6;cursor:default;">拒绝</button>';
+            html += '</div><div class="ssc-count" data-respondat="' + (msg.respondAt || 0) + '">' + shopEscape(cardContactName) + ' 考虑中... ' + left + 's</div>';
         }
     } else if (st === 'confirmed') {
-        html += '<div class="ssc-result ok">对方已确认收货</div>';
+        html += '<div class="ssc-result ok">' + shopEscape(cardContactName) + ' 已确认收货</div>';
     } else if (st === 'accepted') {
-        html += '<div class="ssc-result ok">' + (msg.sender === 'other' ? '你已同意代付' : '对方已同意付款') + '</div>';
+        html += '<div class="ssc-result ok">' + (msg.sender === 'other' ? '你已同意代付' : shopEscape(cardContactName) + ' 已同意') + '</div>';
     } else if (st === 'rejected') {
-        html += '<div class="ssc-result no">' + (msg.sender === 'other' ? '你已拒绝代付' : '对方已拒绝') + '</div>';
+        html += '<div class="ssc-result no">' + (msg.sender === 'other' ? '你已拒绝代付' : shopEscape(cardContactName) + ' 已拒绝') + '</div>';
     } else if (st === 'notDelivered') {
-        html += '<div class="ssc-result no">对方反馈未送达</div>';
+        html += '<div class="ssc-result no">' + shopEscape(cardContactName) + ' 反馈未送达</div>';
     }
-    html += '</div></div>';
+    if (st !== 'pending' || msg.sender === 'other') html += '</div>';
+    html += '</div>';
     return html;
 }
 
@@ -26420,8 +27404,11 @@ function shopShareCardToChat(card) {
         title: card.title,
         giftMessage: card.giftMessage || '',
         status: 'pending',
-        respondAt: card.respondAt || 0
+        respondAt: card.respondAt || 0,
+        contactId: card.contactId || null,
+        contactName: card.contactName || ''
     };
+    if (card.contactId) msg.contactId = card.contactId;
     addMessage(msg);
     return msg.id;
 }
@@ -26432,20 +27419,26 @@ function shopCardAction(msgId, action) {
     for (var i = 0; i < appData.chatHistory.length; i++) { if (appData.chatHistory[i].id === msgId) { msg = appData.chatHistory[i]; break; } }
     if (!msg || msg.type !== 'shopShareCard' || msg.status !== 'pending') return;
     var sd = appData.shopData;
-    var order = null;
-    if (sd) { for (var j = 0; j < sd.orders.length; j++) { if (sd.orders[j].id === msg.orderId) { order = sd.orders[j]; break; } } }
     if (action === 'agree') {
         msg.status = 'accepted';
-        if (order) {
-            shopEnsureBalance();
-            addBalanceRecord(order.payer === 'me' ? 'mine' : 'other', -order.total, '次元购物城代付');
-            order.paid = true;
-            order.debt = appData.balanceData[order.payer === 'me' ? 'mine' : 'other'] < 0;
-        }
-        addSystemMsg('你已同意代付，¥' + (order ? order.total.toFixed(0) : 0) + ' 已从你的余额扣除');
+        /* 我同意代付：此时创建订单并从我的余额扣款 */
+        var _p = msg.product || {};
+        var _oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        sd.orders.push({
+            id: _oid, items: [{ productId: '', name: _p.name || '', price: _p.price || 0, qty: 1, image: _p.image || '' }],
+            total: _p.price || 0, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
+            address: sd.otherAddr || { name: '', phone: '', addr: '' },
+            message: '', giftMessage: '',
+            orderType: 'heHelpPay', buyer: 'other', payer: 'me', payStage: 'agree',
+            paid: true, debt: false, deliveryCardSent: false
+        });
+        msg.orderId = _oid;
+        shopEnsureBalance();
+        addBalanceRecord('mine', -(_p.price || 0), '次元购物城代付');
+        sd.orders[sd.orders.length - 1].debt = appData.balanceData.mine < 0;
+        addSystemMsg('你已同意代付，¥' + (_p.price || 0) + ' 已从你的余额扣除');
     } else {
         msg.status = 'rejected';
-        if (order) order.status = 'cancelled';
         addSystemMsg('你已拒绝代付');
     }
     saveData();
@@ -26468,34 +27461,61 @@ function shopProcessPendingCards() {
         if (!msg.respondAt || msg.respondAt > now) continue;
         var order = null;
         for (var k = 0; k < sd.orders.length; k++) { if (sd.orders[k].id === msg.orderId) { order = sd.orders[k]; break; } }
+        /* 获取卡片关联的联系人名称 */
+        var _cardContactName = msg.contactName || ((appData.chatSettings && appData.chatSettings.otherNickname) || '对方');
+        /* 临时切换聊天上下文，让系统消息发到正确的联系人聊天记录 */
+        var _savedContactId = _activeContactId;
+        if (msg.contactId) { _activeContactId = msg.contactId; }
         if (msg.cardType === 'delivery') {
             if (Math.random() < 0.5) {
                 msg.status = 'confirmed';
                 if (order) { order.status = 'done'; order.signTime = now; order.confirmResult = 'confirmed'; order.message = shopGetShopMessage(); }
-                addSystemMsg(appData.chatSettings.otherNickname + ' 已确认收货' + (order && order.message ? '并留言：' + order.message : ''));
+                addSystemMsg(_cardContactName + ' 已确认收货' + (order && order.message ? '并留言：' + order.message : ''));
             } else {
                 msg.status = 'notDelivered';
                 if (order) order.confirmResult = 'notDelivered';
-                addSystemMsg(appData.chatSettings.otherNickname + ' 反馈未收到商品，可在次元购物城申请退款');
+                addSystemMsg(_cardContactName + ' 反馈未收到商品，可在次元购物城申请退款');
             }
             changed = true;
         } else if (msg.cardType === 'request' || msg.cardType === 'helpPay' || msg.cardType === 'loveGift') {
             if (Math.random() < 0.5) {
                 msg.status = 'accepted';
-                if (order) {
-                    shopEnsureBalance();
-                    addBalanceRecord(order.payer === 'me' ? 'mine' : 'other', -order.total, '次元购物城代付/求购');
-                    order.paid = true;
-                    order.debt = appData.balanceData[order.payer === 'me' ? 'mine' : 'other'] < 0;
-                }
-                addSystemMsg(appData.chatSettings.otherNickname + ' 已同意付款');
+                /* 对方同意：此时创建订单并扣款 */
+                var _p = msg.product || {};
+                var _oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                var _orderType = msg.cardType === 'request' ? 'request' : (msg.cardType === 'helpPay' ? 'helpPay' : 'loveGift');
+                sd.orders.push({
+                    id: _oid, items: [{ productId: '', name: _p.name || '', price: _p.price || 0, qty: 1, image: _p.image || '' }],
+                    total: _p.price || 0, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
+                    address: sd.otherAddr || { name: '', phone: '', addr: '' },
+                    message: '', giftMessage: msg.giftMessage || '',
+                    orderType: _orderType, buyer: 'me', payer: 'other', payStage: 'agree',
+                    paid: true, debt: false, deliveryCardSent: false
+                });
+                msg.orderId = _oid;
+                shopEnsureBalance();
+                addBalanceRecord('other', -(_p.price || 0), '次元购物城代付/求购');
+                sd.orders[sd.orders.length - 1].debt = appData.balanceData.other < 0;
+                addSystemMsg(_cardContactName + ' 已同意，¥' + (_p.price || 0) + ' 已从对方余额扣除');
             } else {
                 msg.status = 'rejected';
-                if (order) order.status = 'cancelled';
-                addSystemMsg(appData.chatSettings.otherNickname + ' 拒绝了付款请求');
+                /* 根据对方余额显示不同留言 */
+                shopEnsureBalance();
+                var _otherBal = appData.balanceData.other;
+                var _rejectMsg = '';
+                if (_otherBal < 0) {
+                    _rejectMsg = '天啊‼️陛下！对方已经负债了呀❗️❗️';
+                } else if (_otherBal === 0) {
+                    _rejectMsg = '现在立刻马上去看看他的余额！';
+                } else {
+                    _rejectMsg = '看来系统又占了上风，系统跪下！ 系统跪下：（一个人机痛哭😭）';
+                }
+                addSystemMsg(_cardContactName + ' 拒绝了付款请求，留言：' + _rejectMsg);
             }
             changed = true;
         }
+        /* 恢复聊天上下文 */
+        _activeContactId = _savedContactId;
     }
     if (changed) {
         saveData();
@@ -26504,27 +27524,35 @@ function shopProcessPendingCards() {
     }
 }
 
-// 20. 他找我代付（每日 3% 事件）
+// 20. 他找我代付（每日 3% 事件）— 不创建订单，仅发卡片，我同意后才下单扣款
 function shopMaybeHeHelpPay() {
     shopInitData();
     var sd = appData.shopData;
     var pool = (sd.products || []).filter(function (p) { return p.listed !== false && p.category !== 'love'; });
     if (pool.length === 0) return;
+    /* 没有联系人时不触发代付事件 */
+    var _contacts = [];
+    try { _contacts = (appData.contactList && appData.contactList.contacts) || []; } catch(e) {}
+    if (_contacts.length === 0) return;
     var p = pool[Math.floor(Math.random() * pool.length)];
-    var oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-    sd.orders.push({
-        id: oid, items: [{ productId: p.id, name: p.name, price: p.price, qty: 1, image: p.image || '' }],
-        total: p.price, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
-        address: sd.otherAddr || { name: '', phone: '', addr: '' },
-        message: shopGetShopMessage(), giftMessage: '',
-        orderType: 'heHelpPay', buyer: 'other', payer: 'me', payStage: 'agree',
-        paid: false, debt: false, deliveryCardSent: false
-    });
-    shopShareCardToChat({
-        sender: 'other', cardType: 'heHelpPay', orderId: oid,
+    /* 从联系人中随机选一个发起代付请求 */
+    var _pick = _contacts[Math.floor(Math.random() * _contacts.length)];
+    var _heContactId = _pick.id;
+    var _heContactName = _pick.name || _pick.nickname || '联系人';
+    var msg = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        type: 'shopShareCard',
+        sender: 'other', cardType: 'heHelpPay', orderId: null,
         product: { name: p.name, price: p.price, category: p.category, image: p.image || '' },
-        title: appData.chatSettings.otherNickname + ' 想买这件商品，找你代付'
-    });
+        title: '他找你代付',
+        giftMessage: '',
+        status: 'pending',
+        respondAt: 0,
+        contactId: _heContactId,
+        contactName: _heContactName
+    };
+    if (_heContactId) msg.contactId = _heContactId;
+    addMessage(msg);
     saveData();
 }
 
@@ -26608,6 +27636,245 @@ setInterval(function () {
     } catch (e) {}
 }, 1000);
 setInterval(function () { try { shopProcessPendingCards(); } catch (e) {} }, 3000);
+
+// ========== 词库管理 App ==========
+/* 预设词库引用（与 Ta的传讯 MW_PRESET 共享，不可删除） */
+var WORDLIB_PRESET = (typeof MW_PRESET !== 'undefined') ? MW_PRESET : {
+    subj:  ['I','YOU','WE','MY HEART','MY SOUL','THE MOON','THE STARS',
+            'TIME','LOVE','DESTINY','THE WIND','THE OCEAN','EVERY STAR'],
+    verb:  ['LOVE','MISS','NEED','WANT','HOLD','DREAM','CHERISH','ADMIRE',
+            'DESIRE','TREASURE','EMBRACE','FOLLOW','TRUST','BELIEVE',
+            'SEEK','GUIDE','PROTECT','REMEMBER','WAIT','SING'],
+    obj:   ['YOU','ME','US','FOREVER','ALWAYS','YOUR SMILE','YOUR EYES',
+            'YOUR HEART','YOUR HAND','OUR LOVE','THIS MOMENT','TONIGHT',
+            'YOU DEEPLY','YOUR VOICE','YOUR SOUL'],
+    adj:   ['BEAUTIFUL','WONDERFUL','PERFECT','ENDLESS','ETERNAL','GENTLE',
+            'SWEET','DEAR','PRECIOUS','WARM','BRIGHT','RADIANT','TENDER',
+            'FLAWLESS','DIVINE','MAGICAL','PURE','SHINING','LOVELY'],
+    adv:   ['ALWAYS','FOREVER','DEEPLY','TRULY','MADLY','COMPLETELY',
+            'TENDERLY','ENDLESSLY','SILENTLY','BRAVELY','SOFTLY',
+            'CLOSELY','STEADFASTLY'],
+    noun:  ['HEART','SOUL','WORLD','STAR','DREAM','HOME','ANGEL','DESTINY',
+            'LIGHT','LIFE','SUNSHINE','RAINBOW','MELODY','OCEAN','FLAME',
+            'BLOSSOM','HORIZON','SYMPHONY','COMFORT','SANCTUARY'],
+    poss:  ['MY','YOUR','OUR'],
+    greet: ['HELLO','DEAR','DARLING','SWEETHEART','BELOVED']
+};
+var WORDLIB_CATS = [
+    { key: 'subj',  name: '主语' },
+    { key: 'verb',  name: '动词' },
+    { key: 'obj',   name: '宾语' },
+    { key: 'adj',   name: '形容词' },
+    { key: 'adv',   name: '副词' },
+    { key: 'noun',  name: '名词' },
+    { key: 'poss',  name: '物主代词' },
+    { key: 'greet', name: '问候语' }
+];
+var _wordlibCurCat = 'subj';
+
+/* 初始化词库数据（用户自定义词存储在 appData.taWordLib） */
+function wordlibInitData() {
+    try {
+        if (!appData.taWordLib) appData.taWordLib = {};
+        var w = appData.taWordLib;
+        for (var i = 0; i < WORDLIB_CATS.length; i++) {
+            var k = WORDLIB_CATS[i].key;
+            if (!w[k] || !Array.isArray(w[k])) w[k] = [];
+        }
+    } catch(e) { console.error('[词库管理] init error:', e); }
+}
+
+/* 获取某分类的完整词库（预设 + 用户自定义） */
+function wordlibGetMerged(catKey) {
+    var preset = WORDLIB_PRESET[catKey] || [];
+    var user = (appData.taWordLib && appData.taWordLib[catKey]) || [];
+    return preset.concat(user);
+}
+
+/* 打开/关闭 */
+function openWordLibApp() {
+    wordlibInitData();
+    document.getElementById('wordlibAppPage').style.display = 'flex';
+    _wordlibCurCat = 'subj';
+    wordlibRenderCats();
+    wordlibRenderContent();
+}
+function closeWordLibApp() {
+    document.getElementById('wordlibAppPage').style.display = 'none';
+}
+
+/* 渲染分类标签 */
+function wordlibRenderCats() {
+    var html = '';
+    for (var i = 0; i < WORDLIB_CATS.length; i++) {
+        var c = WORDLIB_CATS[i];
+        var count = wordlibGetMerged(c.key).length;
+        var cls = c.key === _wordlibCurCat ? 'wordlib-cat active' : 'wordlib-cat';
+        html += '<div class="' + cls + '" onclick="wordlibSwitchCat(\'' + c.key + '\')">';
+        html += c.name + '<span class="cat-count">' + count + '</span></div>';
+    }
+    document.getElementById('wordlibCats').innerHTML = html;
+}
+
+/* 切换分类 */
+function wordlibSwitchCat(key) {
+    _wordlibCurCat = key;
+    wordlibRenderCats();
+    wordlibRenderContent();
+}
+
+/* 渲染内容区 */
+function wordlibRenderContent() {
+    var cat = WORDLIB_CATS.find(function(c){ return c.key === _wordlibCurCat; });
+    var preset = WORDLIB_PRESET[_wordlibCurCat] || [];
+    var user = (appData.taWordLib && appData.taWordLib[_wordlibCurCat]) || [];
+    var html = '';
+
+    /* 添加单个词 */
+    html += '<div class="wordlib-section">';
+    html += '<div class="wordlib-section-title">添加词汇到「' + cat.name + '」</div>';
+    html += '<div class="wordlib-add-row">';
+    html += '<input class="wordlib-add-input" id="wordlibAddInput" placeholder="输入一个词，回车添加" maxlength="30" onkeydown="if(event.key===\'Enter\')wordlibAddOne()"/>';
+    html += '<button class="wordlib-add-btn" onclick="wordlibAddOne()">添加</button>';
+    html += '</div>';
+    html += '</div>';
+
+    /* 批量导入 */
+    html += '<div class="wordlib-batch-area">';
+    html += '<div class="wordlib-batch-toggle" onclick="wordlibToggleBatch()">';
+    html += '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
+    html += ' 批量导入</div>';
+    html += '<div class="wordlib-batch-box" id="wordlibBatchBox">';
+    html += '<textarea class="wordlib-batch-textarea" id="wordlibBatchText" placeholder="一行一个词，批量导入到「' + cat.name + '」&#10;例如：&#10;CAT&#10;COFFEE&#10;SUNSET"></textarea>';
+    html += '<div class="wordlib-batch-hint">每行一个词，系统会自动归入当前分类「' + cat.name + '」</div>';
+    html += '<button class="wordlib-batch-btn" onclick="wordlibBatchImport()">导入</button>';
+    html += '</div>';
+    html += '</div>';
+
+    /* 词汇列表 */
+    html += '<div class="wordlib-section">';
+    var totalCount = preset.length + user.length;
+    html += '<div class="wordlib-section-title">词汇列表 <span style="font-weight:400;color:#999;font-size:12px;">（共 ' + totalCount + ' 个，预设 ' + preset.length + ' + 自定义 ' + user.length + '）</span></div>';
+    html += '<div class="wordlib-word-list">';
+    /* 预设词 */
+    for (var i = 0; i < preset.length; i++) {
+        html += '<div class="wordlib-word preset">' + wordlibEscape(preset[i]) + '<span class="wordlib-word-del" title="预设词不可删除"></span></div>';
+    }
+    /* 用户词 */
+    for (var j = 0; j < user.length; j++) {
+        html += '<div class="wordlib-word">' + wordlibEscape(user[j]) + '<span class="wordlib-word-del" onclick="wordlibDeleteOne(' + j + ')" title="删除"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></div>';
+    }
+    if (totalCount === 0) {
+        html += '<div class="wordlib-empty">暂无词汇，请添加</div>';
+    }
+    html += '</div>';
+    /* 清空自定义词 */
+    if (user.length > 0) {
+        html += '<button class="wordlib-clear-btn" onclick="wordlibClearUser()">清空自定义词汇（' + user.length + ' 个）</button>';
+    }
+    html += '</div>';
+
+    document.getElementById('wordlibContent').innerHTML = html;
+}
+
+/* 添加单个词 */
+function wordlibAddOne() {
+    var inp = document.getElementById('wordlibAddInput');
+    var v = (inp.value || '').trim().toUpperCase();
+    if (!v) return;
+    wordlibInitData();
+    var arr = appData.taWordLib[_wordlibCurCat];
+    /* 去重：检查预设和用户词 */
+    var merged = wordlibGetMerged(_wordlibCurCat);
+    for (var i = 0; i < merged.length; i++) {
+        if (merged[i].toUpperCase() === v) {
+            inp.value = '';
+            return;
+        }
+    }
+    arr.push(v);
+    saveData();
+    inp.value = '';
+    wordlibRenderCats();
+    wordlibRenderContent();
+    /* 即时更新 Ta的传讯 的合并词库缓存 */
+    wordlibSyncToTa();
+}
+
+/* 删除单个用户词 */
+function wordlibDeleteOne(idx) {
+    wordlibInitData();
+    var arr = appData.taWordLib[_wordlibCurCat];
+    if (idx >= 0 && idx < arr.length) {
+        arr.splice(idx, 1);
+        saveData();
+        wordlibRenderCats();
+        wordlibRenderContent();
+        wordlibSyncToTa();
+    }
+}
+
+/* 清空当前分类的自定义词 */
+function wordlibClearUser() {
+    wordlibInitData();
+    appData.taWordLib[_wordlibCurCat] = [];
+    saveData();
+    wordlibRenderCats();
+    wordlibRenderContent();
+    wordlibSyncToTa();
+}
+
+/* 批量导入切换 */
+function wordlibToggleBatch() {
+    var box = document.getElementById('wordlibBatchBox');
+    if (box) box.classList.toggle('show');
+}
+
+/* 批量导入 */
+function wordlibBatchImport() {
+    var ta = document.getElementById('wordlibBatchText');
+    if (!ta) return;
+    var lines = ta.value.split('\n');
+    var added = 0;
+    var existing = {};
+    var merged = wordlibGetMerged(_wordlibCurCat);
+    for (var i = 0; i < merged.length; i++) existing[merged[i].toUpperCase()] = true;
+    wordlibInitData();
+    var arr = appData.taWordLib[_wordlibCurCat];
+    for (var j = 0; j < lines.length; j++) {
+        var w = lines[j].trim().toUpperCase();
+        if (w && !existing[w]) {
+            arr.push(w);
+            existing[w] = true;
+            added++;
+        }
+    }
+    saveData();
+    ta.value = '';
+    document.getElementById('wordlibBatchBox').classList.remove('show');
+    wordlibRenderCats();
+    wordlibRenderContent();
+    wordlibSyncToTa();
+    if (added > 0) {
+        var hint = document.querySelector('.wordlib-batch-hint');
+        if (hint) hint.textContent = '成功导入 ' + added + ' 个词汇';
+    }
+}
+
+/* 转义 */
+function wordlibEscape(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* 即时同步到 Ta的传讯 的词库缓存 */
+/* MW 是 Proxy，每次访问都会动态读取 appData.taWordLib，无需手动同步 */
+function wordlibSyncToTa() {
+    /* MW Proxy 自动读取最新数据，此处仅用于兼容旧调用 */
+}
+
+/* 页面加载后初始化词库缓存 */
+wordlibInitData();
 
 </script>
 </body>
