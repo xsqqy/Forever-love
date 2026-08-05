@@ -199,15 +199,140 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     background: #e0e0e0;
     border-color: #888888;
 }
+
+/* ===== iOS 输入辅助栏隐藏 ===== */
+/* 隐藏 iOS Safari 键盘上方的"完成"工具栏 */
+@supports (-webkit-touch-callout: none) {
+    /* iOS only: 使用 trick 隐藏 input accessory view */
+    input, textarea {
+        -webkit-appearance: none;
+    }
+    /* 通过 transform 在 focus 时短暂移出视口再回来，骗过 iOS 不显示 accessory bar */
+    .no-ios-accessory:focus {
+        -webkit-transform: translateY(0);
+    }
+}
+/* 全局：禁用 iOS 自动缩放和辅助栏 */
+input[type="text"], input[type="password"], input[type="number"], 
+input[type="email"], input[type="search"], input[type="tel"], 
+input[type="url"], textarea {
+    -webkit-border-radius: 0;
+    -webkit-appearance: none;
+}
+
+/* ===== 日记卡片消息样式（蓝白手帐风）===== */
+.msg-diary-card {
+    background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+    border: 1.5px solid #c8ddf0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    max-width: 85%;
+    box-shadow: 0 2px 8px rgba(100,150,200,0.1);
+    position: relative;
+    overflow: hidden;
+}
+.msg-diary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #a8d0f0, #c8ddf0, #a8d0f0);
+}
+.msg-diary-card .diary-card-title {
+    font-size: 12px;
+    color: #7baad8;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.msg-diary-card .diary-card-content {
+    font-size: 13px;
+    color: #2c3e50;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.msg-diary-card .diary-card-decoration {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    font-size: 10px;
+    color: #c8ddf0;
+}
+html.dark-mode .msg-diary-card {
+    background: linear-gradient(135deg, #1a2535 0%, #222233 100%);
+    border-color: #3a5070;
+}
+html.dark-mode .msg-diary-card .diary-card-title { color: #7baad8; }
+html.dark-mode .msg-diary-card .diary-card-content { color: #ccc; }
+
+/* ===== 盲选抽牌记录卡片样式 ===== */
+.msg-blind-card-record {
+    background: #ffffff;
+    border: 1.5px solid #b8d4f0;
+    border-radius: 12px;
+    padding: 14px 16px 14px 40px;
+    max-width: 85%;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(100,150,200,0.08);
+}
+.msg-blind-card-record::before {
+    content: '★';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 16px;
+    color: #4a90d9;
+}
+html.dark-mode .msg-blind-card-record {
+    background: #1a1a2e;
+    border-color: #3a5070;
+}
+html.dark-mode .msg-blind-card-record::before { color: #7baad8; }
+
+/* ===== 日记分享卡片(居中) ===== */
+.msg-row.diary-share-row{display:flex;justify-content:center;padding:6px 0;width:100%;}
+.msg-row.diary-share-row .diary-share-card{background:linear-gradient(135deg,#f0f7ff 0%,#ffffff 100%);border:1.5px solid #c8ddf0;border-radius:14px;box-shadow:0 4px 16px rgba(100,150,200,0.10);width:86%;max-width:300px;padding:14px;box-sizing:border-box;animation:diaryCardFadeIn .3s ease;font-family:inherit;position:relative;overflow:hidden;}
+.msg-row.diary-share-row .diary-share-card .dsc-title{font-size:14px;font-weight:600;color:#2c5f8a;margin-bottom:8px;}
+.msg-row.diary-share-row .diary-share-card .dsc-body{font-size:13px;color:#444;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+.msg-row.diary-share-row .diary-share-card .dsc-footer{font-size:12px;color:#7baad8;margin-top:10px;text-align:right;}
+@keyframes diaryCardFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+html.dark-mode .msg-row.diary-share-row .diary-share-card{background:linear-gradient(135deg,#1a2a3a 0%,#222 100%);border-color:#3a5070;}
+html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-title{color:#7baad8;}
+html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
+
+/* ===== 拉黑样式 ===== */
+.chat-dnd-block-section {
+    padding: 12px 0;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+.dnd-block-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+.dnd-block-row label {
+    font-size: 14px;
+    color: #333;
+}
+.msg-blocked-indicator {
+    display: inline-block;
+    color: #ff3b30;
+    font-size: 16px;
+    margin-left: 4px;
+}
 </style>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
-<meta content="迁逸" name="apple-mobile-web-app-title"/>
+<meta content="Beloved Time" name="apple-mobile-web-app-title"/>
 <meta content="#f7f7f7" id="themeColorMeta" name="theme-color"/>
 <link href="./manifest.json" rel="manifest"/>
 <link href="./icon-192.png" rel="apple-touch-icon"/>
 <link href="./icon-192.png" rel="icon" type="image/png"/>
-<title>迁逸 · 双屏</title>
+<title>Beloved Time · 双屏</title>
 <style>
         * {
             margin: 0;
@@ -1057,10 +1182,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             font-size: 12px;
             color: var(--color-normal-gray);
             padding: 4px 8px;
-            border-left: 2px solid var(--color-deep-gray);
             margin-bottom: 4px;
             background: rgba(0,0,0,0.05);
-            border-radius: 0 4px 4px 0;
+            border-radius: 4px;
+            border: 1px solid rgba(0,0,0,0.06);
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1138,7 +1263,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             height: 0;
             border-top: 7px solid transparent;
             border-bottom: 7px solid transparent;
-            border-left: 7px solid var(--tail-border-color, var(--my-bubble-border, transparent));
+            border-left: 1px solid var(--tail-border-color, var(--my-bubble-border, transparent));
         }
         .msg-bubble.tail-right::after {
             content: '';
@@ -1789,18 +1914,28 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             flex-direction: column;
         }
         .settings-header, .wordcard-header, .page-header {
-            height: calc(50px + env(safe-area-inset-top));
-            padding-top: env(safe-area-inset-top);
-            background: #f0f0f0;
-            border-bottom: 1px solid #e0e0e0;
+            height: calc(env(safe-area-inset-top, 0px) + 96px);
+            padding-top: env(safe-area-inset-top, 0px);
+            background: transparent;
+            border-bottom: none;
             display: flex;
-            align-items: center;
-            padding-left: 16px;
-            padding-right: 16px;
+            align-items: flex-end;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 12px;
             position: relative;
             flex-shrink: 0;
         }
-        .settings-back, .page-back {
+        .settings-back {
+            font-size: 28px;
+            color: var(--color-normal-gray);
+            font-weight: 300;
+            cursor: pointer;
+            position: absolute;
+            left: 16px;
+            display: none;
+        }
+        .page-back {
             font-size: 28px;
             color: var(--color-normal-gray);
             font-weight: 300;
@@ -1810,10 +1945,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         .settings-title, .page-title {
             flex: 1;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 500;
+            text-align: left;
+            font-size: 34px;
+            font-weight: 700;
             color: var(--color-deep-black);
+            letter-spacing: -0.5px;
         }
         .page-menu {
             position: absolute;
@@ -1844,6 +1980,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 16px;
+            border: none;
         }
         .section-title {
             font-size: 15px;
@@ -1861,7 +1998,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             align-items: center;
             gap: 12px;
             padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: none;
         }
         .settings-item:last-child {
             border-bottom: none;
@@ -2115,12 +2252,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
         /* ========== 字卡页面样式 ========== */
         .wordcard-title {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 17px;
-            font-weight: 600;
+            font-size: 34px;
+            font-weight: 700;
             color: var(--color-deep-black);
+            text-align: left;
+            letter-spacing: -0.5px;
         }
         .wordcard-contact-btn {
             margin-left: auto;
@@ -2140,18 +2276,18 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             flex-wrap: wrap;
             gap: 8px;
             padding: 10px 16px;
-            background: #f7f7f7;
-            border-bottom: 1px solid #e8e8e8;
+            background: #ffffff;
+            border-bottom: none;
             flex-shrink: 0;
         }
         .wordcard-contact-bar.show { display: flex; }
         .wc-scope-chip {
             padding: 6px 14px;
-            border-radius: 16px;
+            border-radius: 4px;
             font-size: 13px;
             cursor: pointer;
             background: var(--color-white);
-            border: 1.5px solid #e0e0e0;
+            border: none;
             color: var(--color-deep-gray);
             flex-shrink: 0;
             transition: all .15s;
@@ -2159,31 +2295,31 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .wc-scope-chip.active {
             background: var(--color-deep-black);
             color: var(--color-white);
-            border-color: var(--color-deep-black);
+            border: none;
         }
         .wordcard-tabs {
             display: flex;
             gap: 12px;
             padding: 12px 16px;
-            background: #f0f0f0;
+            background: #ffffff;
             overflow-x: auto;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: none;
             flex-shrink: 0;
         }
         .wordcard-tab {
             padding: 6px 14px;
             background: var(--color-white);
-            border-radius: 16px;
+            border-radius: 4px;
             font-size: 13px;
             color: var(--color-deep-gray);
             cursor: pointer;
             flex-shrink: 0;
-            border: 1px solid #e0e0e0;
+            border: none;
         }
         .wordcard-tab.active {
             background: var(--color-deep-black);
             color: var(--color-white);
-            border-color: var(--color-deep-black);
+            border: none;
         }
         .wordcard-tab.add-tab {
             border-style: dashed;
@@ -2211,7 +2347,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             gap: 8px;
             padding: 12px 16px;
             background: var(--color-white);
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: none;
             flex-shrink: 0;
             flex-wrap: wrap;
         }
@@ -2224,7 +2360,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             font-size: 13px;
             color: var(--color-deep-gray);
             cursor: pointer;
-            border: 1px solid #e0e0e0;
+            border: none;
             min-width: 60px;
         }
         .wordcard-list {
@@ -3751,7 +3887,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode,html.dark-mode body{background:#1a1a1a!important;color:#e0e0e0!important;}
         html.dark-mode .settings-page,html.dark-mode .wordcard-page,html.dark-mode .moments-page,html.dark-mode .diary-page,html.dark-mode .letter-page,html.dark-mode #globalSettingsPage,html.dark-mode #beautifyPage,html.dark-mode #storagePage,html.dark-mode #lifeDeathPageNotApplied,html.dark-mode #albumPageNotApplied{background:#1a1a1a!important;color:#e0e0e0!important;}
         html.dark-mode .settings-content,html.dark-mode .settings-section{background:#2d2d2d!important;}
-        html.dark-mode .settings-header,html.dark-mode .page-header{background:#1a1a1a!important;color:#e0e0e0!important;}
+        html.dark-mode .settings-header,html.dark-mode .page-header{background:transparent!important;/*override*/background:#1a1a1a!important;color:#e0e0e0!important;}
         html.dark-mode .settings-title,html.dark-mode .page-title,html.dark-mode .section-title,html.dark-mode .section-subtitle,html.dark-mode .settings-row label,html.dark-mode .settings-back,html.dark-mode .page-back,html.dark-mode .settings-label,html.dark-mode .settings-value{color:#e0e0e0!important;}
         html.dark-mode .settings-row,html.dark-mode .settings-item{color:#e0e0e0!important;border-color:#444!important;}
         html.dark-mode input,html.dark-mode textarea,html.dark-mode select{background:#333!important;color:#e0e0e0!important;border-color:#555!important;}
@@ -3767,7 +3903,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode .frame-item{border-color:#555!important;}
         html.dark-mode .beautify-main-tab{color:#aaa!important;background:#2d2d2d!important;}
         html.dark-mode .beautify-main-tab.active{color:#fff!important;border-bottom-color:#fff!important;}
-        html.dark-mode .msg-quote{background:rgba(255,255,255,0.1)!important;color:#ccc!important;border-left-color:#666!important;}
+        html.dark-mode .msg-quote{background:rgba(255,255,255,0.1)!important;color:#ccc!important;}
         html.dark-mode .msg-row.other .msg-bubble{background:#fff!important;border-color:#fff!important;color:#000!important;}
         html.dark-mode .msg-row.mine .msg-bubble{background:#333!important;border-color:#333!important;color:#fff!important;}
         /* 深色模式下小尾巴跟随气泡强制颜色，避免尾巴仍显示自定义色导致不融合 */
@@ -3806,7 +3942,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .chat-dark-mode .plus-item span{color:#e0e0e0!important;}
         .chat-dark-mode .chat-btn{color:#aaa!important;}
         .chat-dark-mode .chat-btn svg{stroke:#aaa!important;}
-        .chat-dark-mode .msg-quote{background:rgba(255,255,255,0.1)!important;color:#ccc!important;border-left-color:#666!important;}
+        .chat-dark-mode .msg-quote{background:rgba(255,255,255,0.1)!important;color:#ccc!important;}
         /* 暗黑模式 - 桌面小组件和日历不受影响但其他全部覆盖 */
         html.dark-mode .anniversary-widget{background:var(--glass-bg)!important;border-color:rgba(255,255,255,0.15)!important;}
         html.dark-mode .period-calendar{background:var(--glass-bg)!important;border-color:rgba(255,255,255,0.15)!important;}
@@ -3841,7 +3977,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         html.dark-mode .flip-back{background:#555!important;}
         html.dark-mode .flip-front{background:#2d2d2d!important;color:#e0e0e0!important;border-color:#444!important;}
         html.dark-mode .mc-word{background:rgba(45,45,45,.5)!important;border-color:rgba(255,255,255,0.15)!important;}
-        html.dark-mode .bal-box{background:rgba(45,45,45,.55)!important;border-color:rgba(255,255,255,0.3)!important;}
+        html.dark-mode .bal-box{background:#2d2d2d!important;border:none!important;}
         html.dark-mode .bal-side .lbl{color:#aaa!important;}
         html.dark-mode .bal-rec{color:#aaa!important;border-color:#444!important;}
         html.dark-mode .chat-btn{color:#e0e0e0!important;}
@@ -4023,10 +4159,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
         /* 顶部标题栏：返回 + 歌名 + 菜单 */
         .sw-topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top, 0px) + 10px) 2px 10px;background:transparent;}
-        .sw-topbar .sw-tb-back{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--sw-font);cursor:pointer;border:1px solid rgba(255,255,255,0.5);user-select:none;}
+        .sw-topbar .sw-tb-back{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--sw-font);cursor:pointer;border:1px solid rgba(255,255,255,0.5);user-select:none;}
         html.dark-mode .sw-topbar .sw-tb-back{background:rgba(60,60,60,0.6);border-color:rgba(255,255,255,0.1);}
         .sw-topbar .sw-tb-title{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--sw-font);padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-        .sw-topbar .sw-tb-menu{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;color:var(--sw-font);cursor:pointer;border:1px solid rgba(255,255,255,0.5);}
+        .sw-topbar .sw-tb-menu{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;color:var(--sw-font);cursor:pointer;border:1px solid rgba(255,255,255,0.5);}
         html.dark-mode .sw-topbar .sw-tb-menu{background:rgba(60,60,60,0.6);border-color:rgba(255,255,255,0.1);}
 
         /* 通用按钮 */
@@ -4071,10 +4207,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-countdown{font-size:14px;color:#8a8a8a;text-align:center;margin:6px 0 4px;}
         .sw-countdown b{color:var(--sw-accent);font-size:18px;margin:0 2px;}
 
-        /* 乐器横滚卡片 */
-        .sw-inst-scroll{display:flex;gap:10px;overflow-x:auto;padding:6px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-        .sw-inst-scroll::-webkit-scrollbar{display:none;}
-        .sw-inst-card{flex:0 0 auto;width:92px;padding:12px 8px;border:1.5px solid rgba(0,0,0,0.08);border-radius:14px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:center;cursor:pointer;transition:all .18s;color:var(--sw-font);}
+        /* 乐器网格排列 */
+        .sw-inst-scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;padding:6px 2px 10px;}
+        .sw-inst-card{width:auto;padding:12px 8px;border:1.5px solid rgba(0,0,0,0.08);border-radius:14px;background:rgba(255,255,255,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:center;cursor:pointer;transition:all .18s;color:var(--sw-font);}
         html.dark-mode .sw-inst-card{background:rgba(70,70,70,0.45);border-color:rgba(255,255,255,0.1);}
         .sw-inst-card.on{border-color:var(--sw-accent);box-shadow:0 8px 20px rgba(0,0,0,0.14);transform:translateY(-2px);}
         .sw-inst-card .sw-inst-ic{display:flex;justify-content:center;margin-bottom:6px;}
@@ -4204,89 +4339,96 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         .sw-toast{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.78);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;z-index:99999;max-width:80%;text-align:center;}
 
         /* ===== 余额 ===== */
-        .bal-box{background:rgba(255,255,255,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid #000;border-radius:14px;padding:16px;display:flex;justify-content:space-between;margin-bottom:14px;}
+        .bal-box{background:#f5f5f5;backdrop-filter:none;-webkit-backdrop-filter:none;border:none;border-radius:12px;padding:16px;display:flex;justify-content:space-between;margin-bottom:14px;}
         .bal-side{text-align:center;flex:1;}
-        .bal-side .lbl{font-size:12px;color:#666;margin-bottom:4px;}
-        .bal-side .val{font-size:26px;font-weight:600;color:var(--text-color);}
-        .bal-rec{font-size:13px;color:#4a4a4a;padding:6px 0;border-bottom:1px solid #f0f0f0;}
+        .bal-side .lbl{font-size:12px;color:#000;margin-bottom:4px;}
+        .bal-side .val{font-size:26px;font-weight:600;color:#000;}
+        .bal-rec{font-size:13px;color:#333;padding:8px 0;border-bottom:1px solid #eee;}
 
     /* ========== 词库管理 App 样式 ========== */
     .wordlib-page {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         z-index: 500; display: none; flex-direction: column;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-        background: linear-gradient(160deg, #f5f7fa 0%, #eef1f5 100%);
+        background: #ffffff;
+        padding-top: env(safe-area-inset-top, 44px);
     }
     .wordlib-header {
-        flex-shrink: 0; padding: 16px 20px 12px;
-        background: rgba(255,255,255,0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(0,0,0,0.06);
-        display: flex; align-items: center; gap: 12px;
+        flex-shrink: 0; padding: calc(env(safe-area-inset-top, 44px) + 24px) 20px 12px;
+        background: transparent;
+        border-bottom: none;
+        display: flex; align-items: flex-end; gap: 12px;
     }
-    .wordlib-back { cursor: pointer; color: #4a90d9; display: flex; align-items: center; }
-    .wordlib-title { font-size: 18px; font-weight: 600; color: #1a1a1a; }
-    .wordlib-subtitle { font-size: 12px; color: #999; margin-left: auto; }
+    .wordlib-back { cursor: pointer; color: #333333; display: none; align-items: center; }
+    .wordlib-title { font-size: 34px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+    .wordlib-subtitle { font-size: 12px; color: #aaa; margin-left: auto; display: none; }
     .wordlib-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .wordlib-cats {
         flex-shrink: 0; display: flex; gap: 6px; padding: 10px 16px; overflow-x: auto;
-        background: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(0,0,0,0.04);
+        background: #ffffff; border-bottom: none;
     }
     .wordlib-cats::-webkit-scrollbar { display: none; }
     .wordlib-cat {
-        flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
-        background: rgba(255,255,255,0.6); color: #666; cursor: pointer; transition: all .18s;
-        border: 1px solid transparent; white-space: nowrap;
+        flex-shrink: 0; padding: 8px 16px; border-radius: 4px; font-size: 13px; font-weight: 500;
+        background: #e0e0e0; color: #ffffff; cursor: pointer; transition: all .18s;
+        border: none; white-space: nowrap;
     }
-    .wordlib-cat.active { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+    .wordlib-cat.active { background: #1a1a1a; color: #fff; border: none; }
     .wordlib-cat .cat-count { font-size: 11px; opacity: 0.7; margin-left: 4px; }
-    .wordlib-content { flex: 1; overflow-y: auto; padding: 16px; }
+    .wordlib-content { flex: 1; overflow-y: auto; padding: 16px; background: #ffffff; }
     .wordlib-section { margin-bottom: 20px; }
     .wordlib-section-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
     .wordlib-add-row { display: flex; gap: 8px; margin-bottom: 12px; }
     .wordlib-add-input {
-        flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px;
-        outline: none; background: #fff; font-family: inherit;
+        flex: 1; padding: 10px 14px; border: none; border-radius: 4px; font-size: 14px;
+        outline: none; background: #f5f5f5; color: #333; font-family: inherit;
     }
-    .wordlib-add-input:focus { border-color: #4a90d9; }
+    .wordlib-add-input:focus { background: #f0f0f0; }
     .wordlib-add-btn {
-        padding: 10px 18px; border: none; border-radius: 10px; font-size: 14px; font-weight: 500;
-        background: #4a90d9; color: #fff; cursor: pointer; white-space: nowrap; font-family: inherit;
+        padding: 10px 18px; border: none; border-radius: 4px; font-size: 14px; font-weight: 500;
+        background: #e0e0e0; color: #fff; cursor: pointer; white-space: nowrap; font-family: inherit;
     }
     .wordlib-add-btn:active { opacity: 0.8; }
     .wordlib-batch-area { margin-bottom: 16px; }
     .wordlib-batch-toggle {
-        font-size: 13px; color: #4a90d9; cursor: pointer; padding: 6px 0; display: inline-flex; align-items: center; gap: 4px;
+        font-size: 13px; color: #666; cursor: pointer; padding: 6px 0; display: inline-flex; align-items: center; gap: 4px;
     }
     .wordlib-batch-box { display: none; margin-top: 8px; }
     .wordlib-batch-box.show { display: block; }
     .wordlib-batch-textarea {
-        width: 100%; min-height: 100px; padding: 12px; border: 1px solid #ddd; border-radius: 10px;
-        font-size: 13px; outline: none; resize: vertical; font-family: inherit; box-sizing: border-box;
+        width: 100%; min-height: 100px; padding: 12px; border: none; border-radius: 4px;
+        font-size: 13px; outline: none; resize: vertical; font-family: inherit; box-sizing: border-box; background: #f5f5f5;
     }
-    .wordlib-batch-textarea:focus { border-color: #4a90d9; }
+    .wordlib-batch-textarea:focus { background: #f0f0f0; }
     .wordlib-batch-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
     .wordlib-batch-btn {
-        margin-top: 8px; padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px;
-        background: #4a90d9; color: #fff; cursor: pointer; font-family: inherit;
+        margin-top: 8px; padding: 8px 16px; border: none; border-radius: 4px; font-size: 13px;
+        background: #e0e0e0; color: #fff; cursor: pointer; font-family: inherit;
     }
     .wordlib-word-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .wordlib-word {
-        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px;
-        font-size: 13px; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.06); color: #333;
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 4px;
+        font-size: 13px; background: #e0e0e0; border: none; color: #fff;
     }
-    .wordlib-word.preset { background: #f0f4f8; border-color: #d0dbe6; color: #666; }
+    .wordlib-word.preset { background: #d0d0d0; border: none; color: #999; }
     .wordlib-word.preset .wordlib-word-del { display: none; }
     .wordlib-word-del {
         cursor: pointer; color: #e0607a; font-size: 14px; line-height: 1; display: flex; align-items: center;
     }
-    .wordlib-empty { font-size: 13px; color: #ccc; padding: 20px 0; text-align: center; }
+    .wordlib-empty { font-size: 13px; color: #999; padding: 20px 0; text-align: center; }
     .wordlib-clear-btn {
-        margin-top: 12px; padding: 6px 14px; border: 1px solid #e0607a; border-radius: 8px; font-size: 12px;
-        background: transparent; color: #e0607a; cursor: pointer; font-family: inherit;
+        margin-top: 12px; padding: 6px 14px; border: none; border-radius: 4px; font-size: 12px;
+        background: #e0e0e0; color: #fff; cursor: pointer; font-family: inherit;
     }
     .wordlib-clear-btn:active { background: #fff0f3; }
     .wordlib-stats { font-size: 12px; color: #999; margin-bottom: 10px; }
-    html.dark-mode .wordlib-page { background: linear-gradient(160deg, #1a1a1a 0%, #222 100%); }
+    html.dark-mode .wordlib-page { background: #1a1a1a; }
+    html.dark-mode .wordlib-header { background: #1a1a1a; border-bottom-color: rgba(255,255,255,0.1); }
+    html.dark-mode .wordlib-back, html.dark-mode .wordlib-title, html.dark-mode .wordlib-section-title { color: #fff; }
+    html.dark-mode .wordlib-cats { background: #111; border-bottom-color: rgba(255,255,255,0.08); }
+    html.dark-mode .wordlib-cat { background: #1a1a1a; color: #ccc; border-color: rgba(255,255,255,0.1); }
+    html.dark-mode .wordlib-content { background: #000; }
+    html.dark-mode .wordlib-add-input { background: #1a1a1a; color: #fff; border-color: #333; }
     html.dark-mode .wordlib-header { background: rgba(45,45,45,0.75); border-color: rgba(255,255,255,0.08); }
     html.dark-mode .wordlib-title { color: #e0e0e0; }
     html.dark-mode .wordlib-subtitle { color: #777; }
@@ -4866,7 +5008,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     .contact-list-page {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         z-index: 400; display: none; flex-direction: column;
-        background: var(--contact-list-bg, #ededed);
+        background: var(--contact-list-bg, #ffffff);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     .contact-list-page.active { display: flex; }
@@ -5900,7 +6042,169 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 }
 #albumPage .xcyj-setting-reset:active { transform: scale(0.96); background: #F4F4F5; }
 
-    </style>
+    
+        .wordcard-back { display: none !important; }
+        .wordcard-header { background: transparent !important; border-bottom: none !important; }
+        .wordcard-page { background: #ffffff; }
+        .wordcard-list { background: #ffffff; }
+        .special-section { background: #ffffff; border: none; }
+        .special-item { border: none; }
+        .special-header button { border: none; }
+
+        .special-section { border: none !important; }
+        .special-item { border: none !important; background: transparent !important; }
+        .special-header { border: none !important; }
+        .special-header button { border: none !important; background: #f5f5f5 !important; border-radius: 4px !important; }
+        .special-header span { color: #333 !important; }
+        .image-card-grid { border: none !important; }
+
+        .wordcard-back, .wordlib-back { display: none !important; }
+        .wordlib-header { background: transparent !important; border-bottom: none !important; }
+        .wordlib-title { font-size: 34px !important; font-weight: 700 !important; color: #1a1a1a !important; }
+        .settings-header { background: transparent !important; border-bottom: none !important; }
+        .settings-back { display: none !important; }
+        #storagePage .settings-title, #balanceAppPage .settings-title { font-size: 34px; font-weight: 700; color: #1a1a1a; }
+
+        #balanceContactSelector {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+    /* ===== Contact List Profile Layout ===== */
+    .cl-profile-header {
+        flex-shrink: 0;
+        padding: calc(env(safe-area-inset-top, 0px) + 150px) 20px 36px;
+        background: #c8c8c8;
+        position: relative;
+        cursor: pointer;
+    }
+    .cl-profile-avatar {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: #d0d0d0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #666;
+        overflow: hidden;
+        border: 3px solid rgba(255,255,255,0.8);
+        cursor: pointer;
+        flex-shrink: 0;
+        position: absolute;
+        bottom: -34px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+    .cl-profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .cl-profile-nickname {
+        font-size: 17px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-top: 0;
+        cursor: pointer;
+        max-width: 80%;
+        text-align: center;
+        word-break: break-all;
+    }
+    .cl-profile-account {
+        font-size: 13px;
+        color: #888;
+        margin-top: 4px;
+        cursor: pointer;
+    }
+    .cl-profile-bio {
+        font-size: 13px;
+        color: #666;
+        margin-top: 12px;
+        max-width: 70%;
+        text-align: center;
+        line-height: 1.5;
+        cursor: pointer;
+        word-break: break-all;
+    }
+    .cl-contact-section {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background: var(--contact-list-bg, #ffffff);
+    }
+    .cl-contact-label {
+        padding: 14px 16px 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--contact-list-font, #1a1a1a);
+        opacity: 0.6;
+    }
+    .cl-contact-list {
+        background: var(--contact-list-bg, #ffffff);
+    }
+    .cl-bottom-bar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 36px;
+        margin: 0 16px calc(env(safe-area-inset-bottom, 0px) + 8px);
+        padding: 8px 20px;
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+    .cl-bottom-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--contact-list-font, #1a1a1a);
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity 0.15s;
+    }
+    .cl-bottom-btn:active {
+        opacity: 0.6;
+    }
+    .cl-bottom-btn img {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+    }
+    /* Override old contact-list-header - hide it since we removed it */
+    .contact-list-header { display: none !important; }
+    /* Contact search in new position */
+    .cl-contact-section .contact-list-search {
+        padding: 8px 12px;
+    }
+    .cl-contact-section .contact-list-search input {
+        width: 100%;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.05);
+        font-size: 14px;
+        outline: none;
+        color: var(--contact-list-font, #1a1a1a);
+    }
+
+    .cl-profile-info {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px 16px;
+        background: var(--contact-list-bg, #ffffff);
+    }
+</style>
 </head>
 <body>
 <!-- 锁屏界面 -->
@@ -5942,20 +6246,30 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <!-- 联系人列表界面 -->
 <div class="contact-list-page" id="contactListPage">
-<div class="contact-list-header">
-<div class="contact-list-back" onclick="closeContactList()">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+<div class="cl-profile-header" id="clProfileHeader" onclick="handleProfileHeaderClick(event)">
+<div class="cl-profile-avatar" id="clProfileAvatar" onclick="event.stopPropagation();uploadProfileAvatar()">头像</div>
 </div>
-<div class="contact-list-title">聊天</div>
-<div class="contact-list-add-btn" onclick="showContactAddOptions()">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+<div class="cl-profile-info">
+<div class="cl-profile-nickname" id="clProfileNickname" onclick="event.stopPropagation();editProfileNickname()">这里点击更换昵称</div>
+<div class="cl-profile-account" id="clProfileAccount" onclick="event.stopPropagation();editProfileAccount()">@这里点击替换账号</div>
+<div class="cl-profile-bio" id="clProfileBio" onclick="event.stopPropagation();editProfileBio()">这里点击替换文案</div>
 </div>
-</div>
-<div class="contact-list-body" id="contactListBody">
-<div class="contact-list-search">
-<input type="text" id="contactSearchInput" placeholder="搜索" oninput="filterContacts(this.value)"/>
+<div class="cl-contact-section">
+<div class="cl-contact-label">联系人</div>
+<div class="cl-contact-list" id="contactListBody">
+<div class="contact-list-search" id="clSearchBox" style="display:none;">
+<input type="text" id="contactSearchInput" placeholder="搜索联系人" oninput="filterContacts(this.value)"/>
 </div>
 <div id="contactListItems"></div>
+</div>
+</div>
+<div class="cl-bottom-bar" id="clBottomBar">
+<div class="cl-bottom-btn" id="clSearchBtn" onclick="toggleContactSearch()">
+<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+</div>
+<div class="cl-bottom-btn" id="clAddBtn" onclick="showContactAddOptions()">
+<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</div>
 </div>
 </div>
 <!-- 添加联系人选项弹窗 -->
@@ -5965,7 +6279,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="contact-add-modal-title">添加</div>
 <div class="contact-add-options">
 <div class="contact-add-option" onclick="showAddContactForm()">添加联系人</div>
-<div class="contact-add-option" onclick="showCreateGroupForm()">创建群聊</div>
 </div>
 <div style="margin-top:12px;text-align:center;">
 <span onclick="closeContactAddModal()" style="font-size:14px;color:#999;cursor:pointer;">取消</span>
@@ -6190,6 +6503,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <!-- 聊天主界面 -->
 <div class="chat-page" id="chatPage">
+<!-- 聊天底栏标签 -->
 <div class="chat-header">
 <div class="chat-back" onclick="backToContactList()">‹</div>
 <div class="chat-title" id="chatTitle">对方</div>
@@ -6204,7 +6518,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <svg viewbox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg>
 </div>
 <div class="chat-input-wrap">
-<input class="chat-input" id="chatInput" onkeydown="handleChatEnter(event)" placeholder="输入消息" type="text"/>
+<input class="chat-input" id="chatInput" onkeydown="handleChatEnter(event)" placeholder="输入消息" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text"/>
 </div>
 <div class="chat-btn" data-icon="receive" onclick="triggerReceive()">
 <svg viewbox="0 0 24 24"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -6269,6 +6583,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-header">
 <div class="settings-back" onclick="closeChatSettings()">‹</div>
 <div class="settings-title">聊天设置</div>
+
 </div>
 <div class="settings-content">
 <div class="settings-section">
@@ -6414,6 +6729,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div id="bubbleFontName" style="margin-top:4px;font-size:11px;color:#999;font-family:var(--font-family);"></div>
 <div id="customFontList_chat" style="margin:4px 0 8px;"></div>
 <input accept=".ttf,.otf" id="bubbleFontInput" onchange="handleBubbleFontUpload(event)" style="display:none;" type="file"/>
+<div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
 </div><div class="settings-float-box"><div class="section-subtitle">气泡圆角进阶</div>
 <div class="switch-setting ios-switch-row">
 <span class="ios-switch-label">开启修改双方气泡圆方程度</span>
@@ -6674,12 +6990,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <span class="ios-switch"><input id="chatDarkMode" onchange="toggleChatDarkMode()" type="checkbox"/><span class="ios-switch-slider"></span></span>
 </div>
 <div class="settings-row"><label>输入框圆方程度</label><div style="display:flex;align-items:center;gap:6px;flex:1;"><input id="inputBorderRadius" max="20" min="0" oninput="updateInputBorderRadius(this.value)" step="1" style="flex:1;" type="range" value="0"/><span id="inputBorderRadiusVal" style="font-size:11px;color:#999;min-width:28px;">0px</span></div></div>
-<div class="settings-row"><label>输入框颜色</label><input id="inputBgColor" oninput="updateInputBgColor(this.value)" type="color" value="#ffffff"/><button onclick="resetInputBgColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
+<div class="settings-row"><label>输入框颜色</label><input id="inputBgColor" oninput="updateInputBgColor(this.value)" type="color" value="#ffffff"/><button onclick="resetInputBgColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
 <div class="settings-row ios-switch-row">
 <span class="ios-switch-label">关闭底部背景</span>
 <span class="ios-switch"><input id="hideFooterBg" onchange="toggleFooterBg()" type="checkbox"/><span class="ios-switch-slider"></span></span>
 </div>
-<div class="settings-row"><label>顶部备注颜色</label><input id="headerTitleColor" oninput="updateHeaderTitleColor(this.value)" type="color" value="#1a1a1a"/><button onclick="resetHeaderTitleColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
+<div class="settings-row"><label>顶部备注颜色</label><input id="headerTitleColor" oninput="updateHeaderTitleColor(this.value)" type="color" value="#1a1a1a"/><button onclick="resetHeaderTitleColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
 </div></div>
 <div class="settings-section">
 <div class="settings-float-box"><div class="section-title">美化设置</div>
@@ -6690,9 +7006,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <button onclick="resetChatWallpaper()">重置</button>
 </div>
 </div>
-<div class="settings-row"><label>顶部背景色</label><input id="topBgColor" oninput="updateTopBgColor()" type="color" value="#f0f0f0"/><button onclick="resetTopBgColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
+<div class="settings-row"><label>顶部背景色</label><input id="topBgColor" oninput="updateTopBgColor()" type="color" value="#f0f0f0"/><button onclick="resetTopBgColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
 <div class="settings-row"><label>修改顶部背景图</label><div class="btn-group"><button onclick="uploadTopBgImage()">上传</button><button onclick="resetTopBgImage()">恢复默认</button></div></div>
-<div class="settings-row"><label>底部背景色</label><input id="bottomBgColor" oninput="updateBottomBgColor()" type="color" value="#f0f0f0"/><button onclick="resetBottomBgColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
+<div class="settings-row"><label>底部背景色</label><input id="bottomBgColor" oninput="updateBottomBgColor()" type="color" value="#f0f0f0"/><button onclick="resetBottomBgColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">重置</button></div>
 <div class="settings-row"><label>修改底部背景图</label><div class="btn-group"><button onclick="uploadBottomBgImage()">上传</button><button onclick="resetBottomBgImage()">恢复默认</button></div></div>
 <div class="settings-row"><label>顶部背景内边距</label><div style="display:flex;align-items:center;gap:6px;flex:1;"><input id="topBgPadding" max="50" min="0" oninput="updateTopBgPadding(this.value)" step="1" style="flex:1;" type="range" value="0"/><span id="topBgPaddingVal" style="font-size:11px;color:#999;min-width:28px;">0vh</span></div></div>
 <div class="settings-row"><label>底部背景内边距</label><div style="display:flex;align-items:center;gap:6px;flex:1;"><input id="bottomBgPadding" max="50" min="0" oninput="updateBottomBgPadding(this.value)" step="1" style="flex:1;" type="range" value="0"/><span id="bottomBgPaddingVal" style="font-size:11px;color:#999;min-width:28px;">0vh</span></div></div>
@@ -6745,7 +7061,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-row">
 <label>图标颜色</label>
 <input id="customIconColor" oninput="updateCustomIconColor(this.value)" type="color" value="#999999"/>
-<button onclick="resetCustomIconColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">重置</button>
+<button onclick="resetCustomIconColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">重置</button>
 </div>
 </div></div>
 <div class="settings-section">
@@ -6842,15 +7158,21 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-row danger" onclick="clearChatHistory()">
 <span>清空聊天记录</span>
 </div>
+<div class="chat-dnd-block-section" id="chatDndBlockSection" style="display:none;">
+<div class="section-title" style="font-size:14px;font-weight:600;margin-bottom:8px;">联系人管理</div>
+<div class="dnd-block-row">
+<label>拉黑</label>
+<span class="ios-switch"><input id="contactBlockToggle" onchange="toggleContactBlock(_activeContactId)" type="checkbox"/><span class="ios-switch-slider"></span></span>
+</div>
+</div>
 </div></div>
 </div>
 </div>
 <!-- 字卡主界面 -->
 <div class="wordcard-page" id="wordcardPage">
 <div class="wordcard-header">
-<div class="wordcard-back" onclick="closeWordCard()">‹</div>
-<div class="wordcard-title">字卡管理</div>
-<div class="wordcard-contact-btn" id="wordcardContactBtn" onclick="toggleContactScopeBar()">联系人</div>
+<div class="wordcard-title">字卡</div>
+<div class="wordcard-contact-btn" id="wordcardContactBtn" onclick="toggleContactScopeBar()">共用字卡</div>
 </div>
 <div class="wordcard-contact-bar" id="wordcardContactBar"></div>
 <div class="wordcard-tabs" id="wordcardTabs">
@@ -6859,7 +7181,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <div class="wordcard-actions">
 <div style="width:100%;margin-bottom:8px;">
-<input id="wordcardSearchInput" oninput="renderWordCardList()" placeholder="搜索字卡..." style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;font-family:var(--font-family);box-sizing:border-box;" type="text"/>
+<input id="wordcardSearchInput" oninput="renderWordCardList()" placeholder="搜索字卡..." style="width:100%;padding:8px 10px;border:none;border-radius:4px;font-size:13px;outline:none;font-family:var(--font-family);box-sizing:border-box;background:#f5f5f5;" type="text"/>
 </div>
 <div class="action-btn" onclick="batchUploadWord()">批量上传</div>
 <div class="action-btn" onclick="uploadWordFile()">上传文件</div>
@@ -7028,7 +7350,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-page" id="globalSettingsPage" style="z-index:350;">
 <div class="settings-header">
 <div class="settings-back" onclick="closeGlobalSettings()">‹</div>
-<div class="settings-title">系统设置</div>
+<div class="settings-title">设置</div>
 </div>
 <div class="settings-content">
 <div class="settings-section">
@@ -7054,6 +7376,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <button onclick="uploadCustomFont('global')">上传TTF</button>
 </div>
 </div>
+<div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
 <div class="font-url-block">
 <div class="font-url-label">URL链接</div>
 <input type="text" id="globalFontUrlInput" class="font-url-input" placeholder="输入字体URL...">
@@ -7107,7 +7430,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <div style="font-size:12px;color:#999;margin:4px 0 8px;font-family:var(--font-family);">开启后，当你离开聊天界面时，对方发消息会有弹窗提醒。同时会请求浏览器通知权限，离开网站后也能收到系统通知</div>
 <div id="notifTestArea" style="display:none;margin-top:8px;">
-<div onclick="testNotification()" style="display:inline-block;padding:6px 16px;border-radius:10px;background:linear-gradient(135deg,#4a90d9,#357abd);color:#fff;font-size:13px;cursor:pointer;font-family:var(--font-family);transition:opacity 0.2s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">测试消息通知</div>
+<div onclick="testNotification()" style="display:inline-block;padding:6px 16px;border-radius:10px;background:#e0e0e0;color:#fff;font-size:13px;cursor:pointer;font-family:var(--font-family);transition:opacity 0.2s;" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">测试消息通知</div>
 <div id="notifPermissionStatus" style="font-size:11px;color:#999;margin-top:6px;font-family:var(--font-family);"></div>
 </div>
 </div></div>
@@ -7135,24 +7458,26 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
 <button onclick="exportAllData()" style="padding:8px 12px;background:#1a1a1a;color:white;border:none;border-radius:6px;font-size:13px;cursor:pointer;">导出全局文件</button>
-<button onclick="exportChatOnly()" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">导出聊天记录</button>
-<button onclick="exportWordCardsOnly()" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">导出字卡备份</button>
+<button onclick="exportChatOnly()" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">导出聊天记录</button>
+<button onclick="exportWordCardsOnly()" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">导出字卡备份</button>
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-<button onclick="importData('full')" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">导入全局文件</button>
-<button onclick="importData('chat')" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">导入聊天记录</button>
-<button onclick="importData('wordcards')" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">导入字卡备份</button>
+<button onclick="importData('full')" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">导入全局文件</button>
+<button onclick="importData('chat')" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">导入聊天记录</button>
+<button onclick="importData('wordcards')" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">导入字卡备份</button>
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-<button onclick="compressStoredImages()" style="padding:8px 12px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">压缩当前图片</button>
+<button onclick="compressStoredImages()" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">压缩当前图片</button>
 <button onclick="resetEntireWebsite()" style="padding:8px 12px;background:#ff3b30;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">重置网站数据</button>
 </div>
 </div>
 <div class="settings-float-box"><div class="section-title">全局修复</div>
 <div style="font-size:12px;color:#999;line-height:1.5;margin-bottom:10px;">如果网站出现卡死、点击无反应等异常，点击下方按钮可恢复界面。所有数据均保存在本地，不会丢失。</div>
-<button onclick="globalRecovery();alert('已执行全局恢复，界面已重置，数据未丢失');" style="padding:10px 16px;background:#4a90d9;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;width:100%;">全局恢复（大退）</button>
-<div style="font-size:11px;color:#bbb;text-align:center;margin-top:4px;">快捷键: Ctrl+Shift+R</div>
-</div></div>
+<button onclick="globalRecovery();alert('已执行全局恢复，界面已重置，数据未丢失');" style="padding:10px 16px;background:#e0e0e0;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;width:100%;">全局恢复（大退）</button>
+
+</div>
+
+</div>
 <div class="settings-section">
 <div class="settings-float-box"><div class="section-title">锁屏设置</div>
 <div class="settings-row ios-switch-row">
@@ -7170,12 +7495,12 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 </div>
 </div>
 <div id="lockScreenPasswordChangeArea" style="display:none;margin-top:8px;">
-<input type="password" id="lockScreenOldPwd" placeholder="旧密码" maxlength="20" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;font-size:13px;outline:none;"/>
-<input type="password" id="lockScreenNewPwd" placeholder="新密码" maxlength="20" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;font-size:13px;outline:none;"/>
-<input type="password" id="lockScreenConfirmPwd" placeholder="确认新密码" maxlength="20" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;font-size:13px;outline:none;"/>
+<input type="password" id="lockScreenOldPwd" placeholder="旧密码" maxlength="20" style="width:100%;padding:8px;border:none;border-radius:6px;margin-bottom:6px;font-size:13px;outline:none;background:#f5f5f5;"/>
+<input type="password" id="lockScreenNewPwd" placeholder="新密码" maxlength="20" style="width:100%;padding:8px;border:none;border-radius:6px;margin-bottom:6px;font-size:13px;outline:none;background:#f5f5f5;"/>
+<input type="password" id="lockScreenConfirmPwd" placeholder="确认新密码" maxlength="20" style="width:100%;padding:8px;border:none;border-radius:6px;margin-bottom:6px;font-size:13px;outline:none;background:#f5f5f5;"/>
 <div style="display:flex;gap:8px;">
 <button onclick="confirmChangeLockPassword()" style="flex:1;padding:8px;background:#1a1a1a;color:white;border:none;border-radius:6px;font-size:13px;cursor:pointer;">确认</button>
-<button onclick="cancelChangeLockPassword()" style="flex:1;padding:8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;cursor:pointer;">取消</button>
+<button onclick="cancelChangeLockPassword()" style="flex:1;padding:8px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">取消</button>
 </div>
 <div id="lockPwdChangeMsg" style="font-size:12px;margin-top:6px;text-align:center;"></div>
 </div>
@@ -7189,7 +7514,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-row">
 <label>锁屏文字颜色</label>
 <div class="btn-group">
-<input id="lockTextColorPicker" oninput="updateLockTextColor(this.value)" type="color" value="#ffffff" style="width:40px;height:30px;border:1px solid #ddd;border-radius:6px;cursor:pointer;"/>
+<input id="lockTextColorPicker" oninput="updateLockTextColor(this.value)" type="color" value="#ffffff" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
 <button onclick="resetLockTextColor()">恢复默认</button>
 </div>
 </div>
@@ -7199,8 +7524,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-row">
 <label>列表界面背景</label>
 <div class="btn-group">
-<input id="contactListBgColor" oninput="updateContactListBg(this.value)" type="color" value="#ededed" style="width:40px;height:30px;border:1px solid #ddd;border-radius:6px;cursor:pointer;"/>
-<button onclick="resetContactListBg()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
+<input id="contactListBgColor" oninput="updateContactListBg(this.value)" type="color" value="#ededed" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
+<button onclick="resetContactListBg()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
 </div>
 </div>
 <div class="settings-row">
@@ -7213,8 +7538,53 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-row">
 <label>列表界面字体颜色</label>
 <div class="btn-group">
-<input id="contactListFontColor" oninput="updateContactListFontColor(this.value)" type="color" value="#1a1a1a" style="width:40px;height:30px;border:1px solid #ddd;border-radius:6px;cursor:pointer;"/>
-<button onclick="resetContactListFontColor()" style="padding:4px 8px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
+<input id="contactListFontColor" oninput="updateContactListFontColor(this.value)" type="color" value="#1a1a1a" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
+<button onclick="resetContactListFontColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
+</div>
+</div>
+</div></div>
+<div class="settings-section">
+<div class="settings-float-box"><div class="section-title">底栏与按钮自定义</div>
+<div class="settings-row">
+<label>修改加号按钮图片</label>
+<div class="btn-group">
+<button onclick="uploadAddBtnImage()">上传</button>
+<button onclick="resetAddBtnImage()">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>调节加号按钮颜色</label>
+<div class="btn-group">
+<input id="addBtnColorPicker" oninput="updateAddBtnColor(this.value)" type="color" value="#1a1a1a" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
+<button onclick="resetAddBtnColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>修改搜索按钮图片</label>
+<div class="btn-group">
+<button onclick="uploadSearchBtnImage()">上传</button>
+<button onclick="resetSearchBtnImage()">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>调节搜索按钮颜色</label>
+<div class="btn-group">
+<input id="searchBtnColorPicker" oninput="updateSearchBtnColor(this.value)" type="color" value="#1a1a1a" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
+<button onclick="resetSearchBtnColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>修改底栏背景图片</label>
+<div class="btn-group">
+<button onclick="uploadBottomBarBgImage()">上传</button>
+<button onclick="resetBottomBarBgImage()">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>调节底栏背景颜色</label>
+<div class="btn-group">
+<input id="bottomBarBgColorPicker" oninput="updateBottomBarBgColor(this.value)" type="color" value="#ffffff" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
+<button onclick="resetBottomBarBgColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
 </div>
 </div>
 </div></div>
@@ -7322,14 +7692,19 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div id="storageList"></div>
 </div>
 <div class="settings-section" style="margin-top:16px;">
-<div class="section-title">消息词云统计</div>
-<div style="font-size:12px;color:#999;margin-bottom:10px;">统计双方发送消息中最常出现的词汇，从多到少依次排列</div>
+<div class="section-title">对方最爱发送的字卡</div>
 <div id="wordCloudStats"></div>
 </div>
 <div class="settings-section" style="margin-top:16px;">
 <div class="section-title">消息条数统计</div>
 <div style="font-size:12px;color:#999;margin-bottom:10px;">统计双方各自发送的消息数量</div>
 <div id="messageCountStats"></div>
+</div>
+<div style="padding:20px 16px;text-align:center;font-size:11px;color:#999;line-height:1.8;">
+<div>网站作者：@今天要吃1顿饭</div>
+<div>账号：6673995435</div>
+<div>发布平台：小红书</div>
+<div style="margin-top:6px;">本网站严禁二传二改，如果你并不是从此平台此作者账号获取到的网站还望可以告知原作者，非常感谢，愿使用愉快。</div>
 </div>
 </div>
 </div>
@@ -7345,7 +7720,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             <div class="ta-device-speaker"></div>
             <div class="ta-device-camera"></div>
             <div class="ta-device-led"></div>
-            <div class="ta-brand">QianYi</div>
+            <div class="ta-brand">Beloved Time</div>
         </div>
         <!-- 屏幕 -->
         <div class="ta-screen">
@@ -7446,8 +7821,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         <div class="wordlib-back" onclick="closeWordLibApp()">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </div>
-        <div class="wordlib-title">词库管理</div>
-        <div class="wordlib-subtitle">为Ta的传讯扩展摩斯密码词汇</div>
+        <div class="wordlib-title">词库</div>
+        
     </div>
     <div class="wordlib-body" id="wordlibBody">
         <div class="wordlib-cats" id="wordlibCats"></div>
@@ -7477,18 +7852,20 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="settings-page" id="songwriteAppPage" style="z-index:350;">
 <div class="settings-content" id="songwriteAppContent" style="padding:16px;position:relative;"></div>
 <div class="sw-audio-fix" id="swAudioFix">
-<div class="sw-audio-fix-ic">🔇</div>
+<div class="sw-audio-fix-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></div>
 <div class="sw-audio-fix-tx">音频被系统中断（可能是录屏）<br>点击下方按钮恢复声音</div>
 <div class="sw-audio-fix-btn" onclick="swForceResumeAudio()">点击恢复音频</div>
 </div>
 </div>
 <!-- 余额页面 -->
-<div class="settings-page" id="balanceAppPage" style="z-index:350;">
+<div class="settings-page" id="balanceAppPage" style="z-index:350;background:#ffffff;">
 <div class="settings-header">
-<div class="settings-back" onclick="closeBalanceApp()">‹</div>
 <div class="settings-title">余额</div>
 </div>
-<div class="settings-content" id="balanceAppContent" style="padding:16px;"></div>
+<div style="padding:0 16px 8px;">
+<select id="balanceContactSelector" onchange="switchBalanceContact()" style="width:100%;padding:10px 14px;border:none;border-radius:8px;font-size:14px;background:#f5f5f5;color:#333;outline:none;-webkit-appearance:none;appearance:none;font-family:var(--font-family);"></select>
+</div>
+<div class="settings-content" id="balanceAppContent" style="padding:16px;background:#ffffff;"></div>
 </div>
 <!-- 默契生死局页面 -->
 <div id="lifeDeathPage" class="settings-page" style="z-index:350; display:none;">
@@ -7631,6 +8008,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
   </div>
   <!-- 相册字体/背景/按钮的隐藏文件输入 -->
   <input type="file" id="xcyjFontInput" accept=".ttf,.otf" style="display:none" onchange="albumFontChanged(event)">
+<div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
   <input type="file" id="xcyjBgInput" accept="image/*" style="display:none" onchange="albumBgChanged(event)">
   <input type="file" id="xcyjBackBtnInput" accept="image/*" style="display:none" onchange="albumBackBtnChanged(event)">
   <input type="file" id="xcyjMenuBtnInput" accept="image/*" style="display:none" onchange="albumMenuBtnChanged(event)">
@@ -7712,7 +8090,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <div class="upload-modal" id="uploadModal"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>选择图片</h3><div class="upload-option" onclick="triggerUpload()"><svg viewbox="0 0 24 24"><rect height="18" rx="2" width="18" x="3" y="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>从相册选择</div><div class="upload-option" onclick="resetWidgetImage()"><svg viewbox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>重置为初始</div></div>
 <div class="edit-menu" id="anniversaryEditor"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>编辑纪念日</h3><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">第一行文字</label><input class="edit-input" id="editTitle" placeholder="输入标题" type="text"/></div><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">日期</label><input class="edit-input" id="editDate" type="date"/></div><div class="color-input-row"><label>字体颜色</label><input id="anniColorPicker" oninput="setAnniversaryColor(this.value)" type="color" value="#1a1a1a"/></div><div class="edit-option" onclick="openAnniversaryBgUpload()" style="margin-top:12px;">更换背景图片</div><div class="edit-option" onclick="saveAnniversary()">保存</div></div>
 <div class="edit-menu" id="periodEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>日历设置</h3><div class="edit-option" onclick="openPeriodBgUpload()">更换背景图片</div><div class="edit-option" onclick="resetPeriodBg()">重置背景</div><div class="color-input-row"><label>字体颜色</label><input id="periodColorPicker" oninput="setPeriodColor(this.value)" type="color" value="#1a1a1a"/></div></div>
-<div class="edit-menu" id="timeEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>时间组件</h3><div class="edit-option" onclick="openTimeBgUpload()">更换背景图片</div><div class="edit-option" onclick="resetTimeBg()">重置背景</div><div class="color-input-row"><label>字体颜色</label><input id="timeColorPicker" oninput="setTimeColor(this.value)" type="color" value="#1a1a1a"/></div><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">时差 (小时)</label><input class="edit-input" id="timeOffsetInput" step="1" type="number" value="-9"/></div><div class="edit-option" onclick="saveTimeOffset()">保存时差</div></div>
+<div class="edit-menu" id="timeEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>时间组件</h3><div class="edit-option" onclick="openTimeBgUpload()">更换背景图片</div><div class="edit-option" onclick="resetTimeBg()">重置背景</div><div class="color-input-row"><label>字体颜色</label><input id="timeColorPicker" oninput="setTimeColor(this.value)" type="color" value="#1a1a1a"/></div><div style="margin-top:12px;"><label style="font-size:13px;color:#666;font-family:var(--font-family);">时差设置</label><div style="display:flex;gap:8px;margin-top:6px;"><div style="flex:1;"><label style="font-size:11px;color:#999;">小时</label><input class="edit-input" id="timeOffsetHour" step="1" type="number" value="-9" style="width:100%;"/></div><div style="flex:1;"><label style="font-size:11px;color:#999;">分钟</label><input class="edit-input" id="timeOffsetMin" step="1" type="number" value="0" min="0" max="59" style="width:100%;"/></div><div style="flex:1;"><label style="font-size:11px;color:#999;">秒</label><input class="edit-input" id="timeOffsetSec" step="1" type="number" value="0" min="0" max="59" style="width:100%;"/></div></div></div><div class="edit-option" onclick="saveTimeOffset()">保存时差</div></div>
 <div class="edit-menu" id="wordCardEditMenu"><span class="edit-menu-close" onclick="closeAllModals()">×</span><h3>字卡设置</h3><div class="edit-option" onclick="openWordCardBgUpload()">更换背景图片</div><div class="edit-option" onclick="resetWordCardBg()">重置背景</div><div class="color-input-row"><label>字体颜色</label><input id="wordCardColorPicker" oninput="setWordCardColor(this.value)" type="color" value="#1a1a1a"/></div></div>
 <!-- 批量上传模态框 -->
 <div class="modal batch-upload-modal" id="batchUploadModal">
@@ -7905,6 +8283,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <button onclick="resetDiaryFont()">重置</button>
 </div>
 </div>
+<div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
 <div class="font-url-block">
 <div class="font-url-label">URL链接</div>
 <input type="text" id="diaryFontUrlInput" class="font-url-input" placeholder="输入字体URL...">
@@ -8081,6 +8460,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <button onclick="resetLetterFont()">重置</button>
 </div>
 </div>
+<div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
 <div class="font-url-block">
 <div class="font-url-label">URL链接</div>
 <input type="text" id="letterFontUrlInput" class="font-url-input" placeholder="输入字体URL...">
@@ -8154,6 +8534,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 <input accept="video/*" class="hidden-input" id="videoInput" onchange="handleVideoUpload(event)" type="file"/>
 <input accept=".txt,.json,.jsonl" class="hidden-input" id="textFileInput" onchange="handleTextFileUpload(event)" type="file"/>
 <input accept=".ttf,.otf" class="hidden-input" id="fontFileInput" onchange="handleFontUpload(event)" type="file"/>
+<div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
 <script>
     // ===== 全局错误捕获：防止未处理异常导致页面白屏崩溃 =====
     window.addEventListener('error', function(e) {
@@ -8659,7 +9040,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         lockScreen: {
             enabled: false,
             passwordEnabled: true,
-            password: '112365',
+            password: '080365',
             wallpaper: '',
             textColor: '#ffffff',
             firstLaunchDone: false
@@ -9006,6 +9387,30 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 console.log('[迁移 v4→v5] 已为双方各补发 5200 元');
             } catch(e) { console.error('[迁移 v4→v5] 失败:', e); }
             version = 5;
+        /* ---- v5 → v6: 联系人列表个人主页 + 底部栏自定义 ---- */
+        if (version < 6) {
+            try {
+                if (!data.contactList) data.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
+                if (!data.contactList.profile) data.contactList.profile = {
+                    nickname: '这里点击更换昵称',
+                    account: '@这里点击替换账号',
+                    bio: '这里点击替换文案',
+                    avatar: '',
+                    headerImage: '',
+                    headerColor: ''
+                };
+                if (!data.contactList.bottomBar) data.contactList.bottomBar = {
+                    bgColor: '',
+                    bgImage: '',
+                    addBtnColor: '',
+                    searchBtnColor: '',
+                    addBtnImage: '',
+                    searchBtnImage: ''
+                };
+                upgraded = true;
+            } catch(e) { console.error('[迁移 v5→v6] 失败:', e); }
+            version = 6;
+        }
         }
 
         data.dataVersion = version;
@@ -9951,13 +10356,42 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     return (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute);
                 });
                 saveData();
+            } else if (!updateData.todayUpdateTimes || updateData.todayUpdateTimes.length === 0) {
+                /* 修复：当天已有记录但更新时间点缺失（旧数据/异常），重新生成 */
+                var _uc = 2 + Math.floor(Math.random() * 3);
+                updateData.todayUpdateTimes = [];
+                for (var j = 0; j < _uc; j++) {
+                    updateData.todayUpdateTimes.push({ hour: Math.floor(Math.random()*24), minute: Math.floor(Math.random()*60), applied: false });
+                }
+                updateData.todayUpdateTimes.sort(function(a, b) { return (a.hour*60+a.minute)-(b.hour*60+b.minute); });
+                saveData();
             }
             updateWordCardDisplay();
             restoreWordCardStyle();
 
+            /* 立即检查是否有未应用的更新时间点 */
+            try {
+                var _now = new Date();
+                var _nowMin = _now.getHours() * 60 + _now.getMinutes();
+                var _changed = false;
+                if (updateData.todayUpdateTimes && updateData.todayUpdateTimes.length > 0) {
+                    updateData.todayUpdateTimes.forEach(function(_tt) {
+                        if (!_tt.applied && _nowMin >= (_tt.hour * 60 + _tt.minute)) {
+                            _tt.applied = true;
+                            _changed = true;
+                        }
+                    });
+                    if (_changed) {
+                        updateData.currentText = generateDailyWordText();
+                        saveData();
+                        updateWordCardDisplay();
+                    }
+                }
+            } catch(_e) {}
+
             /* 清理旧定时器，防止重复创建导致崩溃 */
             if (_wordCardTimer) { clearInterval(_wordCardTimer); _wordCardTimer = null; }
-            /* 每5分钟检查一次（降低频率减少性能开销） */
+            /* 每30秒检查一次，确保字卡及时更新 */
             _wordCardTimer = setInterval(function() {
                 try {
                     var now = new Date();
@@ -10000,6 +10434,22 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     }
                 } catch(e) { console.error('wordCard interval error:', e); }
             }, 300000); /* 5分钟检查一次 */
+            /* 修复：页面加载后2秒立即检查一次，避免5分钟间隔内短暂使用看不到字卡更新 */
+            setTimeout(function() {
+                try {
+                    var _now0 = new Date();
+                    var _nowMin0 = _now0.getHours() * 60 + _now0.getMinutes();
+                    var _ud = appData.dailyWordUpdate;
+                    if (_ud && _ud.todayUpdateTimes && _ud.todayUpdateTimes.length > 0) {
+                        var _ch = false;
+                        for (var k = 0; k < _ud.todayUpdateTimes.length; k++) {
+                            var _tt = _ud.todayUpdateTimes[k];
+                            if (!_tt.applied && _nowMin0 >= (_tt.hour * 60 + _tt.minute)) { _tt.applied = true; _ch = true; }
+                        }
+                        if (_ch) { _ud.currentText = generateDailyWordText(); saveData(); updateWordCardDisplay(); }
+                    }
+                } catch(_e2) {}
+            }, 2000);
         } catch(e) { console.error('initDailyWord error:', e); }
     }
     function updateWordCardDisplay() {
@@ -10113,7 +10563,17 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         currentEditType = 'time';
         document.getElementById('overlay').classList.add('show');
         document.getElementById('timeEditMenu').classList.add('show');
-        document.getElementById('timeOffsetInput').value = timeOffset;
+        var _absOff = Math.abs(timeOffset);
+            var _h = Math.floor(_absOff);
+            var _m = Math.floor((_absOff - _h) * 60);
+            var _s = Math.round(((_absOff - _h) * 60 - _m) * 60);
+            var _sign = timeOffset < 0 ? -1 : 1;
+            var _hourInput = document.getElementById('timeOffsetHour');
+            var _minInput = document.getElementById('timeOffsetMin');
+            var _secInput = document.getElementById('timeOffsetSec');
+            if (_hourInput) _hourInput.value = _sign * _h;
+            if (_minInput) _minInput.value = _m;
+            if (_secInput) _secInput.value = _s;
         const savedText = appData.colors[el.id + '_text'];
         document.getElementById('timeColorPicker').value = savedText || '#1a1a1a';
     }
@@ -10134,7 +10594,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
     }
     function saveTimeOffset() {
-        const v = parseFloat(document.getElementById('timeOffsetInput').value);
+        var h = parseFloat(document.getElementById('timeOffsetHour').value) || 0;
+        var m = parseFloat(document.getElementById('timeOffsetMin').value) || 0;
+        var s = parseFloat(document.getElementById('timeOffsetSec').value) || 0;
+        var v = h + m/60 + s/3600;
         if (!isNaN(v)) { timeOffset = v; appData.timeOffset = v; saveData(); updateTimes(); }
         closeAllModals();
     }
@@ -10190,6 +10653,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function closeChat() {
         _activeContactId = null;
         document.getElementById('chatPage').style.display = 'none';
+        // 显示底栏
+        var _dockBar = document.querySelector('.dock-bar');
+        if (_dockBar) _dockBar.style.display = '';
         // 同时关闭联系人列表
         var clPage = document.getElementById('contactListPage');
         if (clPage) clPage.classList.remove('active');
@@ -10198,6 +10664,11 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         }
     }
     function initChatPage() {
+        // 进入聊天界面时隐藏底栏
+        try {
+            var _dockBar = document.querySelector('.dock-bar');
+            if (_dockBar) _dockBar.style.display = 'none';
+        } catch(e) {}
         const s = appData.chatSettings;
         // 复位键盘自适应状态，清除可能残留的 keyboard-open 类和 --keyboard-height
         if (typeof resetChatKeyboard === 'function') resetChatKeyboard();
@@ -10482,6 +10953,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const container = document.getElementById('chatMessages');
         if (!container) return;
         const history = appData.chatHistory;
+        // Bug17修复：聊天界面可见时实时标记已读时间戳，避免返回前台时重复提醒已看过的消息
+        if (document.getElementById('chatPage').style.display === 'flex' && history.length > 0) {
+            try { _lastSeenMsgTime = history[history.length - 1].id || Date.now(); } catch(_e17) {}
+        }
         const s = appData.chatSettings;
         const BATCH_SIZE = 100;
         const GAP_MS = 5 * 60 * 1000; // 5分钟
@@ -10735,7 +11210,27 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 }
             }
             
-            if (msg.type === 'text') {
+            if (msg.type === 'diary-card') {
+                const _dcRow = document.createElement('div');
+                _dcRow.className = 'msg-row diary-share-row';
+                _dcRow.dataset.id = msg.id;
+                var _dcHtml = '<div class="diary-share-card">';
+                _dcHtml += '<div class="dsc-title">' + escapeHtml(msg.cardTitle || '日记分享') + '</div>';
+                _dcHtml += '<div class="dsc-body">' + escapeHtml(msg.content) + '</div>';
+                _dcHtml += '<div class="dsc-footer">\u270E</div>';
+                _dcHtml += '</div>';
+                _dcRow.innerHTML = _dcHtml;
+                _dcRow.addEventListener('contextmenu', (e) => { e.preventDefault(); showMsgOpsMenu(e, msg.id, _dcRow, e.clientX, e.clientY); });
+                _dcRow.addEventListener('touchstart', (e) => {
+                    const rowEl = e.currentTarget; const touch = e.touches[0];
+                    const tx = touch ? touch.clientX : 0, ty = touch ? touch.clientY : 0;
+                    let timer = setTimeout(() => { if (!rowEl || !rowEl.isConnected) return; try { showMsgOpsMenu(e, msg.id, rowEl, tx, ty); } catch(err){} }, 600);
+                    const end = () => { clearTimeout(timer); };
+                    rowEl.addEventListener('touchend', end, {once:true});
+                    rowEl.addEventListener('touchmove', end, {once:true});
+                }, { passive: true });
+                return _dcRow;
+            } else if (msg.type === 'text') {
                 bubble.textContent = msg.content;
             } else if (msg.type === 'image') {
                 bubble.className += ' media-msg';
@@ -11230,7 +11725,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     // Deduct from other's balance
                     bd.other -= parseFloat(amount);
                     bd.records.push({
-                        text: '对方向你转账 ¥' + parseFloat(amount).toFixed(0) + '（对方-' + parseFloat(amount).toFixed(0) + '）',
+                        text: '对方向你转账 ¥' + parseFloat(amount).toFixed(2) + '（对方-' + parseFloat(amount).toFixed(2) + '）',
                         time: Date.now()
                     });
                     saveData();
@@ -11275,10 +11770,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     // _activeContactId || _lastChatContactId，若用户刚从联系人聊天进入日记页，
     // 系统消息会被写入该联系人的独立记录，导致主聊天界面看不到提醒。
     function addSystemMsgToMain(text, subtype) {
+        // 日记/信封等全局提醒：优先发送到最近聊天的联系人窗口，确保用户可见
+        var targetId = _activeContactId || _lastChatContactId || null;
         var _savedActive = _activeContactId;
-        var _savedLast = _lastChatContactId;
-        _activeContactId = null;
-        _lastChatContactId = null;
+        _activeContactId = targetId;
         try {
             addMessage({
                 id: Date.now(),
@@ -11288,7 +11783,6 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             });
         } catch (e) { console.error('addSystemMsgToMain失败:', e); }
         _activeContactId = _savedActive;
-        _lastChatContactId = _savedLast;
     }
 
     // ===== 表情面板 =====
@@ -11409,7 +11903,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // Deduct from my balance
         appData.balanceData.mine -= amt;
         appData.balanceData.records.push({
-            text: '你向对方转账 ¥' + amt.toFixed(0) + '（我方-' + amt.toFixed(0) + '）',
+            text: '你向对方转账 ¥' + amt.toFixed(2) + '（我方-' + amt.toFixed(2) + '）',
             time: Date.now()
         });
         saveData();
@@ -11438,14 +11932,14 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     // Add to other's balance
                     appData.balanceData.other += amt;
                     appData.balanceData.records.push({
-                        text: '对方领取了你的转账 ¥' + amt.toFixed(0) + '（对方+' + amt.toFixed(0) + '）',
+                        text: '对方领取了你的转账 ¥' + amt.toFixed(2) + '（对方+' + amt.toFixed(2) + '）',
                         time: Date.now()
                     });
                 } else {
                     // Refund to my balance
                     appData.balanceData.mine += amt;
                     appData.balanceData.records.push({
-                        text: '对方退回了转账 ¥' + amt.toFixed(0) + '（我方+' + amt.toFixed(0) + '）',
+                        text: '对方退回了转账 ¥' + amt.toFixed(2) + '（我方+' + amt.toFixed(2) + '）',
                         time: Date.now()
                     });
                 }
@@ -11474,7 +11968,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             if (appData.balanceData) {
                 appData.balanceData.mine += amt;
                 appData.balanceData.records.push({
-                    text: '你领取了对方的转账 ¥' + amt.toFixed(0) + '（我方+' + amt.toFixed(0) + '）',
+                    text: '你领取了对方的转账 ¥' + amt.toFixed(2) + '（我方+' + amt.toFixed(2) + '）',
                     time: Date.now()
                 });
                 saveData();
@@ -11495,7 +11989,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             if (appData.balanceData) {
                 appData.balanceData.other += amt;
                 appData.balanceData.records.push({
-                    text: '你退回了对方的转账 ¥' + amt.toFixed(0) + '（对方+' + amt.toFixed(0) + '）',
+                    text: '你退回了对方的转账 ¥' + amt.toFixed(2) + '（对方+' + amt.toFixed(2) + '）',
                     time: Date.now()
                 });
                 saveData();
@@ -12473,6 +12967,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
 
     // ===== 聊天设置 =====
     function openChatSettings() {
+        try { updateChatSettingsDndBlock(); } catch(e) {}
         document.getElementById('settingsPage').style.display = 'flex';
         applyChatDisplaySettings();
         renderCustomFontList('chat');
@@ -15648,19 +16143,23 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const diary = list[info.index];
         if (!diary) return;
         var sendContent = '';
+        var cardTitle = '日记分享';
         if (info.tab === 'double') {
             // 双人日记：将结构化数据格式化为文本
             sendContent = formatDoubleDiaryForChat(diary);
+            cardTitle = '双人日记分享';
         } else {
             // 单人日记：直接发送内容
             sendContent = diary.content;
+            cardTitle = '单人日记分享';
         }
         if (!sendContent) return;
         addMessage({
             id: Date.now(),
             sender: 'mine',
-            type: 'text',
-            content: sendContent
+            type: 'diary-card',
+            content: sendContent,
+            cardTitle: cardTitle
         });
         closeDiaryDetail();
     }
@@ -15882,13 +16381,23 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     }
     function splitSentences(text) {
-        const parts = text.split(/([。！？.?!]+)/);
-        const sentences = [];
-        for (let i = 0; i < parts.length; i += 2) {
-            const s = parts[i] + (parts[i+1] || '');
-            if (s.trim()) sentences.push(s.trim());
+        // 一句一显示：按字卡（换行符）分割，每个字卡单独一行显示
+        // 如果没有换行符，尝试按句号、感叹号、问号分割
+        var raw = String(text || '');
+        var sentences = raw.split(/\n+/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+        if (sentences.length <= 1 && raw.trim()) {
+            // 没有换行符，尝试按标点分割
+            var punctSplit = raw.split(/([。！？!?\n]+)/).filter(function(s){ return s.trim(); });
+            if (punctSplit.length > 1) {
+                sentences = [];
+                for (var i = 0; i < punctSplit.length; i += 2) {
+                    var s = punctSplit[i] || '';
+                    if (i + 1 < punctSplit.length) s += punctSplit[i + 1];
+                    if (s.trim()) sentences.push(s.trim());
+                }
+            }
         }
-        if (sentences.length === 0 && text.trim()) sentences.push(text.trim());
+        if (sentences.length === 0 && raw.trim()) sentences.push(raw.trim());
         return sentences;
     }
     function renderDetailTextHtml(text, s) {
@@ -17041,6 +17550,133 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function closeGlobalSettings() {
         document.getElementById('globalSettingsPage').style.display = 'none';
     }
+    // ===== Contact List Bottom Bar & Button Customization =====
+    function uploadAddBtnImage() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                if (!appData.contactList) appData.contactList = {};
+                if (!appData.contactList.bottomBar) appData.contactList.bottomBar = {};
+                appData.contactList.bottomBar.addBtnImage = ev.target.result;
+                saveData();
+                renderContactProfile();
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+    function resetAddBtnImage() {
+        if (appData.contactList && appData.contactList.bottomBar) {
+            appData.contactList.bottomBar.addBtnImage = '';
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function updateAddBtnColor(val) {
+        if (!appData.contactList) appData.contactList = {};
+        if (!appData.contactList.bottomBar) appData.contactList.bottomBar = {};
+        appData.contactList.bottomBar.addBtnColor = val;
+        saveData();
+        renderContactProfile();
+    }
+    function resetAddBtnColor() {
+        if (appData.contactList && appData.contactList.bottomBar) {
+            appData.contactList.bottomBar.addBtnColor = '';
+            var picker = document.getElementById('addBtnColorPicker');
+            if (picker) picker.value = '#1a1a1a';
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function uploadSearchBtnImage() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                if (!appData.contactList) appData.contactList = {};
+                if (!appData.contactList.bottomBar) appData.contactList.bottomBar = {};
+                appData.contactList.bottomBar.searchBtnImage = ev.target.result;
+                saveData();
+                renderContactProfile();
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+    function resetSearchBtnImage() {
+        if (appData.contactList && appData.contactList.bottomBar) {
+            appData.contactList.bottomBar.searchBtnImage = '';
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function updateSearchBtnColor(val) {
+        if (!appData.contactList) appData.contactList = {};
+        if (!appData.contactList.bottomBar) appData.contactList.bottomBar = {};
+        appData.contactList.bottomBar.searchBtnColor = val;
+        saveData();
+        renderContactProfile();
+    }
+    function resetSearchBtnColor() {
+        if (appData.contactList && appData.contactList.bottomBar) {
+            appData.contactList.bottomBar.searchBtnColor = '';
+            var picker = document.getElementById('searchBtnColorPicker');
+            if (picker) picker.value = '#1a1a1a';
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function uploadBottomBarBgImage() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                if (!appData.contactList) appData.contactList = {};
+                if (!appData.contactList.bottomBar) appData.contactList.bottomBar = {};
+                appData.contactList.bottomBar.bgImage = ev.target.result;
+                saveData();
+                renderContactProfile();
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+    function resetBottomBarBgImage() {
+        if (appData.contactList && appData.contactList.bottomBar) {
+            appData.contactList.bottomBar.bgImage = '';
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function updateBottomBarBgColor(val) {
+        if (!appData.contactList) appData.contactList = {};
+        if (!appData.contactList.bottomBar) appData.contactList.bottomBar = {};
+        appData.contactList.bottomBar.bgColor = val;
+        saveData();
+        renderContactProfile();
+    }
+    function resetBottomBarBgColor() {
+        if (appData.contactList && appData.contactList.bottomBar) {
+            appData.contactList.bottomBar.bgColor = '';
+            var picker = document.getElementById('bottomBarBgColorPicker');
+            if (picker) picker.value = '#ffffff';
+            saveData();
+            renderContactProfile();
+        }
+    }
 
     // ========== 锁屏功能 ==========
     var _lockScreenPwdInput = '';
@@ -17048,8 +17684,29 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function initLockScreen() {
         try {
             var ls = appData.lockScreen || {};
-            // 首次启动强制锁屏（无论 enabled 设置）
-            if (!ls.firstLaunchDone || ls.enabled) {
+            // 首次启动强制锁屏并要求输入密码（无论 enabled 设置）
+            if (!ls.firstLaunchDone) {
+                // 首次打开：强制锁屏 + 强制密码
+                ls.passwordEnabled = true;
+                ls.enabled = true;
+                if (!ls.password) {
+                    // 没有设置密码时，强制要求设置密码
+                    showLockScreen();
+                    // 显示密码设置提示
+                    setTimeout(function() {
+                        var errEl = document.getElementById('lockScreenError');
+                        if (errEl) {
+                            errEl.textContent = '首次使用请设置锁屏密码';
+                            errEl.style.display = 'block';
+                            errEl.style.color = '#ff9500';
+                        }
+                        var pwdSection = document.getElementById('lockScreenPasswordSection');
+                        if (pwdSection) pwdSection.style.display = 'flex';
+                    }, 300);
+                } else {
+                    showLockScreen();
+                }
+            } else if (ls.enabled) {
                 showLockScreen();
             }
             applyLockScreenStyles();
@@ -17455,6 +18112,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             applyContactListStyles();
             document.getElementById('contactListPage').classList.add('active');
             renderContactList();
+            renderContactProfile();
         } catch(e) { console.error('openContactList error:', e); }
     }
     function closeContactList() {
@@ -17462,15 +18120,192 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('contactListPage').classList.remove('active');
         // 返回桌面，关闭聊天页
         document.getElementById('chatPage').style.display = 'none';
+        // 显示底栏
+        var _dockBar = document.querySelector('.dock-bar');
+        if (_dockBar) _dockBar.style.display = '';
         if (!isTyping) {
             var titleEl = document.getElementById('chatTitle');
             if (titleEl) titleEl.textContent = appData.chatSettings.otherNickname;
         }
     }
+    // ===== Contact List Profile Functions =====
+    function renderContactProfile() {
+        try {
+            var cl = appData.contactList || {};
+            var p = cl.profile || { nickname: '这里点击更换昵称', account: '@这里点击替换账号', bio: '这里点击替换文案', avatar: '', headerImage: '' };
+            var avatarEl = document.getElementById('clProfileAvatar');
+            if (avatarEl) {
+                if (p.avatar) {
+                    avatarEl.innerHTML = '<img src="' + p.avatar + '" alt=""/>';
+                } else {
+                    avatarEl.textContent = '头像';
+                }
+            }
+            var nickEl = document.getElementById('clProfileNickname');
+            if (nickEl) nickEl.textContent = p.nickname || '这里点击更换昵称';
+            var accEl = document.getElementById('clProfileAccount');
+            if (accEl) accEl.textContent = p.account || '@这里点击替换账号';
+            var bioEl = document.getElementById('clProfileBio');
+            if (bioEl) bioEl.textContent = p.bio || '这里点击替换文案';
+            var headerEl = document.getElementById('clProfileHeader');
+            if (headerEl) {
+                if (p.headerImage) {
+                    headerEl.style.background = 'url(' + p.headerImage + ') center/cover no-repeat';
+                } else {
+                    headerEl.style.background = '#c8c8c8';
+                }
+            }
+            // Apply bottom bar customization
+            var bb = cl.bottomBar || {};
+            var bottomBar = document.getElementById('clBottomBar');
+            if (bottomBar) {
+                if (bb.bgImage) {
+                    bottomBar.style.background = 'url(' + bb.bgImage + ') center/cover no-repeat';
+                } else if (bb.bgColor) {
+                    bottomBar.style.background = bb.bgColor;
+                } else {
+                    bottomBar.style.background = '#ffffff';
+                }
+            }
+            var searchBtn = document.getElementById('clSearchBtn');
+            if (searchBtn) {
+                if (bb.searchBtnImage) {
+                    searchBtn.innerHTML = '<img src="' + bb.searchBtnImage + '" alt=""/>';
+                } else {
+                    searchBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+                    searchBtn.style.color = bb.searchBtnColor || '';
+                }
+            }
+            var addBtn = document.getElementById('clAddBtn');
+            if (addBtn) {
+                if (bb.addBtnImage) {
+                    addBtn.innerHTML = '<img src="' + bb.addBtnImage + '" alt=""/>';
+                } else {
+                    addBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+                    addBtn.style.color = bb.addBtnColor || '';
+                }
+            }
+        } catch(e) { console.error('renderContactProfile error:', e); }
+    }
+    function editProfileNickname() {
+        var p = ensureContactListProfile();
+        var val = prompt('请输入昵称', p.nickname || '');
+        if (val !== null) {
+            p.nickname = val;
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function editProfileAccount() {
+        var p = ensureContactListProfile();
+        var val = prompt('请输入账号（以@开头）', p.account || '');
+        if (val !== null) {
+            if (val && val[0] !== '@') val = '@' + val;
+            p.account = val;
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function editProfileBio() {
+        var p = ensureContactListProfile();
+        var val = prompt('请输入文案', p.bio || '');
+        if (val !== null) {
+            p.bio = val;
+            saveData();
+            renderContactProfile();
+        }
+    }
+    function uploadProfileAvatar() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var p = ensureContactListProfile();
+                p.avatar = ev.target.result;
+                saveData();
+                renderContactProfile();
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+    function handleProfileHeaderClick(e) {
+        if (e.target.id === 'clProfileHeader' || e.target.classList.contains('cl-profile-header')) {
+            // Clicked on the header background, not on avatar/nickname/etc
+            var p = ensureContactListProfile();
+            if (p.headerImage) {
+                // Already has image, ask to change or reset
+                if (confirm('点击确定上传新图片，取消恢复默认背景')) {
+                    uploadProfileHeaderImage();
+                } else {
+                    p.headerImage = '';
+                    saveData();
+                    renderContactProfile();
+                }
+            } else {
+                uploadProfileHeaderImage();
+            }
+        }
+    }
+    function uploadProfileHeaderImage() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var p = ensureContactListProfile();
+                p.headerImage = ev.target.result;
+                saveData();
+                renderContactProfile();
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+    function ensureContactListProfile() {
+        if (!appData.contactList) appData.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
+        if (!appData.contactList.profile) {
+            appData.contactList.profile = {
+                nickname: '这里点击更换昵称',
+                account: '@这里点击替换账号',
+                bio: '这里点击替换文案',
+                avatar: '',
+                headerImage: ''
+            };
+        }
+        if (!appData.contactList.bottomBar) {
+            appData.contactList.bottomBar = {
+                bgColor: '', bgImage: '', addBtnColor: '', searchBtnColor: '', addBtnImage: '', searchBtnImage: ''
+            };
+        }
+        return appData.contactList.profile;
+    }
+    function toggleContactSearch() {
+        var box = document.getElementById('clSearchBox');
+        if (box) {
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            if (box.style.display === 'block') {
+                var inp = document.getElementById('contactSearchInput');
+                if (inp) inp.focus();
+            }
+        }
+    }
+
+
     function backToContactList() {
         // 从聊天页返回联系人列表：清除联系人聊天上下文
         _activeContactId = null;
         document.getElementById('chatPage').style.display = 'none';
+        // 显示底栏
+        var _dockBar = document.querySelector('.dock-bar');
+        if (_dockBar) _dockBar.style.display = '';
         document.getElementById('contactListPage').classList.add('active');
         renderContactList();
     }
@@ -17531,18 +18366,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 var bPin = b.data.pinned ? 1 : 0;
                 return bPin - aPin;
             });
-            // 群聊分组
-            var groupItems = allItems.filter(function(i) { return i.type === 'group'; });
+            // 群聊功能已移除，仅显示联系人
             var contactItems = allItems.filter(function(i) { return i.type === 'contact'; });
-            if (groupItems.length > 0) {
-                var title = document.createElement('div');
-                title.className = 'contact-list-section-title';
-                title.textContent = '群聊';
-                container.appendChild(title);
-                for (var g = 0; g < groupItems.length; g++) {
-                    container.appendChild(createContactItemEl(groupItems[g]));
-                }
-            }
             if (contactItems.length > 0) {
                 var title2 = document.createElement('div');
                 title2.className = 'contact-list-section-title';
@@ -17593,7 +18418,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             name.textContent = displayName;
             if (item.data.pinned) {
                 var pinIcon = document.createElement('span');
-                pinIcon.style.cssText = 'display:inline-block;width:10px;height:10px;background:#000000;border-radius:2px;margin-right:4px;vertical-align:middle;';
+                pinIcon.style.cssText = 'display:inline-block;margin-right:4px;vertical-align:middle;color:#999;font-size:14px;';
+                pinIcon.textContent = '★';
                 name.insertBefore(pinIcon, name.firstChild);
             }
             info.appendChild(name);
@@ -17806,16 +18632,19 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         // 关闭联系人列表，打开聊天
         document.getElementById('contactListPage').classList.remove('active');
         document.getElementById('chatPage').style.display = 'flex';
+        // 隐藏底栏
+        var _dockBar = document.querySelector('.dock-bar');
+        if (_dockBar) _dockBar.style.display = 'none';
         try {
             // 设置当前联系人 ID，使 appData.chatHistory 重定向到该联系人的独立记录
             if (type === 'contact') {
                 _activeContactId = id;
                 _lastChatContactId = id; // 记录最后聊天的联系人，用于从通知恢复
-                // 将联系人的头像和昵称同步到聊天设置，使聊天界面和设置页显示正确
+                // 始终重置头像和昵称为当前联系人自身值，避免残留上一个联系人的信息
                 var c = _findContactById(id);
                 if (c) {
-                    if (c.avatar) appData.chatSettings.otherAvatar = c.avatar;
-                    if (c.name) appData.chatSettings.otherNickname = c.name;
+                    appData.chatSettings.otherAvatar = c.avatar || '';
+                    appData.chatSettings.otherNickname = c.name || '对方';
                 }
             } else {
                 _activeContactId = null; // 群聊暂不隔离
@@ -17851,6 +18680,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('contactAddOptionsView').style.display = 'block';
         document.getElementById('contactAddFormView').style.display = 'none';
         document.getElementById('contactCreateGroupView').style.display = 'none';
+        // 群聊功能已移除
+        var _groupOpt = document.querySelector('[onclick="showCreateGroupForm()"]');
+        if (_groupOpt) _groupOpt.style.display = 'none';
     }
     function showAddContactForm() {
         document.getElementById('contactAddOptionsView').style.display = 'none';
@@ -17937,7 +18769,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             if (!contactName) { alert('请输入联系人名称'); return; }
             // 重置聊天上下文，确保创建联系人时不会将聊天记录写入错误的位置
             _activeContactId = null;
-            if (!appData.contactList) appData.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
+            if (!appData.contactList) appData.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[], profile:{ nickname:'这里点击更换昵称', account:'@这里点击替换账号', bio:'这里点击替换文案', avatar:'', headerImage:'', headerColor:'' }, bottomBar:{ bgColor:'', bgImage:'', addBtnColor:'', searchBtnColor:'', addBtnImage:'', searchBtnImage:'' } };
+        if (!appData.contactList.profile) appData.contactList.profile = { nickname:'这里点击更换昵称', account:'@这里点击替换账号', bio:'这里点击替换文案', avatar:'', headerImage:'', headerColor:'' };
+        if (!appData.contactList.bottomBar) appData.contactList.bottomBar = { bgColor:'', bgImage:'', addBtnColor:'', searchBtnColor:'', addBtnImage:'', searchBtnImage:'' };
             if (!appData.contactList.contacts) appData.contactList.contacts = [];
             // 检查是否已存在同名联系人（防止重复添加）
             var existingNames = appData.contactList.contacts.map(function(c) { return (c.name || '').trim(); });
@@ -17999,7 +18833,9 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                     }
                 }
             }
-            if (!appData.contactList) appData.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[] };
+            if (!appData.contactList) appData.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts:[], groups:[], profile:{ nickname:'这里点击更换昵称', account:'@这里点击替换账号', bio:'这里点击替换文案', avatar:'', headerImage:'', headerColor:'' }, bottomBar:{ bgColor:'', bgImage:'', addBtnColor:'', searchBtnColor:'', addBtnImage:'', searchBtnImage:'' } };
+        if (!appData.contactList.profile) appData.contactList.profile = { nickname:'这里点击更换昵称', account:'@这里点击替换账号', bio:'这里点击替换文案', avatar:'', headerImage:'', headerColor:'' };
+        if (!appData.contactList.bottomBar) appData.contactList.bottomBar = { bgColor:'', bgImage:'', addBtnColor:'', searchBtnColor:'', addBtnImage:'', searchBtnImage:'' };
             if (!appData.contactList.groups) appData.contactList.groups = [];
             appData.contactList.groups.push({
                 id: 'g_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -18138,6 +18974,15 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         document.getElementById('lockScreenPasswordToggle').checked = ls.passwordEnabled !== false;
         document.getElementById('lockTextColorPicker').value = ls.textColor || '#ffffff';
         // 联系人列表设置初始化
+        try {
+            var bb = (appData.contactList && appData.contactList.bottomBar) || {};
+            var addColorEl = document.getElementById('addBtnColorPicker');
+            if (addColorEl && bb.addBtnColor) addColorEl.value = bb.addBtnColor;
+            var searchColorEl = document.getElementById('searchBtnColorPicker');
+            if (searchColorEl && bb.searchBtnColor) searchColorEl.value = bb.searchBtnColor;
+            var bbBgColorEl = document.getElementById('bottomBarBgColorPicker');
+            if (bbBgColorEl && bb.bgColor) bbBgColorEl.value = bb.bgColor;
+        } catch(e) {}
         var cl = appData.contactList || {};
         document.getElementById('contactListBgColor').value = cl.background || '#ededed';
         document.getElementById('contactListFontColor').value = cl.fontColor || '#1a1a1a';
@@ -18553,8 +19398,8 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
                 _activeContactId = targetContactId;
                 var c = _findContactById(targetContactId);
                 if (c) {
-                    if (c.avatar) appData.chatSettings.otherAvatar = c.avatar;
-                    if (c.name) appData.chatSettings.otherNickname = c.name;
+                    appData.chatSettings.otherAvatar = c.avatar || '';
+                    appData.chatSettings.otherNickname = c.name || '对方';
                 }
             } else {
                 _activeContactId = null;
@@ -18615,22 +19460,58 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function exportAllData() {
         const exportObj = {};
         saveDataSync();
-        /* 全局备份始终导出完整 appData，确保不丢失任何数据（包括图片、设置、联系人等）
-           包含：chatSettings, emojis, wordCards, contactWordCards, specialCards, chatHistory,
-           moments, diary, letter, beautifyPresets, colors, shop, doubleDiaryNotifications,
-           以及所有其他 appData 中的字段，确保事无巨细全保存 */
-        // 序列化前强制切换到主聊天上下文：appData.chatHistory 是 getter，
-        // 若当前处于联系人聊天中，getter 会返回该联系人的记录而非主聊天记录，
-        // 导致主聊天记录在备份中丢失。saveDataSync 内部虽也做了同样处理，
-        // 但在 finally 中已恢复原值，此处必须独立处理。
+        // 序列化前强制切换到主聊天上下文
         var _savedActiveId = _activeContactId;
         _activeContactId = null;
         try {
-            exportObj.full = JSON.parse(JSON.stringify(appData));
+            // 收集选中的导出项
+            var checkboxes = document.querySelectorAll('.export-checkbox');
+            var selectedKeys = {};
+            var hasSelection = false;
+            checkboxes.forEach(function(cb) {
+                if (cb.checked) {
+                    selectedKeys[cb.dataset.key] = true;
+                    hasSelection = true;
+                }
+            });
+            // 如果没有选中任何项，导出全部
+            if (!hasSelection) {
+                exportObj.full = JSON.parse(JSON.stringify(appData));
+            } else {
+                exportObj.full = {};
+                // 映射 checkbox data-key 到 appData 字段
+                var keyMap = {
+                    chatSettings: 'chatSettings',
+                    emojis: 'emojis',
+                    wordCards: 'wordCards',
+                    chatHistory: 'chatHistory',
+                    diary: 'diary',
+                    letter: 'letter',
+                    moments: 'moments',
+                    specialCards: 'specialCards',
+                    globalSettings: 'globalSettings'
+                };
+                var fullData = JSON.parse(JSON.stringify(appData));
+                Object.keys(selectedKeys).forEach(function(key) {
+                    var appKey = keyMap[key] || key;
+                    if (fullData[appKey] !== undefined) {
+                        exportObj.full[appKey] = fullData[appKey];
+                    }
+                });
+                // 始终导出关联数据，避免导入后结构损坏
+                if (selectedKeys.chatHistory) {
+                    exportObj.full.contactList = fullData.contactList;
+                }
+                if (selectedKeys.wordCards) {
+                    exportObj.full.contactWordCards = fullData.contactWordCards;
+                    exportObj.full.wordGroups = fullData.wordGroups;
+                    exportObj.full.currentGroup = fullData.currentGroup;
+                }
+            }
         } finally {
             _activeContactId = _savedActiveId;
         }
-        // 收集 localStorage 中的辅助数据（翻翻乐最高记录、AI伴侣聊天历史等）
+        // 收集 localStorage 中的辅助数据
         const extra = {};
         try {
             for (let i = 0; i < localStorage.length; i++) {
@@ -18644,7 +19525,7 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = '迁逸双屏_备份_' + new Date().toISOString().slice(0,10) + '.json';
+        a.download = 'BelovedTime_备份_' + new Date().toISOString().slice(0,10) + '.json';
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -19313,66 +20194,89 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
     function renderWordCloudStats() {
         const container = document.getElementById('wordCloudStats');
         if (!container) return;
-        // 收集所有文本消息
+        // 收集对方发送的所有文本消息（字卡内容）
         const history = appData.chatHistory || [];
-        const allText = [];
-        history.forEach(m => {
-            if (m && m.type === 'text' && m.content) allText.push(String(m.content));
+        var otherMessages = [];
+        history.forEach(function(m) {
+            if (m && m.sender === 'other' && m.content) {
+                otherMessages.push(String(m.content));
+            }
         });
-        if (allText.length === 0) {
-            container.innerHTML = '<div class="word-cloud-empty">暂无聊天消息，无法生成词云</div>';
-            return;
-        }
-        // 统计词频
-        const freq = {};
-        allText.forEach(text => {
-            const toks = tokenizeText(text);
-            // 同一条消息内相同词只计一次，避免单条重复刷量
-            const seen = new Set();
-            toks.forEach(t => {
-                if (!seen.has(t)) { seen.add(t); freq[t] = (freq[t] || 0) + 1; }
+        // 也收集联系人聊天中的对方消息
+        try {
+            var contacts = (appData.contactList && appData.contactList.contacts) || [];
+            contacts.forEach(function(c) {
+                try { (c.chatHistory || []).forEach(function(m) {
+                    if (m && m.sender === 'other' && m.content) otherMessages.push(String(m.content));
+                }); } catch(e) {}
             });
-        });
-        // 排序：按频次从多到少
-        const sorted = Object.entries(freq)
-            .filter(([w, c]) => c >= 2) // 至少出现2次才显示
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 50); // 最多显示50个
-        if (sorted.length === 0) {
-            container.innerHTML = '<div class="word-cloud-empty">暂无足够的高频词汇</div>';
+        } catch(e) {}
+        
+        if (otherMessages.length === 0) {
+            container.innerHTML = '<div class="word-cloud-empty">暂无对方发送的消息</div>';
             return;
         }
-        const maxCount = sorted[0][1];
-        const minCount = sorted[sorted.length - 1][1];
-        const wrap = document.createElement('div');
-        wrap.className = 'word-cloud-wrap';
-        sorted.forEach(([word, count]) => {
-            // 根据频次映射字号（12px ~ 26px）
-            const ratio = maxCount === minCount ? 1 : (count - minCount) / (maxCount - minCount);
-            const fontSize = (12 + ratio * 14).toFixed(1);
-            // 根据频次映射灰度浓度（高频更深）
-            const gray = Math.round(80 + (1 - ratio) * 120); // 80~200
-            const span = document.createElement('span');
-            span.className = 'word-cloud-item';
-            span.style.fontSize = fontSize + 'px';
-            span.style.color = 'rgb(' + gray + ',' + gray + ',' + gray + ')';
-            span.textContent = word + ' (' + count + ')';
-            wrap.appendChild(span);
+        
+        // 统计每条消息出现的次数（按完整消息内容计数，即字卡频率）
+        var freq = {};
+        otherMessages.forEach(function(text) {
+            var t = text.trim();
+            if (t) freq[t] = (freq[t] || 0) + 1;
         });
-        container.innerHTML = '';
-        container.appendChild(wrap);
+        
+        // 按频次排序
+        var sorted = Object.entries(freq)
+            .sort(function(a, b) { return b[1] - a[1]; })
+            .slice(0, 20);
+        
+        if (sorted.length === 0) {
+            container.innerHTML = '<div class="word-cloud-empty">暂无数据</div>';
+            return;
+        }
+        
+        var html = '';
+        // 显示最爱字卡
+        if (sorted[0]) {
+            html += '<div style="background:linear-gradient(135deg,#f0f7ff,#ffffff);border:1.5px solid #c8ddf0;border-radius:12px;padding:16px;margin-bottom:12px;text-align:center;">';
+            html += '<div style="font-size:13px;color:#7baad8;margin-bottom:6px;">★ 对方最爱发送的字卡</div>';
+            html += '<div style="font-size:16px;font-weight:600;color:#2c3e50;">' + escapeHtml(sorted[0][0]) + '</div>';
+            html += '<div style="font-size:12px;color:#999;margin-top:4px;">共发送 ' + sorted[0][1] + ' 次</div>';
+            html += '</div>';
+        }
+        
+        // 显示排名列表
+        if (sorted.length > 1) {
+            html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#333;">字卡发送频率排行</div>';
+            html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+            sorted.slice(1).forEach(function(item, idx) {
+                var rank = idx + 2;
+                html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(0,0,0,0.03);border-radius:8px;">';
+                html += '<span style="font-size:12px;color:#999;min-width:20px;">' + rank + '</span>';
+                html += '<span style="flex:1;font-size:13px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(item[0]) + '</span>';
+                html += '<span style="font-size:11px;color:#999;">' + item[1] + '次</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
     }
 
     function renderMessageCountStats() {
         const container = document.getElementById('messageCountStats');
         if (!container) return;
-        const history = appData.chatHistory || [];
+        // Bug21修复：统计所有联系人 + 主聊天的全部消息（按id去重，避免重复计数）
         let mineCount = 0, otherCount = 0;
-        history.forEach(m => {
-            if (!m) return;
+        var _seenMsgIds = {};
+        function _countMsg(m) {
+            if (!m || _seenMsgIds[m.id]) return;
+            _seenMsgIds[m.id] = true;
             if (m.sender === 'mine') mineCount++;
             else if (m.sender === 'other') otherCount++;
-        });
+        }
+        try { (_actualChatHistory || []).forEach(_countMsg); } catch(e) {}
+        var _cts = (appData.contactList && appData.contactList.contacts) || [];
+        _cts.forEach(function(c) { try { (c.chatHistory || []).forEach(_countMsg); } catch(e) {} });
         const s = appData.chatSettings || {};
         const myName = s.myNickname || '我';
         const otherName = s.otherNickname || '对方';
@@ -20299,10 +21203,14 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
         else { page.style.background='linear-gradient(160deg,#eef1f5,#f7f7fa)'; }
     }
     function swTopbar(title){
+        var _backStyle = (typeof _swCustomBackImg !== 'undefined' && _swCustomBackImg) ? 'style="background-image:url(\''+_swCustomBackImg+'\');background-size:cover;background-position:center;"' : '';
+        var _menuStyle = (typeof _swCustomMenuImg !== 'undefined' && _swCustomMenuImg) ? 'style="background-image:url(\''+_swCustomMenuImg+'\');background-size:cover;background-position:center;"' : '';
+        var _backContent = (typeof _swCustomBackImg !== 'undefined' && _swCustomBackImg) ? '' : '‹';
+        var _menuContent = (typeof _swCustomMenuImg !== 'undefined' && _swCustomMenuImg) ? '' : '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
         return '<div class="sw-topbar">'+
-            '<div class="sw-tb-back" onclick="swBack()">‹</div>'+
+            '<div class="sw-tb-back" onclick="swBack()" '+_backStyle+'>'+_backContent+'</div>'+
             '<div class="sw-tb-title">'+(title||'一起写歌')+'</div>'+
-            '<div class="sw-tb-menu" onclick="swOpenMenu()"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></div>'+
+            '<div class="sw-tb-menu" onclick="swOpenMenu()" '+_menuStyle+'>'+_menuContent+'</div>'+
             '</div>';
     }
     function swRender(html, attach){ var c=document.getElementById('songwriteAppContent'); c.innerHTML=html; swApplyTheme(); if(attach) attach(); }
@@ -21339,7 +22247,10 @@ html.dark-mode input[type="range"]::-moz-range-thumb {
             '<div class="sw-menu-item" onclick="swMenuPick(\'btnColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="8" rx="3"/></svg>修改按钮颜色</div><div class="sw-color-pick"><input type="color" id="swBtnColor" value="'+(t.btnColor||'#1a1a1a')+'" onchange="swSetBtnColor(this.value)"></div></div>'+
             '<div class="sw-menu-item" onclick="swMenuPick(\'btnTextColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>修改按钮文字颜色</div><div class="sw-color-pick"><input type="color" id="swBtnTextColor" value="'+(t.btnTextColor||'#ffffff')+'" onchange="swSetBtnTextColor(this.value)"></div></div>'+
             '<div class="sw-menu-item" onclick="swMenuPick(\'bgColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>修改背景颜色</div><div class="sw-color-pick"><input type="color" id="swBgColor" value="'+(t.bgColor||'#eef1f5')+'" onchange="swSetBgColor(this.value)"></div></div>'+
-            '<div class="sw-menu-item" onclick="swUploadBtnImg()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>修改按钮（上传图片）</div><div class="mi-r">'+(t.btnImage?'已设置':'默认')+'</div></div>'+
+            '<div class="sw-menu-item" onclick="swUploadCustomBack()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg>修改返回键（上传图片）</div><div class="mi-r">'+(typeof _swCustomBackImg!=='undefined'&&_swCustomBackImg?'已设置':'默认')+'</div></div>'+
+            '<div class="sw-menu-item" onclick="swResetCustomBack()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>恢复默认返回键</div></div>'+
+            '<div class="sw-menu-item" onclick="swUploadCustomMenu()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>修改菜单键（上传图片）</div><div class="mi-r">'+(typeof _swCustomMenuImg!=='undefined'&&_swCustomMenuImg?'已设置':'默认')+'</div></div>'+
+            '<div class="sw-menu-item" onclick="swResetCustomMenu()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>恢复默认菜单键</div></div>'+
             '<div class="sw-menu-item" onclick="swUploadBgImg()"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>修改背景（上传图片）</div><div class="mi-r">'+(t.bgImage?'已设置':'默认')+'</div></div>'+
             '<div class="sw-menu-item" onclick="swMenuPick(\'fontColor\')"><div class="mi-l"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>修改字体颜色</div><div class="sw-color-pick"><input type="color" id="swFontColor" value="'+(t.fontColor||'#222222')+'" onchange="swSetFontColor(this.value)"></div></div>'+
             '<div class="sw-sec-h">绘画区域内置颜色</div>'+
@@ -24220,27 +25131,63 @@ function mlsjIconClock() {
     function closeBalanceApp() {
         document.getElementById('balanceAppPage').style.display = 'none';
     }
+    var _balanceContactId = '';
+    function switchBalanceContact() {
+        var sel = document.getElementById('balanceContactSelector');
+        _balanceContactId = sel ? sel.value : '';
+        renderBalanceApp();
+    }
+    function getBalanceData() {
+        if (_balanceContactId) {
+            var c = _findContactById(_balanceContactId);
+            if (c) {
+                if (!c.balanceData) {
+                    c.balanceData = { mine: 0, other: 0, records: [] };
+                }
+                return c.balanceData;
+            }
+        }
+        return appData.balanceData;
+    }
     function renderBalanceApp() {
-        const bd = appData.balanceData;
+        const bd = getBalanceData();
         const container = document.getElementById('balanceAppContent');
         let html = '';
+        // Populate header selector
+        var sel = document.getElementById('balanceContactSelector');
+        if (sel) {
+            var contacts = (appData.contactList && appData.contactList.contacts) || [];
+            var selHtml = '';
+            contacts.forEach(function(c) {
+                selHtml += '<option value="' + (c.id || '') + '"' + (_balanceContactId === (c.id||'') ? ' selected' : '') + '>' + escapeHtml(c.name || '联系人') + '</option>';
+            });
+            if (contacts.length === 0) {
+                selHtml = '<option value="">暂无联系人</option>';
+                sel.disabled = true;
+            } else {
+                sel.disabled = false;
+            }
+            sel.innerHTML = selHtml;
+        }
         // Balance box
         html += '<div class="bal-box">';
-        html += '<div class="bal-side"><div class="lbl">对方余额</div><div class="val">¥' + bd.other.toFixed(0) + '</div></div>';
-        html += '<div class="bal-side"><div class="lbl">我方余额</div><div class="val">¥' + bd.mine.toFixed(0) + '</div></div>';
+        html += '<div class="bal-side"><div class="lbl">对方余额</div><div class="val">¥' + bd.other.toFixed(2) + '</div></div>';
+        html += '<div class="bal-side"><div class="lbl">我方余额</div><div class="val">¥' + bd.mine.toFixed(2) + '</div></div>';
         html += '</div>';
-        // Records
-        html += '<div style="font-size:14px;font-weight:600;margin-bottom:8px;">记录</div>';
+        // Records container
+        html += '<div style="background:#f5f5f5;border-radius:12px;padding:16px;">';
+        html += '<div style="font-size:14px;font-weight:600;margin-bottom:8px;color:#333;">记录</div>';
         if (bd.records.length === 0) {
             html += '<div style="color:#999;font-size:13px;text-align:center;padding:20px;">暂无记录</div>';
         }
         bd.records.slice().reverse().forEach(r => {
             html += '<div class="bal-rec">' + r.text + '</div>';
         });
+        html += '</div>';
         container.innerHTML = html;
     }
     function addBalanceRecord(target, amount, desc) {
-        const bd = appData.balanceData;
+        const bd = getBalanceData();
         if (target === 'mine') {
             bd.mine += amount;
         } else if (target === 'other') {
@@ -24531,6 +25478,7 @@ function mlsjIconClock() {
     let _lastVisibleTime = Date.now();   // 上次页面可见的时间戳
     let _lastLeaveTime = null;           // 上次离开聊天的时间戳
     let _lastSeenMsgTime = Date.now();   // 用户最后看到的消息时间戳（用于返回前台时检测未读消息）
+    let _notifiedMsgIds = new Set();     // 已通知过的消息ID集合，防止重复通知
     let _wakeLock = null;                // Wake Lock 句柄
     let _swReady = false;                // SW 是否就绪
 
@@ -24708,7 +25656,7 @@ function mlsjIconClock() {
                 var unseenMsgs = [];
                 for (var i = hist.length - 1; i >= 0; i--) {
                     var m = hist[i];
-                    if (m.id && m.id > _lastSeenMsgTime && m.sender === 'other') {
+                    if (m.id && m.id > _lastSeenMsgTime && m.sender === 'other' && !_notifiedMsgIds.has(m.id)) {
                         unseenMsgs.unshift(m);
                     } else if (m.id && m.id <= _lastSeenMsgTime) {
                         break; // 到达已看过的消息，停止
@@ -24717,6 +25665,13 @@ function mlsjIconClock() {
                 // 如果有未读消息，通知最新的一条
                 if (unseenMsgs.length > 0) {
                     var latestMsg = unseenMsgs[unseenMsgs.length - 1];
+                    // 标记该消息已通知，防止重复通知
+                    _notifiedMsgIds.add(latestMsg.id);
+                    // 限制 Set 大小，防止内存泄漏
+                    if (_notifiedMsgIds.size > 200) {
+                        var _arr = Array.from(_notifiedMsgIds);
+                        _notifiedMsgIds = new Set(_arr.slice(-100));
+                    }
                     // 延迟一点确保页面已渲染
                     setTimeout(function() {
                         showChatNotification(latestMsg);
@@ -25443,7 +26398,49 @@ function mlsjIconClock() {
         function stopPolling() {
             if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         }
-        if (window.visualViewport) {
+        // ===== iOS 输入辅助工具栏隐藏 =====
+    (function() {
+        // 创建虚拟input用于转移焦点，骗过iOS键盘的辅助栏
+        var _dummyInput = document.createElement('input');
+        _dummyInput.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;border:none;font-size:16px;';
+        _dummyInput.setAttribute('autocomplete','off');
+        _dummyInput.setAttribute('autocorrect','off');
+        _dummyInput.setAttribute('autocapitalize','off');
+        _dummyInput.setAttribute('spellcheck','false');
+        _dummyInput.setAttribute('readonly','true');
+        _dummyInput.setAttribute('aria-hidden','true');
+        document.body.appendChild(_dummyInput);
+        var _isTransfering = false;
+
+        // 监听chatInput的focus事件，在获得焦点时先快速切换到虚拟input再切回
+        var chatInputEl = document.getElementById('chatInput');
+        if (chatInputEl) {
+            chatInputEl.addEventListener('focus', function() {
+                if (_isTransfering) return;
+                // 短暂转移焦点到虚拟input，再转回，可触发iOS重新渲染键盘（不带辅助栏）
+                _isTransfering = true;
+                try {
+                    _dummyInput.focus({preventScroll:true});
+                    setTimeout(function() {
+                        chatInputEl.focus({preventScroll:true});
+                        _isTransfering = false;
+                    }, 0);
+                } catch(e) {
+                    _isTransfering = false;
+                }
+            }, true);
+            // blur时也转移焦点到虚拟input，防止辅助栏残留
+            chatInputEl.addEventListener('blur', function() {
+                setTimeout(function() {
+                    if (document.activeElement !== chatInputEl) {
+                        try { _dummyInput.focus({preventScroll:true}); _dummyInput.blur(); } catch(e){}
+                    }
+                }, 50);
+            }, true);
+        }
+    })();
+
+    if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', function() {
                 apply();
                 if (inputFocused) {
@@ -25985,12 +26982,12 @@ function shopRenderCart() {
     var total = shopCartTotal();
     shopEnsureBalance();
     var otherBal = appData.balanceData.other;
-    var balHtml = '对方余额 ¥' + otherBal.toFixed(0) +
+    var balHtml = '对方余额 ¥' + otherBal.toFixed(2) +
         (otherBal < 0 ? ' <span class="shop-owe-tag">赊账中</span>' : '');
 
     // 结算栏 sticky 固定底部
     html += '<div class="shop-cart-footer" style="position:-webkit-sticky;position:sticky;bottom:0;z-index:5;">';
-    html += '<div><div class="shop-cart-total">合计 ¥' + total.toFixed(0) + '</div>';
+    html += '<div><div class="shop-cart-total">合计 ¥' + total.toFixed(2) + '</div>';
     html += '<div style="font-size:11px;color:#999;margin-top:2px;">' + balHtml + '</div></div>';
     var disabled = items.length === 0;
     html += '<button class="shop-checkout-btn"' + (disabled ? ' disabled style="opacity:.5;"' : '') +
@@ -26078,7 +27075,7 @@ function shopCheckout() {
     });
     sd.cart = [];
     saveData();
-    shopToast('下单成功，对方已扣款¥' + total.toFixed(0) + (debt ? '（赊账）' : ''));
+    shopToast('下单成功，对方已扣款¥' + total.toFixed(2) + (debt ? '（赊账）' : ''));
     shopSwitchTab('orders');
 }
 
@@ -26099,7 +27096,7 @@ function shopRenderOrders() {
             if (o.message) {
                 html += '<div style="font-size:11px;color:#a0845a;margin-top:2px;">留言：' + shopEscape(o.message) + '</div>';
             }
-            html += '<div class="soi-price">¥' + o.total.toFixed(0) + '</div>';
+            html += '<div class="soi-price">¥' + o.total.toFixed(2) + '</div>';
             html += '<div><span class="soi-status ' + shopStatusClass(o.status) + '">' + shopStatusName(o.status) + '</span>';
             if (o.debt) html += ' <span class="shop-owe-tag">赊账</span>';
             html += '</div>';
@@ -26133,11 +27130,11 @@ function shopOrderDetail(id) {
     order.items.forEach(function (it) {
         html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;">';
         html += '<span>' + shopEscape(it.name) + ' ×' + it.qty + '</span>';
-        html += '<span style="color:#ff6b35;">¥' + (it.price * it.qty).toFixed(0) + '</span>';
+        html += '<span style="color:#ff6b35;">¥' + (it.price * it.qty).toFixed(2) + '</span>';
         html += '</div>';
     });
     html += '<div style="border-top:1px solid #eee;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;font-size:14px;font-weight:700;">';
-    html += '<span>合计</span><span style="color:#ff6b35;">¥' + order.total.toFixed(0) + '</span></div>';
+    html += '<span>合计</span><span style="color:#ff6b35;">¥' + order.total.toFixed(2) + '</span></div>';
     html += '</div>';
 
     // 状态 + 物流时间线
@@ -26524,12 +27521,12 @@ function shopCheckAutoOrder() {
         }
     });
 
-    // 2. 每日 5% 概率自动下单（每天只判定一次）
+    // 2. 每日 10% 概率自动下单（每天只判定一次）
     var today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     if (sd.lastAutoOrderDate !== today) {
         sd.lastAutoOrderDate = today; // 无论成败都标记今日已判定
         changed = true;
-        if (Math.random() < 0.05) {
+        if (Math.random() < 0.10) {
             var pool = (sd.products || []).filter(function (p) { return p.listed !== false; });
             if (pool.length > 0) {
                 var p = pool[Math.floor(Math.random() * pool.length)];
@@ -26728,14 +27725,7 @@ if (document.readyState === 'loading') {
         }
     }
 
-    // 监听键盘快捷键：Ctrl+Shift+R 触发全局恢复
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
-            e.preventDefault();
-            globalRecovery();
-            alert('已执行全局恢复，界面已重置，数据未丢失');
-        }
-    });
+    // Ctrl+Shift+R 快捷键已移除（移动端不需要）
 
     // 页面恢复时自动检测是否需要全局恢复（从后台返回或冷启动）
     (function() {
@@ -27198,7 +28188,7 @@ shopRenderOrders = function () {
             html += '<div class="soi-name">' + shopEscape(first) + more + (typeLabel ? ' <span style="font-size:10px;color:#aaa;">' + typeLabel + '</span>' : '') + '</div>';
             if (o.giftMessage) html += '<div style="font-size:11px;color:#a0845a;margin-top:2px;">礼物留言：' + shopEscape(o.giftMessage) + '</div>';
             else if (o.message) html += '<div style="font-size:11px;color:#a0845a;margin-top:2px;">留言：' + shopEscape(o.message) + '</div>';
-            html += '<div class="soi-price">¥' + o.total.toFixed(0) + '</div>';
+            html += '<div class="soi-price">¥' + o.total.toFixed(2) + '</div>';
             html += '<div><span class="soi-status ' + shopStatusClass(o.status) + '">' + shopStatusName(o.status) + '</span>';
             if (o.debt) html += ' <span class="shop-owe-tag">赊账</span>';
             if (o.confirmResult === 'notDelivered') html += ' <span class="soi-status pending">未送达</span>';
@@ -27227,14 +28217,14 @@ shopOrderDetail = function (id) {
     order.items.forEach(function (it) {
         html += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;">';
         html += '<span>' + shopEscape(it.name) + ' ×' + it.qty + '</span>';
-        html += '<span style="color:#ff6b35;">¥' + (it.price * it.qty).toFixed(0) + '</span></div>';
+        html += '<span style="color:#ff6b35;">¥' + (it.price * it.qty).toFixed(2) + '</span></div>';
     });
-    html += '<div style="border-top:1px solid #eee;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;font-size:14px;font-weight:700;"><span>合计</span><span style="color:#ff6b35;">¥' + order.total.toFixed(0) + '</span></div>';
+    html += '<div style="border-top:1px solid #eee;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;font-size:14px;font-weight:700;"><span>合计</span><span style="color:#ff6b35;">¥' + order.total.toFixed(2) + '</span></div>';
     html += '</div>';
     // 状态 + 时间线
     html += '<div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;">';
     html += '<div style="font-size:14px;font-weight:700;margin-bottom:10px;">订单状态：' + shopStatusName(order.status) + '</div>';
-    if (order.debt) html += '<div class="shop-owe-tag" style="margin-bottom:8px;">本次购买赊账 ¥' + order.total.toFixed(0) + '</div>';
+    if (order.debt) html += '<div class="shop-owe-tag" style="margin-bottom:8px;">本次购买赊账 ¥' + order.total.toFixed(2) + '</div>';
     html += '<div class="shop-timeline">';
     html += shopTimelineItem(true, '已下单', order.createTime);
     var shipped = order.status === 'shipping' || order.status === 'delivered' || order.status === 'done';
@@ -27622,13 +28612,13 @@ shopCheckAutoOrder = function () {
     // 处理待响应卡片
     try { shopProcessPendingCards(); } catch (e) { console.error('[shop] processPendingCards error:', e); }
 
-    // 每日事件：5% 他为我购买 / 3% 他找我代付（互斥，每日最多触发其一）
+    // 每日事件：10% 他为我购买 / 10% 他找我代付（互斥，每日最多触发其一）
     var today = new Date().toISOString().slice(0, 10);
     if (sd.lastAutoOrderDate !== today) {
         sd.lastAutoOrderDate = today; changed = true;
         var aTriggered = false;
         var pool = (sd.products || []).filter(function (p) { return p.listed !== false && p.category !== 'love'; });
-        if (pool.length > 0 && Math.random() < 0.05) {
+        if (pool.length > 0 && Math.random() < 0.10) {
             var p = pool[Math.floor(Math.random() * pool.length)];
             var msg = shopGetShopMessage();
             var oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
@@ -27642,7 +28632,7 @@ shopCheckAutoOrder = function () {
             });
             aTriggered = true;
         }
-        if (!aTriggered && Math.random() < 0.03) {
+        if (!aTriggered && Math.random() < 0.10) {
             shopMaybeHeHelpPay();
         }
     }
@@ -27903,6 +28893,233 @@ function wordlibSyncToTa() {
 
 /* 页面加载后初始化词库缓存 */
 wordlibInitData();
+
+
+// ===== iOS 输入辅助栏隐藏 =====
+// iOS Safari 在 input/textarea focus 时会显示带"完成"按钮的工具栏
+// 此方案通过在 focus 时创建临时 input 转移焦点来阻止 accessory bar 显示
+(function() {
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS) return;
+    
+    // 监听所有 input/textarea 的 focus 事件
+    document.addEventListener('focusin', function(e) {
+        var target = e.target;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') return;
+        // 设置 autocomplete=off 和 autocorrect=off 防止 iOS 弹出额外工具栏
+        target.setAttribute('autocomplete', 'off');
+        target.setAttribute('autocorrect', 'off');
+        target.setAttribute('autocapitalize', 'off');
+        target.setAttribute('spellcheck', 'false');
+    }, true);
+})();
+
+
+// ===== 写歌App：自定义返回键/菜单键 =====
+var _swCustomBackImg = '';
+var _swCustomMenuImg = '';
+function swUploadCustomBack() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            _swCustomBackImg = ev.target.result;
+            try { localStorage.setItem('_swCustomBackImg', _swCustomBackImg); } catch(e) {}
+            swApplyCustomButtons();
+            alert('返回键图片已更新');
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+function swResetCustomBack() {
+    _swCustomBackImg = '';
+    try { localStorage.removeItem('_swCustomBackImg'); } catch(e) {}
+    swApplyCustomButtons();
+    alert('返回键已恢复默认');
+}
+function swUploadCustomMenu() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            _swCustomMenuImg = ev.target.result;
+            try { localStorage.setItem('_swCustomMenuImg', _swCustomMenuImg); } catch(e) {}
+            swApplyCustomButtons();
+            alert('菜单键图片已更新');
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+function swResetCustomMenu() {
+    _swCustomMenuImg = '';
+    try { localStorage.removeItem('_swCustomMenuImg'); } catch(e) {}
+    swApplyCustomButtons();
+    alert('菜单键已恢复默认');
+}
+function swApplyCustomButtons() {
+    var backEl = document.querySelector('.sw-tb-back');
+    var menuEl = document.querySelector('.sw-tb-menu');
+    if (backEl) {
+        if (_swCustomBackImg) {
+            backEl.style.backgroundImage = 'url(' + _swCustomBackImg + ')';
+            backEl.style.backgroundSize = 'cover';
+            backEl.style.backgroundPosition = 'center';
+            backEl.innerHTML = '';
+        } else {
+            backEl.style.backgroundImage = '';
+            backEl.innerHTML = '\u2039';
+        }
+    }
+    if (menuEl) {
+        if (_swCustomMenuImg) {
+            menuEl.style.backgroundImage = 'url(' + _swCustomMenuImg + ')';
+            menuEl.style.backgroundSize = 'cover';
+            menuEl.style.backgroundPosition = 'center';
+            menuEl.innerHTML = '';
+        } else {
+            menuEl.style.backgroundImage = '';
+            menuEl.innerHTML = '\u22ee';
+        }
+    }
+}
+// 初始化：从 localStorage 恢复自定义按钮
+try {
+    _swCustomBackImg = localStorage.getItem('_swCustomBackImg') || '';
+    _swCustomMenuImg = localStorage.getItem('_swCustomMenuImg') || '';
+} catch(e) {}
+
+
+// ===== 拉黑功能 =====
+function toggleContactBlock(contactId) {
+    try {
+        var c = _findContactById(contactId);
+        if (!c) return;
+        c.isBlocked = !c.isBlocked;
+        if (c.isBlocked) {
+            // 拉黑后启动30s自动消息
+            c._blockTimer = setInterval(function() {
+                try {
+                    var hist = c.chatHistory || [];
+                    var allCards = getAllVisibleWordCards();
+                    if (allCards.length > 0) {
+                        var card = allCards[Math.floor(Math.random() * allCards.length)];
+                        hist.push({
+                            id: Date.now() + Math.random(),
+                            sender: 'other',
+                            type: 'text',
+                            content: card,
+                            blocked: true,
+                            time: new Date().toISOString()
+                        });
+                        c.chatHistory = hist;
+                        saveData();
+                        // 如果当前正在查看该联系人聊天，刷新
+                        if (_activeContactId === contactId) {
+                            renderMessages(true);
+                            scrollToBottom();
+                        }
+                    }
+                } catch(e) {}
+            }, 30000);
+        } else {
+            // 解除拉黑，清除定时器
+            if (c._blockTimer) {
+                clearInterval(c._blockTimer);
+                c._blockTimer = null;
+            }
+        }
+        saveData();
+        alert(c.isBlocked ? '已拉黑该联系人' : '已解除拉黑');
+    } catch(e) { console.error('toggleContactBlock error:', e); }
+}
+
+
+// 检查是否需要显示拉黑标记
+function isContactBlocked(contactId) {
+    try {
+        var c = _findContactById(contactId);
+        return c && c.isBlocked;
+    } catch(e) { return false; }
+}
+
+
+// 渲染拉黑消息标记
+function addBlockedIndicator(bubble, msg) {
+    if (msg.blocked) {
+        var indicator = document.createElement('span');
+        indicator.className = 'msg-blocked-indicator';
+        indicator.textContent = '!';
+        bubble.appendChild(indicator);
+    }
+}
+
+// ===== 通用右滑退出手势 =====
+function bindSwipeRightToExit(pageEl, exitFn) {
+    if (!pageEl || pageEl.dataset.swipeBound === '1') return;
+    pageEl.dataset.swipeBound = '1';
+    var sx = 0, sy = 0, tracking = false;
+    pageEl.addEventListener('touchstart', function(e) {
+        var t = e.touches[0];
+        if (t.clientX < 30) { sx = t.clientX; sy = t.clientY; tracking = true; }
+    }, { passive: true });
+    pageEl.addEventListener('touchmove', function(e) {
+        if (!tracking) return;
+        var dx = e.touches[0].clientX - sx;
+        var dy = e.touches[0].clientY - sy;
+        if (Math.abs(dy) > Math.abs(dx)) { tracking = false; return; }
+        if (dx > 0) {
+            pageEl.style.transform = 'translateX(' + Math.min(dx, 120) + 'px)';
+            pageEl.style.transition = 'none';
+        }
+    }, { passive: true });
+    pageEl.addEventListener('touchend', function(e) {
+        if (!tracking) return;
+        var dx = (e.changedTouches[0].clientX) - sx;
+        pageEl.style.transition = 'transform 0.25s ease';
+        if (dx > 60) {
+            pageEl.style.transform = 'translateX(100%)';
+            setTimeout(function() { exitFn(); pageEl.style.transform = ''; pageEl.style.transition = ''; }, 250);
+        } else {
+            pageEl.style.transform = '';
+            setTimeout(function() { pageEl.style.transition = ''; }, 260);
+        }
+        tracking = false;
+    }, { passive: true });
+}
+// 绑定各App页面右滑退出
+(function() {
+    function bindAll() {
+        var mappings = [
+            ['#wordcardPage', 'closeWordCard'],
+            ['#wordlibAppPage', 'closeWordLibApp'],
+            ['#globalSettingsPage', 'closeGlobalSettings'],
+            ['#storagePage', 'closeStorageApp'],
+            ['#balanceAppPage', 'closeBalanceApp'],
+            ['#contactListPage', 'closeContactList'],
+            ['#beautifyPage', 'closeBeautifyApp'],
+            ['#gobanAppPage', 'closeGobanApp'],
+            ['#settingsPage', 'closeChatSettings']
+        ];
+        mappings.forEach(function(m) {
+            var el = document.querySelector(m[0]);
+            if (el && typeof window[m[1]] === 'function') {
+                bindSwipeRightToExit(el, window[m[1]]);
+            }
+        });
+    }
+    if (document.readyState === 'complete') bindAll();
+    else window.addEventListener('load', bindAll);
+})();
 
 </script>
 </body>
