@@ -6075,7 +6075,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     /* ===== Contact List Profile Layout ===== */
     .cl-profile-header {
         flex-shrink: 0;
-        padding: calc(env(safe-area-inset-top, 0px) + 150px) 20px 36px;
+        padding: calc(env(safe-area-inset-top, 0px) + 60px) 20px 36px;
         background: #c8c8c8;
         position: relative;
         cursor: pointer;
@@ -12967,6 +12967,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
     // ===== 聊天设置 =====
     function openChatSettings() {
+        // 进入聊天设置前，主动收起键盘并复位聊天页键盘自适应状态，
+        // 避免残留的 keyboard-open / padding-bottom 在 Android 上被错误复用。
+        try {
+            var _ci = document.getElementById('chatInput');
+            if (_ci && document.activeElement === _ci) _ci.blur();
+        } catch(e) {}
+        try { document.querySelectorAll('.emoji-panel.show, .plus-panel.show').forEach(function(p){ p.classList.remove('show'); }); } catch(e) {}
+        if (typeof resetChatKeyboard === 'function') resetChatKeyboard();
         try { updateChatSettingsDndBlock(); } catch(e) {}
         document.getElementById('settingsPage').style.display = 'flex';
         applyChatDisplaySettings();
@@ -12974,6 +12982,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
     function closeChatSettings() {
         document.getElementById('settingsPage').style.display = 'none';
+        // 返回聊天页时复位键盘自适应状态并重算底部布局，
+        // 清除 Android 上覆盖层交互期间可能残留的 padding-bottom / footer margin-top，
+        // 避免底部输入框出现空白/错位/变形。
+        if (typeof resetChatKeyboard === 'function') resetChatKeyboard();
+        var _cp = document.getElementById('chatPage');
+        if (_cp) { void _cp.offsetHeight; } // 强制重排，刷新底部输入框布局
     }
     function editOtherNickname() {
         const name = prompt('输入对方昵称', appData.chatSettings.otherNickname);
@@ -26341,8 +26355,16 @@ function mlsjIconClock() {
             const vv = window.visualViewport;
             if (!vv) return false;
             if (chatPage.style.display === 'none') return false;
+            // 聊天设置等覆盖层打开时，不干预聊天页布局：Android 上覆盖层交互期间
+            // visualViewport 事件仍会触发，若放任 apply() 运行会误判键盘状态，
+            // 给 chatPage 写入错误的 padding-bottom 并移除 footer 的 margin-top，
+            // 导致返回聊天页时底部输入框出现空白/错位/变形。
+            var _sp = document.getElementById('settingsPage');
+            if (_sp && _sp.style.display === 'flex') return false;
             const layoutH = cachedLayoutH || Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
-            const open = (layoutH - vv.height) > 100;
+            // 仅当聊天输入框处于焦点状态时才认为键盘可能打开，杜绝地址栏伸缩、
+            // 覆盖层滑动等导致的假阳性键盘检测。
+            const open = (layoutH - vv.height) > 100 && inputFocused;
             const kbH = Math.max(0, Math.round(layoutH - vv.height - (vv.offsetTop || 0)));
             // 只在键盘高度变化时写 DOM，减少回流
             if (kbH !== _lastKbH) {
