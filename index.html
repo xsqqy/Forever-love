@@ -6451,7 +6451,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
   font-family:var(--lt-font);color:var(--lt-text);
 }
 .lt-phone{
-  position:relative;width:min(419px,100vw);height:min(869px,100vh);
+  /* 遵循站点全屏逻辑（--app-height），撑满整屏，消除刘海屏顶部白边 */
+  position:relative;width:100%;height:var(--app-height,100dvh);
   background:#f5f5f5;
   overflow:hidden;display:flex;flex-direction:column;
   box-shadow:0 30px 80px rgba(0,0,0,0.22);
@@ -6465,7 +6466,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 .lt-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.16);border-radius:3px;}
 
 /* topbar */
-.lt-topbar{display:flex;align-items:center;gap:6px;padding:5px 12px 2px;flex-shrink:0;}
+.lt-topbar{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top, 0px) + 5px) 12px 2px;flex-shrink:0;}
 .lt-icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(--lt-text);padding:0;flex-shrink:0;}
 .lt-icon-btn:hover{background:rgba(0,0,0,0.05);}
 .lt-icon-btn svg{width:22px;height:22px;display:block;}
@@ -6650,7 +6651,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 .lt-invite-btn:disabled{cursor:not-allowed;opacity:0.5;}
 
 /* modal */
-.lt-modal-mask{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);padding:24px;}
+.lt-modal-mask{position:absolute;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.3);padding:calc(env(safe-area-inset-top, 0px) + 10vh) 24px 24px;overflow-y:auto;}
 .lt-modal{width:100%;max-width:340px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,0.25);}
 .lt-modal-title{font-size:16px;font-weight:600;margin-bottom:14px;text-align:center;}
 .lt-modal-field{margin-bottom:12px;}
@@ -27976,6 +27977,9 @@ function mlsjIconClock() {
             if (msg.type === 'NOTIF_CLICK') {
                 // 使用 SW 通知中携带的联系人 ID 恢复正确的聊天上下文
                 if (msg.contactId) _notifContactId = msg.contactId;
+                // 同步写入通知元素的 dataset，避免旧站内弹窗残留的 contactId 导致点错聊天
+                var _ncEl = document.getElementById('chatNotification');
+                if (_ncEl && msg.contactId) _ncEl.dataset.contactId = msg.contactId;
                 openChatFromNotification();
             }
         });
@@ -27992,7 +27996,7 @@ function mlsjIconClock() {
             // 同一构建内复用同一时间戳（避免每次刷新都注册新 SW 导致 iOS 无限刷新）。
             // 发布新版本时修改 _SW_BUILD 即可触发所有用户重新拉取最新 SW，
             // 解决苹果用户因 sw.js 被缓存而必须开梯子才能访问的问题。
-            var _SW_BUILD = '20260806a';
+            var _SW_BUILD = '20260808a';
             var _SW_TS_KEY = 'swRegTs_' + _SW_BUILD;
             var _SW_TS = '';
             try { _SW_TS = localStorage.getItem(_SW_TS_KEY) || ''; } catch(e) {}
@@ -28270,46 +28274,59 @@ function mlsjIconClock() {
     // ===== 增强版站内通知：同时触发系统通知 =====
     // 重写 showChatNotification，在原有站内弹窗基础上增加系统通知
     var _originalShowChatNotification = showChatNotification;
+    // 重写 showChatNotification：站内通知与系统（后台）通知严格分离
+    //   - 前台且不在聊天界面 → 仅显示站内弹窗，【不】发送系统通知
+    //   - 前台且在聊天界面 → 不通知（用户正在聊天）
+    //   - 后台（document.hidden）→ 仅发送系统通知，【不】显示站内弹窗
+    //   （修复此前“站内+站外同时通知”，以及“从聊天页切到后台后回复不通知”的问题）
     showChatNotification = function(msg) {
         // 防重复通知：如果该消息已经通知过，直接跳过
         if (msg && msg.id && isMsgNotified(msg.id)) return;
-        // 标记已通知（在调用原逻辑前标记，避免原逻辑内部递归或并发时重复）
+        // 标记已通知（在调用逻辑前标记，避免并发时重复）
         if (msg && msg.id) markMsgNotified(msg.id);
-        // 调用原有站内弹窗逻辑
-        _originalShowChatNotification(msg);
-        // 发送系统通知：页面在后台，或页面在前台但用户不在聊天界面时
+        // 记录通知对应的联系人 ID，便于点击系统通知时恢复正确的聊天上下文
+        _notifContactId = (msg && msg.contactId) || _activeContactId || _lastChatContactId || _notifContactId || null;
+        var _hidden = document.hidden;
         var _onChatPage = document.getElementById('chatPage') && document.getElementById('chatPage').style.display === 'flex';
-        if (!_onChatPage && appData.globalSettings && appData.globalSettings.notificationEnabled && ('Notification' in window) && Notification.permission === 'granted') {
-            var name = appData.chatSettings.otherNickname || '对方';
-            var body = '';
-            if (msg.type === 'emoji') body = '[表情包]';
-            else if (msg.type === 'image') body = '[图片]';
-            else if (msg.type === 'transfer') body = '[转账] ¥' + msg.amount;
-            else if (msg.type === 'blindCard') body = '[盲选抽牌] ' + msg.question;
-            else if (msg.type === 'shopShareCard') body = '[购物卡片] ' + (msg.title || '');
-            else body = msg.content || '[消息]';
-            // 优先通过 SW 发送系统通知（支持后台通知和点击跳转）
-            if (_swReady && navigator.serviceWorker.controller) {
-                sendSWNotification(name, body, 'qianyi-msg-' + msg.id);
-            } else {
-                // SW 不可用时，直接使用 Notification API 发送系统通知
-                try {
-                    var sysNotif = new Notification(name, {
-                        body: body,
-                        tag: 'qianyi-msg-' + msg.id,
-                        icon: appData.chatSettings.otherAvatar || undefined,
-                        data: { contactId: (msg && msg.contactId) || _notifContactId || _lastChatContactId }
-                    });
-                    sysNotif.onclick = function() {
-                        window.focus();
-                        // Bug7修复：使用消息自身的 contactId，不回退到可能被覆盖的全局 _notifContactId
-                        _notifContactId = (msg && msg.contactId) || (sysNotif.data && sysNotif.data.contactId) || _lastChatContactId;
-                        var _nel = document.getElementById('chatNotification');
-                        if (_nel) _nel.dataset.contactId = _notifContactId || '';
-                        openChatFromNotification();
-                        sysNotif.close();
-                    };
-                } catch(e) { console.warn('系统通知发送失败:', e); }
+        if (_hidden) {
+            // 后台：仅发送系统（站外）通知，不显示站内弹窗
+            if (appData.globalSettings && appData.globalSettings.notificationEnabled && ('Notification' in window) && Notification.permission === 'granted') {
+                var name = appData.chatSettings.otherNickname || '对方';
+                var body = '';
+                if (msg.type === 'emoji') body = '[表情包]';
+                else if (msg.type === 'image') body = '[图片]';
+                else if (msg.type === 'transfer') body = '[转账] ¥' + msg.amount;
+                else if (msg.type === 'blindCard') body = '[盲选抽牌] ' + msg.question;
+                else if (msg.type === 'shopShareCard') body = '[购物卡片] ' + (msg.title || '');
+                else body = msg.content || '[消息]';
+                // 优先通过 SW 发送系统通知（支持后台通知和点击跳转）
+                if (_swReady && navigator.serviceWorker.controller) {
+                    sendSWNotification(name, body, 'qianyi-msg-' + msg.id);
+                } else {
+                    // SW 不可用时，直接使用 Notification API 发送系统通知
+                    try {
+                        var sysNotif = new Notification(name, {
+                            body: body,
+                            tag: 'qianyi-msg-' + msg.id,
+                            icon: appData.chatSettings.otherAvatar || undefined,
+                            data: { contactId: (msg && msg.contactId) || _notifContactId || _lastChatContactId }
+                        });
+                        sysNotif.onclick = function() {
+                            window.focus();
+                            // Bug7修复：使用消息自身的 contactId，不回退到可能被覆盖的全局 _notifContactId
+                            _notifContactId = (msg && msg.contactId) || (sysNotif.data && sysNotif.data.contactId) || _lastChatContactId;
+                            var _nel = document.getElementById('chatNotification');
+                            if (_nel) _nel.dataset.contactId = _notifContactId || '';
+                            openChatFromNotification();
+                            sysNotif.close();
+                        };
+                    } catch(e) { console.warn('系统通知发送失败:', e); }
+                }
+            }
+        } else {
+            // 前台：仅显示站内弹窗（不在聊天界面时），不发送系统通知
+            if (!_onChatPage) {
+                _originalShowChatNotification(msg);
             }
         }
     };
@@ -33672,7 +33689,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
         pc.style.setProperty('--lt-profile-bg','url("'+ltProfileBg+'")');
         pc.style.borderRadius='0 0 0 0';
         pc.style.margin='0';
-        pc.style.paddingTop='60px'; /* 为顶栏留出空间 */
+        pc.style.paddingTop='calc(60px + env(safe-area-inset-top, 0px))'; /* 为顶栏留出空间（含刘海安全区） */
         if(tb){
           tb.style.background='url("'+ltProfileBg+'")';
           tb.style.backgroundSize='cover';
@@ -34067,7 +34084,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
 .tarot-overlay,.tarot-overlay *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 .tarot-phone{position:relative;width:min(430px,100vw);height:min(880px,100vh);background:linear-gradient(180deg,#161033,#0b0720);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 90px rgba(0,0,0,0.55);}
 
-.tarot-header{display:flex;align-items:center;gap:8px;padding:14px 12px 8px;flex-shrink:0;background:rgba(0,0,0,0.18);border-bottom:1px solid rgba(212,175,55,0.18);}
+.tarot-header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top, 0px) + 14px) 12px 8px;flex-shrink:0;background:rgba(0,0,0,0.18);border-bottom:1px solid rgba(212,175,55,0.18);}
 .tarot-icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:#d4af37;padding:0;flex-shrink:0;}
 .tarot-icon-btn:active{background:rgba(212,175,55,0.12);}
 .tarot-icon-btn svg{width:22px;height:22px;display:block;}
