@@ -7290,16 +7290,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 <div class="p3-avatar-section draggable-group" data-drag-key="p3MidRow">
   <div class="p3-input-col p3-input-left">
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" oninput="autoSizeInput(this)"/>
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" oninput="autoSizeInput(this)"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="0" oninput="autoSizeInput(this);saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="1" oninput="autoSizeInput(this);saveP3InputTexts()"/>
   </div>
   <div class="p3-center-avatar" id="p3CenterAvatar" onclick="replaceP3Avatar(event)">
     <div class="p3-avatar-ph">点击<br>替换</div>
     <img alt="" style="display:none"/>
   </div>
   <div class="p3-input-col p3-input-right">
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" oninput="autoSizeInput(this)"/>
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" oninput="autoSizeInput(this)"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="2" oninput="autoSizeInput(this);saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="3" oninput="autoSizeInput(this);saveP3InputTexts()"/>
   </div>
 </div>
 <div class="p3-app-grid draggable-group" data-drag-key="p3AppGrid" id="p3AppGrid">
@@ -9832,7 +9832,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
         } catch(e) {}
     };
-    const CURRENT_DATA_VERSION = 6;
+    const CURRENT_DATA_VERSION = 7;
     const defaultData = {
         dataVersion: 1,
         periodData: {},
@@ -10562,6 +10562,51 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             version = 6;
         }
 
+        /* ---- v6 → v7: 余额记录修复 ----
+           1) 将全局 balanceData.records 同步到每个联系人的 balanceData.records（去重），
+              使得在余额App中查看任意联系人时都能看到历史记录。
+           2) 如果联系人的 other 仍为默认值100且全局 other 已被修改过（有记录），
+              则用全局 other 覆盖，避免显示错误的默认余额。
+           3) 持久化 _balanceContactId 以便刷新后恢复。 */
+        if (version < 7) {
+            try {
+                if (data.balanceData && Array.isArray(data.balanceData.records)) {
+                    var _contacts = (data.contactList && data.contactList.contacts) || [];
+                    var _globalRecs = data.balanceData.records;
+                    var _globalOther = (typeof data.balanceData.other === 'number') ? data.balanceData.other : 100;
+                    var _hasGlobalRecs = _globalRecs.length > 0;
+                    _contacts.forEach(function(c) {
+                        if (!c.balanceData || typeof c.balanceData.other !== 'number') {
+                            /* 初始化联系人余额，other 继承全局值而非固定100 */
+                            c.balanceData = { other: _hasGlobalRecs ? _globalOther : 100, records: [] };
+                        } else if (c.balanceData.records && c.balanceData.records.length === 0 && _hasGlobalRecs) {
+                            /* 联系人无记录但全局有记录：用全局 other 覆盖默认100 */
+                            if (c.balanceData.other === 100) {
+                                c.balanceData.other = _globalOther;
+                            }
+                        }
+                        /* 同步全局记录到联系人（去重） */
+                        if (c.balanceData && Array.isArray(c.balanceData.records)) {
+                            var _seen = {};
+                            c.balanceData.records.forEach(function(r) {
+                                _seen[(r && r.time ? r.time : 0) + '|' + (r && r.text ? r.text : '')] = true;
+                            });
+                            _globalRecs.forEach(function(r) {
+                                var _key = (r && r.time ? r.time : 0) + '|' + (r && r.text ? r.text : '');
+                                if (!_seen[_key]) {
+                                    _seen[_key] = true;
+                                    c.balanceData.records.push(r);
+                                }
+                            });
+                        }
+                    });
+                }
+                upgraded = true;
+                console.log('[迁移 v6→v7] 余额记录已同步到联系人');
+            } catch(e) { console.error('[迁移 v6→v7] 失败:', e); }
+            version = 7;
+        }
+
         data.dataVersion = version;
         // 双人日记：确保每个 entry 都有唯一 id（Bug1：dd 按钮改用 entry.id 标识）
         // 旧数据可能没有 id，这里统一补齐，使后续按 id 查找可靠
@@ -10785,6 +10830,23 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     let _lastGoodJson = null; // 缓存上次成功序列化的 JSON，用于回滚
     // 同步立即保存：用于删除等不可逆操作，避免防抖导致的数据丢失/白屏
     // 新版：直接存储完整 appData（含图片）到 IndexedDB，不写 localStorage
+    /* ===== 安全 toast 提示（主作用域内可用，存储失败等场景反馈用户） ===== */
+    var _appToastTimer = null;
+    function _showUserToast(msg) {
+        try {
+            var old = document.getElementById('_appToastTip');
+            if (old) old.remove();
+            var el = document.createElement('div');
+            el.id = '_appToastTip';
+            el.textContent = msg;
+            el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;z-index:100001;max-width:80%;text-align:center;pointer-events:none;line-height:1.4;';
+            document.body.appendChild(el);
+            if (_appToastTimer) clearTimeout(_appToastTimer);
+            _appToastTimer = setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 2600);
+        } catch(e) { console.error('toast failed:', e); }
+    }
+    /* 主作用域内未定义 toast 时补一个，修复既有 toast() 调用静默失败 */
+    function toast(msg){ _showUserToast(msg); }
     function saveDataSync() {
         if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; }
         var _savedActiveId = _activeContactId;
@@ -10792,6 +10854,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         try {
             var fullJson = JSON.stringify(appData);
             _lastGoodJson = fullJson;
+            // 同步写入 localStorage（规则4/10），配额不足时仅警告不阻塞 IndexedDB
+            try {
+                localStorage.setItem(STORAGE_KEY, fullJson);
+            } catch(_lsErr) {
+                console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
+            }
             if (_idbReady) {
                 idbSet('appData', fullJson);
                 idbSet('appData_backup', fullJson);
@@ -10799,6 +10867,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             return true;
         } catch (e) {
             console.error('数据序列化失败(同步保存):', e);
+            // 存储异常必须反馈用户（规则6）
+            try { _showUserToast('⚠️ 保存失败，请检查存储空间或重试'); } catch(_t){}
             // 序列化失败时尝试回滚到上次成功的状态，避免损坏数据被写入
             if (_lastGoodJson) {
                 try {
@@ -10825,6 +10895,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             try {
                 var fullJson = JSON.stringify(appData);
                 _lastGoodJson = fullJson;
+                // 同步写入 localStorage（规则4/10），配额不足时仅警告不阻塞 IndexedDB
+                try {
+                    localStorage.setItem(STORAGE_KEY, fullJson);
+                } catch(_lsErr) {
+                    console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
+                }
                 // 主存储：IndexedDB（直接存储完整 appData，含图片）
                 if (_idbReady) {
                     idbSet('appData', fullJson);
@@ -11191,24 +11267,26 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         // Handle types that are ONLY in this extended handler
         if(currentEditType==='topBgImage'||currentEditType==='bottomBgImage'||currentEditType==='frame_preview'||currentEditType==='customIcon'){
             const fr=new FileReader();
-            fr.onload=function(ev){
-                const b64=ev.target.result;
+            fr.onload=async function(ev){
+                var b64=ev.target.result;
+                // 安卓必须压缩图片后再存储（规则7），iOS 保留原图
+                try { b64 = await _compressImgIfAndroid(b64); } catch(_ce){}
                 if(currentEditType==='topBgImage'){
                     appData.chatSettings.topBgImage=b64;
                     document.querySelector('.chat-header').style.backgroundImage='url('+b64+')';
                     document.querySelector('.chat-header').style.backgroundSize='cover';
-                    saveData();
+                    saveDataSync();
                 }else if(currentEditType==='bottomBgImage'){
                     appData.chatSettings.bottomBgImage=b64;
                     document.querySelector('.chat-footer').style.backgroundImage='url('+b64+')';
                     document.querySelector('.chat-footer').style.backgroundSize='cover';
-                    saveData();
+                    saveDataSync();
                 }else if(currentEditType==='frame_preview'){
                     showFrameAdjust(currentEditTarget,b64);
                 }else if(currentEditType==='customIcon'){
                     if(!appData.chatSettings.customIcons)appData.chatSettings.customIcons={};
                     appData.chatSettings.customIcons[currentEditTarget]=b64;
-                    saveData();
+                    saveDataSync();
                     refreshCustomIcons();
                 }
                 event.target.value='';
@@ -11219,14 +11297,63 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             handleFileUpload(event);
         }
     }
+    /* 安卓图片压缩：iOS 保留原图不压缩，Android 压缩到 1200px / 0.8 质量（规则7） */
+    function _compressImgIfAndroid(dataUrl) {
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) return Promise.resolve(dataUrl);
+        if (typeof compressImage === 'function') {
+            return compressImage(dataUrl, 1200, 1200, 0.8).catch(function(){ return dataUrl; });
+        }
+        return Promise.resolve(dataUrl);
+    }
+    /* 局部更新联系人列表中某个联系人的头像（避免全量 renderContactList） */
+    function _updateContactAvatarDOM(id, src) {
+        try {
+            var container = document.getElementById('contactListItems');
+            if (!container) return;
+            var wrapper = container.querySelector('.contact-item-wrapper[data-contact-id="' + _cssEscape(id) + '"]');
+            if (!wrapper) return;
+            var av = wrapper.querySelector('.contact-avatar');
+            if (av) {
+                av.innerHTML = '';
+                if (src) { var im = document.createElement('img'); im.src = src; av.appendChild(im); }
+                else {
+                    var c = _findContactById(id);
+                    av.textContent = ((c && c.name) || '?').charAt(0);
+                }
+            }
+        } catch(e) { console.error('_updateContactAvatarDOM error:', e); }
+    }
+    /* 局部更新联系人列表中某个联系人的名称 */
+    function _updateContactNameDOM(id, name) {
+        try {
+            var container = document.getElementById('contactListItems');
+            if (!container) return;
+            var wrapper = container.querySelector('.contact-item-wrapper[data-contact-id="' + _cssEscape(id) + '"]');
+            if (!wrapper) return;
+            var nameEl = wrapper.querySelector('.contact-name');
+            if (nameEl) {
+                // 保留可能存在的置顶图标
+                var pinIcon = nameEl.querySelector('span');
+                nameEl.textContent = name;
+                if (pinIcon) nameEl.insertBefore(pinIcon, nameEl.firstChild);
+            }
+        } catch(e) { console.error('_updateContactNameDOM error:', e); }
+    }
+    /* 转义字符串以安全用于 CSS 属性选择器 */
+    function _cssEscape(s) {
+        return String(s).replace(/["\\\[\]]/g, '\\$&');
+    }
     function handleFileUpload(e) {
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            const src = ev.target.result;
+        reader.onload = async function(ev) {
+            var src = ev.target.result;
+            // 安卓必须压缩图片后再存储（规则7），iOS 保留原图
+            try { src = await _compressImgIfAndroid(src); } catch(_ce){}
             if (currentEditType === 'widget') {
                 const img = currentEditTarget.querySelector('.widget-image');
-                if (img) { img.src = src; appData.widgetImages[currentEditTarget.id] = src; saveData(); }
+                if (img) { img.src = src; appData.widgetImages[currentEditTarget.id] = src; saveDataSync(); }
             } else if (currentEditType === 'appIcon') {
                 const img = currentEditTarget.querySelector('.custom-image');
                 if (img) {
@@ -11236,21 +11363,21 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     if (parent) {
                         const key = parent.dataset.app || 'unknown';
                         appData.appIconImages[key] = src;
-                        saveData();
+                        saveDataSync();
                     }
                 }
             } else if (currentEditType === 'anniversary') {
                 const img = document.getElementById('anniversaryBg');
-                if (img) { img.src = src; document.getElementById('anniversaryWidget').classList.add('has-image'); appData.colors.anniversaryBg = src; saveData(); }
+                if (img) { img.src = src; document.getElementById('anniversaryWidget').classList.add('has-image'); appData.colors.anniversaryBg = src; saveDataSync(); }
             } else if (currentEditType === 'period') {
                 const img = document.getElementById('periodBg');
-                if (img) { img.src = src; document.getElementById('periodCalendar').classList.add('has-image'); appData.colors.periodBg = src; saveData(); }
+                if (img) { img.src = src; document.getElementById('periodCalendar').classList.add('has-image'); appData.colors.periodBg = src; saveDataSync(); }
             } else if (currentEditType === 'time') {
                 const img = currentEditTarget.querySelector('.bg-image');
-                if (img) { img.src = src; currentEditTarget.classList.add('has-image'); const key = currentEditTarget.id; appData.colors[key+'_bg'] = src; saveData(); }
+                if (img) { img.src = src; currentEditTarget.classList.add('has-image'); const key = currentEditTarget.id; appData.colors[key+'_bg'] = src; saveDataSync(); }
             } else if (currentEditType === 'wordCard') {
                 const img = document.getElementById('wordCardBg');
-                if (img) { img.src = src; document.getElementById('wordCard').classList.add('has-image'); appData.colors.wordCardBg = src; saveData(); }
+                if (img) { img.src = src; document.getElementById('wordCard').classList.add('has-image'); appData.colors.wordCardBg = src; saveDataSync(); }
             } else if (currentEditType === 'otherAvatar') {
                 appData.chatSettings.otherAvatar = src;
                 updateAvatarPreview('other', src);
@@ -11259,22 +11386,29 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     var _c = _findContactById(_activeContactId);
                     if (_c) { _c.avatar = src; }
                 }
-                saveData();
-                renderMessages();
-                try { renderContactList(); } catch(e) {}
+                saveDataSync();
+                // 只更新聊天消息中的头像 DOM，不触发全量重绘（规则1/2）
+                updateChatAvatarDOM('other');
+                updateMomentsAvatarDOM('other');
+                // 局部更新联系人列表头像，不调用 renderContactList()
+                if (_activeContactId) _updateContactAvatarDOM(_activeContactId, src);
+                // 更新视频通话头像预览
+                var videoAvatar = document.getElementById('videoAvatar');
+                if (videoAvatar) videoAvatar.innerHTML = '<img src="' + src + '">';
                 closeAllModals();
             } else if (currentEditType === 'myAvatar') {
                 appData.chatSettings.myAvatar = src;
                 updateAvatarPreview('my', src);
-                saveData();
-                renderMessages();
+                saveDataSync();
+                updateChatAvatarDOM('mine');
+                updateMomentsAvatarDOM('mine');
                 closeAllModals();
             } else if (currentEditType === 'chatWallpaper') {
                 appData.chatSettings.chatWallpaper = src;
                 document.querySelector('.chat-messages').style.backgroundImage = `url(${src})`;
                 const chatPage = document.getElementById('chatPage');
                 if (chatPage) { chatPage.style.backgroundImage = `url(${src})`; chatPage.style.backgroundSize = 'cover'; chatPage.style.backgroundPosition = 'center'; }
-                saveData();
+                saveDataSync();
                 closeAllModals();
             } else if (currentEditType === 'frame') {
                 const type = currentEditTarget;
@@ -11292,31 +11426,44 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 frameItem.onclick = () => selectFrame(type, frameId);
                 grid.insertBefore(frameItem, addBtn);
                 
-                saveData();
+                saveDataSync();
                 closeAllModals();
             } else if (currentEditType === 'videoBg') {
                 appData.videoBg = src;
                 document.getElementById('videoBg').src = src;
-                saveData();
+                saveDataSync();
                 closeAllModals();
                 document.getElementById('videoBgMenu').classList.remove('show');
             } else if (currentEditType === 'momentsWallpaper') {
                 appData.moments.wallpaper = src;
-                document.getElementById('momentsHeader').style.backgroundImage = `url(${src})`;
-                saveData();
+                // 清除可能存在的视频壁纸，避免覆盖
+                if (appData.moments.videoWallpaper) appData.moments.videoWallpaper = '';
+                var _mh = document.getElementById('momentsHeader');
+                if (_mh) {
+                    var _oldV = _mh.querySelector('video.moments-bg-video');
+                    if (_oldV) _oldV.remove();
+                    _mh.style.backgroundImage = `url(${src})`;
+                }
+                // 同步立即保存（规则4），防止快速切页丢失
+                saveDataSync();
             } else if (currentEditType === 'diaryBg') {
                 appData.diary.settings.bgImage = src;
-                saveData();
-                renderDiaryList();
+                saveDataSync();
+                // 局部更新：只改已有卡片的背景，不重建列表（规则1/2）
+                var _dCards = document.querySelectorAll('#diaryList .diary-new-card');
+                _dCards.forEach(function(card){ card.style.background = 'url(' + src + ') center/cover no-repeat'; });
                 closeAllModals();
             } else if (currentEditType === 'letterBg') {
                 appData.letter.settings.bgImage = src;
-                saveData();
-                renderLetterList();
+                saveDataSync();
+                // 信件列表项不直接使用 bgImage（仅详情弹窗使用），无需重建列表
+                // 若详情弹窗打开则更新其背景
+                var _lmc = document.querySelector('#letterDetailModal .modal-content');
+                if (_lmc) _lmc.style.background = 'url(' + src + ') center/cover no-repeat';
                 closeAllModals();
             } else if (currentEditType === 'globalChatWallpaper' || currentEditType === 'globalDesktopWallpaper') {
                 appData.globalSettings.chatWallpaper = src;
-                saveData();
+                saveDataSync();
                 applyDesktopWallpaper();
                 const wpPreview = document.getElementById('globalWallpaperPreview');
                 if (wpPreview) {
@@ -12844,6 +12991,155 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         
         return div;
     }
+    /* ===== 局部 DOM 更新辅助函数（避免全量重渲染） ===== */
+    // 更新聊天消息中指定类型(other/mine)的头像图片 src
+    function updateChatAvatarDOM(type) {
+        var s = appData.chatSettings;
+        var src = type === 'other' ? s.otherAvatar : s.myAvatar;
+        var selector = type === 'other' ? '.msg-row.other .msg-avatar img' : '.msg-row.mine .msg-avatar img';
+        var container = document.getElementById('chatMessages');
+        if (!container) return;
+        container.querySelectorAll(selector).forEach(function(img) {
+            if (src) {
+                img.src = src;
+                img.style.display = '';
+            } else {
+                img.style.display = 'none';
+            }
+        });
+    }
+    // 更新聊天消息中指定类型(other/mine)的头像框 overlay
+    function updateChatAvatarFrameDOM(type) {
+        var s = appData.chatSettings;
+        var frameId = type === 'other' ? s.otherFrame : s.myFrame;
+        var frames = type === 'other' ? s.otherFrames : s.myFrames;
+        var selector = type === 'other' ? '.msg-row.other .msg-avatar' : '.msg-row.mine .msg-avatar';
+        var container = document.getElementById('chatMessages');
+        if (!container) return;
+        container.querySelectorAll(selector).forEach(function(avDiv) {
+            // 移除旧 frame-overlay
+            var oldOverlay = avDiv.querySelector('.frame-overlay');
+            if (oldOverlay) oldOverlay.remove();
+            // 添加新 frame-overlay
+            if (frameId && frameId !== 'none' && frames && frames[frameId]) {
+                var overlay = document.createElement('div');
+                overlay.className = 'frame-overlay';
+                var frameData = frames[frameId];
+                var frameSrc = typeof frameData === 'object' ? frameData.src : frameData;
+                overlay.style.backgroundImage = 'url(' + frameSrc + ')';
+                var sz = (typeof frameData === 'object' && frameData.size) ? frameData.size : 130;
+                var offset = (sz - 100) / 2;
+                overlay.style.width = sz + '%';
+                overlay.style.height = sz + '%';
+                overlay.style.top = (-offset) + '%';
+                overlay.style.left = (-offset) + '%';
+                if (typeof frameData === 'object' && frameData.offsetX !== undefined) {
+                    overlay.style.transform = 'translate(' + frameData.offsetX + 'px,' + frameData.offsetY + 'px)';
+                }
+                avDiv.appendChild(overlay);
+            }
+        });
+    }
+    // 更新朋友圈中指定类型(mine/other)的头像图片
+    function updateMomentsAvatarDOM(type) {
+        var s = appData.chatSettings;
+        var src = type === 'other' ? s.otherAvatar : s.myAvatar;
+        var container = document.getElementById('momentsList');
+        if (!container) return;
+        container.querySelectorAll('.moment-item').forEach(function(item) {
+            var id = item.dataset.id;
+            var moment = appData.moments.list.find(function(m) { return String(m.id) === String(id); });
+            if (moment && moment.sender === type) {
+                var avDiv = item.querySelector('.moment-avatar');
+                if (avDiv) {
+                    if (src) {
+                        avDiv.innerHTML = '<img src="' + src + '" alt="">';
+                    } else {
+                        avDiv.innerHTML = '';
+                    }
+                }
+            }
+        });
+    }
+    // 更新朋友圈中指定类型(mine/other)的昵称文字
+    function updateMomentsNicknameDOM(type, nickname) {
+        var container = document.getElementById('momentsList');
+        if (!container) return;
+        container.querySelectorAll('.moment-item').forEach(function(item) {
+            var id = item.dataset.id;
+            var moment = appData.moments.list.find(function(m) { return String(m.id) === String(id); });
+            if (moment && moment.sender === type) {
+                var nickEl = item.querySelector('.moment-nickname');
+                if (nickEl) nickEl.textContent = nickname;
+            }
+        });
+    }
+    // 局部刷新某条朋友圈的点赞评论区（不重建整个列表）
+    function refreshMomentLikeComment(momentId) {
+        var moment = appData.moments.list.find(function(m) { return String(m.id) === String(momentId); });
+        if (!moment) return;
+        var likeComment = document.getElementById('likeComment_' + momentId);
+        if (!likeComment) { renderMomentsList(); return; }
+        // 保留评论输入框
+        var commentInput = document.getElementById('commentInput_' + momentId);
+        // 移除旧的 like-list 和 comment-list
+        var oldLikeList = likeComment.querySelector('.like-list');
+        var oldCommentList = likeComment.querySelector('.comment-list');
+        if (oldLikeList) oldLikeList.remove();
+        if (oldCommentList) oldCommentList.remove();
+        // 重建 like-list
+        if (moment.likes.length > 0) {
+            var likeList = document.createElement('div');
+            likeList.className = 'like-list';
+            likeList.textContent = moment.likes.map(function(l) { return l.nickname; }).join('、');
+            likeComment.insertBefore(likeList, likeComment.firstChild);
+        }
+        // 重建 comment-list
+        if (moment.comments.length > 0) {
+            var commentList = document.createElement('div');
+            commentList.className = 'comment-list';
+            moment.comments.forEach(function(c, idx) {
+                if (!c.id) c.id = 'c_' + moment.id + '_' + idx + '_' + Math.random().toString(36).slice(2, 6);
+                var cItem = document.createElement('div');
+                cItem.className = 'comment-item';
+                var nickSpan = document.createElement('span');
+                nickSpan.className = 'comment-nick';
+                nickSpan.textContent = c.nickname;
+                cItem.appendChild(nickSpan);
+                if (c.replyTo) {
+                    cItem.appendChild(document.createTextNode(' 回复 '));
+                    var replySpan = document.createElement('span');
+                    replySpan.className = 'comment-nick';
+                    replySpan.textContent = c.replyTo;
+                    cItem.appendChild(replySpan);
+                    cItem.appendChild(document.createTextNode('：'));
+                } else {
+                    cItem.appendChild(document.createTextNode('：'));
+                }
+                var textSpan = document.createElement('span');
+                textSpan.className = 'comment-text';
+                textSpan.textContent = c.content;
+                cItem.appendChild(textSpan);
+                cItem.onclick = function(e) {
+                    e.stopPropagation();
+                    startReplyComment(moment.id, c.id, c.nickname);
+                };
+                commentList.appendChild(cItem);
+            });
+            // 插入到 commentInput 之前
+            if (commentInput) {
+                likeComment.insertBefore(commentList, commentInput);
+            } else {
+                likeComment.appendChild(commentList);
+            }
+        }
+        // 更新 show 状态
+        if (moment.likes.length > 0 || moment.comments.length > 0) {
+            likeComment.classList.add('show');
+        } else {
+            likeComment.classList.remove('show');
+        }
+    }
     var _scrollRafPending = false;
     function scrollToBottom() {
         if (_scrollRafPending) return;
@@ -12941,7 +13237,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         // 批量模式下不立即渲染，由调用方统一触发
         if (_batchRendering) return;
-        saveData();
+        saveDataSync();
         renderMessages(true);
         scrollToBottom();
         // 触发站内消息通知（仅对方发来的消息）
@@ -13082,20 +13378,21 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
 
         if (Math.random() * 100 < (s.transferProb !== undefined ? s.transferProb : 5)) {
+            /* 捕获当前聊天联系人上下文（generateReply 内 _activeContactId 已临时设为回复目标） */
+            var _autoTransferCid = _activeContactId || null;
             setTimeout(() => {
-                const bd = appData.balanceData;
+                /* 临时恢复聊天上下文，确保转账消息和系统消息写入正确的聊天记录 */
+                var _savedAutoCid = _activeContactId;
+                _activeContactId = _autoTransferCid;
+                try {
+                /* 使用 getOtherBalance 按联系人上下文读取对方余额 */
+                var _otherBal = getOtherBalance(_autoTransferCid);
                 // Check if other party has balance
-                if (bd && bd.other > 0) {
-                    const amount = Math.min((Math.random() * 100 + 1).toFixed(2), bd.other);
+                if (_otherBal > 0) {
+                    const amount = Math.min((Math.random() * 100 + 1).toFixed(2), _otherBal);
                     const remark = getRandomWordCard() || '转账';
-                    // Deduct from other's balance
-                    bd.other -= parseFloat(amount);
-                    bd.records.push({
-                        text: '对方向你转账 ¥' + parseFloat(amount).toFixed(2) + '（对方-' + parseFloat(amount).toFixed(2) + '）',
-                        time: Date.now()
-                    });
-                    saveData();
-                    if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
+                    // Deduct from other's balance via addBalanceRecord（按联系人上下文）
+                    addBalanceRecord('other', -parseFloat(amount), '对方向你转账 ¥' + parseFloat(amount).toFixed(2), _autoTransferCid);
                     addMessage({
                         id: Date.now(),
                         sender: 'other',
@@ -13104,7 +13401,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         remark: remark,
                         status: 'pending'
                     });
-                } else if (bd && s.allowZeroTransfer) {
+                } else if (s.allowZeroTransfer) {
                     // 零余额转账：允许转账并附带留言
                     const amount = (Math.random() * 100 + 1).toFixed(2);
                     const remark = getRandomWordCard() || '转账';
@@ -13116,10 +13413,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         remark: remark,
                         status: 'pending'
                     });
-                } else if (bd) {
+                } else {
                     // Other party has no money
                     addSystemMsg('对方想为你转账，但奈何余额空空，快一起去赚钱吧！');
                 }
+                } finally { _activeContactId = _savedAutoCid; }
             }, 1000);
         }
         
@@ -13270,20 +13568,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const remark = document.getElementById('transferRemark').value;
         if (!amount || parseFloat(amount) <= 0) return;
         const amt = parseFloat(amount);
-        // Check balance
-        if (!appData.balanceData || appData.balanceData.mine < amt) {
+        /* 捕获当前聊天联系人上下文，确保转账记录写入正确的联系人余额 */
+        var transferCid = _activeContactId || null;
+        // Check balance (mine is global)
+        if (!appData.balanceData || (appData.balanceData.mine || 0) < amt) {
             alert('余额不足');
             return;
         }
         
-        // Deduct from my balance
-        appData.balanceData.mine -= amt;
-        appData.balanceData.records.push({
-            text: '你向对方转账 ¥' + amt.toFixed(2) + '（我方-' + amt.toFixed(2) + '）',
-            time: Date.now()
-        });
-        saveData();
-        if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
+        // Deduct from my balance + write record via addBalanceRecord（按聊天上下文定位联系人）
+        addBalanceRecord('mine', -amt, '你向对方转账 ¥' + amt.toFixed(2), transferCid);
         
         const transferId = Date.now();
         addMessage({
@@ -13300,30 +13594,28 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         // For "mine" transfers, auto-accept after a delay (simulates other party receiving)
         const sentTransferId = transferId;
         setTimeout(() => {
-            const msg = appData.chatHistory.find(m => m.type === 'transfer' && m.sender === 'mine' && m.status === 'pending' && m.id === sentTransferId);
+            /* 临时恢复聊天上下文，确保系统消息写入正确的聊天记录 */
+            var _savedTransferCid = _activeContactId;
+            _activeContactId = transferCid;
+            try {
+            /* 在正确的聊天记录中查找转账消息（_activeContactId 可能已变化） */
+            var _searchHist = transferCid ? (function(){ var _c = _findContactById(transferCid); return _c ? (_c.chatHistory || []) : []; })() : _actualChatHistory;
+            if (!_searchHist) _searchHist = _actualChatHistory || [];
+            const msg = _searchHist.find(m => m.type === 'transfer' && m.sender === 'mine' && m.status === 'pending' && m.id === sentTransferId);
             if (msg) {
                 const accept = Math.random() > 0.3;
                 msg.status = accept ? 'claimed' : 'refunded';
                 if (accept) {
-                    // Add to other's balance
-                    appData.balanceData.other += amt;
-                    appData.balanceData.records.push({
-                        text: '对方领取了你的转账 ¥' + amt.toFixed(2) + '（对方+' + amt.toFixed(2) + '）',
-                        time: Date.now()
-                    });
+                    // Add to other's balance (per-contact if chatting with a contact)
+                    addBalanceRecord('other', amt, '对方领取了你的转账 ¥' + amt.toFixed(2), transferCid);
                 } else {
                     // Refund to my balance
-                    appData.balanceData.mine += amt;
-                    appData.balanceData.records.push({
-                        text: '对方退回了转账 ¥' + amt.toFixed(2) + '（我方+' + amt.toFixed(2) + '）',
-                        time: Date.now()
-                    });
+                    addBalanceRecord('mine', amt, '对方退回了转账 ¥' + amt.toFixed(2), transferCid);
                 }
-                saveData();
                 renderMessages();
-                if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
                 addSystemMsg(accept ? '对方已领取转账' : '对方已退回转账');
             }
+            } finally { _activeContactId = _savedTransferCid; }
         }, 60000); // 1 minute delay - user must wait, simulates real behavior
     }
     function handleTransferClick(msg) {
@@ -13340,17 +13632,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (msg) {
             msg.status = 'claimed';
             const amt = parseFloat(msg.amount);
-            // Add to my balance
-            if (appData.balanceData) {
-                appData.balanceData.mine += amt;
-                appData.balanceData.records.push({
-                    text: '你领取了对方的转账 ¥' + amt.toFixed(2) + '（我方+' + amt.toFixed(2) + '）',
-                    time: Date.now()
-                });
-                saveData();
-                if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
-            }
-            saveData();
+            // Add to my balance (mine is global; use msg.contactId for record placement)
+            addBalanceRecord('mine', amt, '你领取了对方的转账 ¥' + amt.toFixed(2), msg.contactId || null);
             renderMessages();
             addSystemMsg('你已领取转账');
         }
@@ -13361,17 +13644,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (msg) {
             msg.status = 'refunded';
             const amt = parseFloat(msg.amount);
-            // Refund to other's balance
-            if (appData.balanceData) {
-                appData.balanceData.other += amt;
-                appData.balanceData.records.push({
-                    text: '你退回了对方的转账 ¥' + amt.toFixed(2) + '（对方+' + amt.toFixed(2) + '）',
-                    time: Date.now()
-                });
-                saveData();
-                if (document.getElementById('balanceAppPage').style.display === 'flex') renderBalanceApp();
-            }
-            saveData();
+            // Refund to other's balance (per-contact via msg.contactId)
+            addBalanceRecord('other', amt, '你退回了对方的转账 ¥' + amt.toFixed(2), msg.contactId || null);
             renderMessages();
             addSystemMsg('你已退回转账');
         }
@@ -13438,20 +13712,42 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const newText = prompt('修改拍一拍内容', appData.specialCards.nudge[index].text);
         if (newText && newText.trim()) {
             appData.specialCards.nudge[index].text = newText.trim();
-            saveData();
-            renderNudgeCardList();
+            saveDataSync();
+            var container = document.getElementById('nudgeCardList');
+            var item = container && container.children[index];
+            if (item) {
+                var textEl = item.querySelector('.card-text');
+                if (textEl) textEl.textContent = newText.trim();
+            } else { renderNudgeCardList(); }
         }
     }
     function toggleNudgeHide(index) {
         appData.specialCards.nudge[index].hidden = !appData.specialCards.nudge[index].hidden;
-        saveData();
-        renderNudgeCardList();
+        saveDataSync();
+        var container = document.getElementById('nudgeCardList');
+        var item = container && container.children[index];
+        if (item) {
+            item.classList.toggle('hidden', appData.specialCards.nudge[index].hidden);
+            var ops = item.querySelector('.card-ops');
+            if (ops) ops.children[1].textContent = appData.specialCards.nudge[index].hidden ? '显示' : '隐藏';
+        } else { renderNudgeCardList(); }
     }
     function deleteNudgeCard(index) {
         if (confirm('确定删除这条拍一拍吗？')) {
             appData.specialCards.nudge.splice(index, 1);
-            saveData();
-            renderNudgeCardList();
+            saveDataSync();
+            var container = document.getElementById('nudgeCardList');
+            if (container && container.children[index]) {
+                container.removeChild(container.children[index]);
+                for (var i = index; i < container.children.length; i++) {
+                    var ops = container.children[i].querySelector('.card-ops');
+                    if (ops) {
+                        ops.children[0].setAttribute('onclick', 'editNudgeCard(' + i + ')');
+                        ops.children[1].setAttribute('onclick', 'toggleNudgeHide(' + i + ')');
+                        ops.children[2].setAttribute('onclick', 'deleteNudgeCard(' + i + ')');
+                    }
+                }
+            } else { renderNudgeCardList(); }
         }
     }
     function batchUploadNudge() {
@@ -13949,8 +14245,23 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (currentEditType === 'momentsVideoWallpaper') {
                 appData.moments.videoWallpaper = ev.target.result;
                 appData.moments.wallpaper = '';
-                saveData();
-                initMomentsPage();
+                saveDataSync();
+                // 局部更新：只替换朋友圈头部视频壁纸，不重建整个朋友圈页面（规则1/2）
+                var _mh = document.getElementById('momentsHeader');
+                if (_mh) {
+                    var _bv = _mh.querySelector('video.moments-bg-video');
+                    if (!_bv) {
+                        _bv = document.createElement('video');
+                        _bv.className = 'moments-bg-video';
+                        _bv.muted = true; _bv.autoplay = true; _bv.loop = true; _bv.playsInline = true;
+                        _bv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;';
+                        _mh.style.position = 'relative';
+                        _mh.insertBefore(_bv, _mh.firstChild);
+                    }
+                    _bv.src = ev.target.result;
+                    _bv.play().catch(()=>{});
+                    _mh.style.backgroundImage = 'none';
+                }
             }
         };
         reader.readAsDataURL(file);
@@ -13966,16 +14277,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             let processedCount = 0;
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
-                reader.onload = (ev) => {
+                reader.onload = async (ev) => {
+                    var imgSrc = ev.target.result;
+                    // 安卓图片压缩（规则7）
+                    try { imgSrc = await _compressImgIfAndroid(imgSrc); } catch(_ce){}
                     try {
-                        appData.emojis[type].push(ev.target.result);
+                        appData.emojis[type].push(imgSrc);
                     } catch(e) {
                         console.error('表情包添加失败:', e);
                     }
                     processedCount++;
                     if (processedCount === totalFiles) {
-                        // 全部文件读取完毕后，统一保存和渲染一次
-                        saveData();
+                        saveDataSync();
                         renderEmojis();
                     }
                 };
@@ -13986,8 +14299,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = async (ev) => {
-                    // 压缩图片后再存储，减少内存占用
-                    const compressed = await compressImage(ev.target.result, 1200, 1200, 0.7);
+                    // 安卓必须压缩图片后再存储（规则7），iOS 保留原图
+                    var compressed = ev.target.result;
+                    try { compressed = await _compressImgIfAndroid(compressed); } catch(_ce){}
                     addMessage({
                         id: Date.now() + Math.random(),
                         sender: 'mine',
@@ -14001,22 +14315,40 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             let imgDupCount = 0;
             let processed = 0;
             const total = files.length;
+            const newSrcs = [];
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const src = ev.target.result;
+                reader.onload = async (ev) => {
+                    var src = ev.target.result;
+                    // 安卓图片必须压缩（规则7）
+                    try { src = await _compressImgIfAndroid(src); } catch(_ce){}
                     // 自动去重：相同图片不重复添加
                     if (appData.specialCards.image.includes(src)) {
                         imgDupCount++;
                     } else {
                         appData.specialCards.image.push(src);
+                        newSrcs.push(src);
                     }
                     processed++;
                     if (processed === total) {
-                        saveData();
-                        renderImageCards();
+                        saveDataSync();
+                        // 局部更新：只追加新图片卡片，不重建网格（规则5）
+                        var grid = document.getElementById('imageCardGrid');
+                        if (grid) {
+                            var startIndex = appData.specialCards.image.length - newSrcs.length;
+                            var fragment = document.createDocumentFragment();
+                            newSrcs.forEach(function(srcVal, i) {
+                                var idx = startIndex + i;
+                                var item = document.createElement('div');
+                                item.className = 'image-card-item';
+                                item.style.position = 'relative';
+                                item.innerHTML = '<img src="' + srcVal + '" alt="" onerror="this.style.display=\'none\';this.parentElement.style.background=\'#f0f0f0\';this.parentElement.innerHTML+=\'<div style=\\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#ccc;font-size:11px;\\\'>图片加载失败</div>\';"><div class="publish-media-del" onclick="event.stopPropagation();deleteImageCard(' + idx + ')" style="position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(0,0,0,0.5);color:white;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;">×</div>';
+                                fragment.appendChild(item);
+                            });
+                            grid.appendChild(fragment);
+                        }
                         if (imgDupCount > 0) {
-                            alert(`已添加 ${total - imgDupCount} 张，重复 ${imgDupCount} 张已自动去重`);
+                            alert('已添加 ' + (total - imgDupCount) + ' 张，重复 ' + imgDupCount + ' 张已自动去重');
                         }
                     }
                 };
@@ -14025,11 +14357,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         } else if (currentEditType === 'publishMedia') {
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
-                reader.onload = (ev) => {
+                reader.onload = async (ev) => {
                     if (appData.publishMediaList.length < 9) {
+                        var src = ev.target.result;
+                        // 安卓图片必须压缩（规则7），视频不压缩
+                        if (file.type.startsWith('image')) {
+                            try { src = await _compressImgIfAndroid(src); } catch(_ce){}
+                        }
                         appData.publishMediaList.push({
                             type: file.type.startsWith('video') ? 'video' : 'image',
-                            src: ev.target.result
+                            src: src
                         });
                         renderPublishMedia();
                     }
@@ -14314,17 +14651,52 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         closeMsgOpsMenu();
     }
+    /* 局部切换多选模式：给已有消息行添加/移除多选勾选框，不重建列表（规则1/2） */
+    function _applyMultiSelectMode(on) {
+        var container = document.getElementById('chatMessages');
+        if (!container) return;
+        var rows = container.querySelectorAll('.msg-row');
+        rows.forEach(function(row){
+            if (on) {
+                row.classList.add('multi-select-mode');
+                if (!row.querySelector('.multi-check')) {
+                    var chk = document.createElement('div');
+                    chk.className = 'multi-check';
+                    var mid = parseFloat(row.dataset.id);
+                    chk.onclick = function(e){ e.stopPropagation(); toggleMultiSelect(mid); };
+                    row.insertBefore(chk, row.firstChild);
+                }
+            } else {
+                row.classList.remove('multi-select-mode');
+                var chk = row.querySelector('.multi-check');
+                if (chk) chk.remove();
+            }
+        });
+    }
     function deleteMessage() {
         appData.chatHistory = appData.chatHistory.filter(m => m.id !== currentOpsMsgId);
-        saveData();
-        renderMessages();
+        saveDataSync();
+        // 局部移除：只删除对应消息行，不重建列表（规则1/2）
+        var container = document.getElementById('chatMessages');
+        if (container) {
+            var rows = container.querySelectorAll('.msg-row');
+            for (var i = 0; i < rows.length; i++) {
+                if (parseFloat(rows[i].dataset.id) === currentOpsMsgId || String(rows[i].dataset.id) === String(currentOpsMsgId)) {
+                    rows[i].remove();
+                    // 同步修正已渲染计数，避免后续增量渲染错位
+                    if (container._renderedCount) container._renderedCount = Math.max(0, container._renderedCount - 1);
+                    break;
+                }
+            }
+        }
         closeMsgOpsMenu();
     }
     function multiDeleteMode() {
         closeMsgOpsMenu();
         isMultiDeleteMode = !isMultiDeleteMode;
         multiDeleteSelected.clear();
-        renderMessages();
+        // 只切换多选模式类与勾选框，不重绘（规则1/2）
+        _applyMultiSelectMode(isMultiDeleteMode);
         updateMultiDeleteUI();
     }
     function toggleMultiSelect(msgId) {
@@ -14344,11 +14716,33 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function confirmMultiDelete() {
         if (multiDeleteSelected.size === 0) return;
         if (!confirm('确定删除选中的' + multiDeleteSelected.size + '条消息？')) return;
-        appData.chatHistory = appData.chatHistory.filter(m => !multiDeleteSelected.has(m.id));
-        multiDeleteSelected.clear(); isMultiDeleteMode = false; saveData(); renderMessages(); updateMultiDeleteUI();
+        // 先收集要删除的 id，再清理数据
+        var _toRemove = new Set(multiDeleteSelected);
+        appData.chatHistory = appData.chatHistory.filter(m => !_toRemove.has(m.id));
+        isMultiDeleteMode = false;
+        saveDataSync();
+        // 局部移除选中的消息行，不重建列表（规则1/2）
+        var container = document.getElementById('chatMessages');
+        if (container) {
+            var removed = 0;
+            var rows = container.querySelectorAll('.msg-row');
+            rows.forEach(function(row){
+                var mid = parseFloat(row.dataset.id);
+                if (_toRemove.has(mid) || _toRemove.has(row.dataset.id)) {
+                    row.remove(); removed++;
+                }
+            });
+            if (removed && container._renderedCount) container._renderedCount = Math.max(0, container._renderedCount - removed);
+        }
+        multiDeleteSelected.clear();
+        _applyMultiSelectMode(false);
+        updateMultiDeleteUI();
     }
     function cancelMultiDelete() {
-        isMultiDeleteMode = false; multiDeleteSelected.clear(); renderMessages(); updateMultiDeleteUI();
+        isMultiDeleteMode = false; multiDeleteSelected.clear();
+        // 只移除多选模式类与勾选框，不重绘（规则1/2）
+        _applyMultiSelectMode(false);
+        updateMultiDeleteUI();
     }
 
     // ===== 聊天设置 =====
@@ -14357,6 +14751,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.getElementById('settingsPage').style.display = 'flex';
         applyChatDisplaySettings();
         renderCustomFontList('chat');
+        /* 渲染字卡统计（对方最爱字卡 + 频率排行 + 消息条数），确保进入设置即可见最新数据 */
+        try {
+            renderWordCloudStats();
+            renderWordFreqRank();
+            renderMessageCountStats();
+        } catch(e) {}
     }
     /* 更新聊天设置中的免打扰/拉黑区域 */
     function updateChatSettingsDndBlock() {
@@ -14411,20 +14811,32 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 var _c = _findContactById(_activeContactId);
                 if (_c) { _c.name = name.trim(); }
             }
-            saveData();
-            initChatPage();
-            renderMomentsList();
-            try { renderContactList(); } catch(e) {}
+            saveDataSync();
+            // 局部更新：只改对应的昵称 DOM，不触发全量重绘（规则1/2）
+            var titleEl = document.getElementById('chatTitle');
+            if (titleEl && !isTyping) titleEl.textContent = name.trim();
+            // 更新聊天消息中对方昵称
+            document.querySelectorAll('.msg-row.other .msg-nickname').forEach(function(el){ el.textContent = name.trim(); });
+            // 更新设置页预览
+            var preview = document.getElementById('otherNicknameValue');
+            if (preview) preview.textContent = name.trim();
+            // 局部更新联系人列表名称，不调用 renderContactList()
+            if (_activeContactId) _updateContactNameDOM(_activeContactId, name.trim());
+            // 更新朋友圈对方昵称
+            updateMomentsNicknameDOM('other', name.trim());
         }
     }
     function editMyNickname() {
         const name = prompt('输入我方昵称', appData.chatSettings.myNickname);
         if (name && name.trim()) {
             appData.chatSettings.myNickname = name.trim();
-            saveData();
-            initChatPage();
-            document.getElementById('momentMyNick').textContent = name.trim();
-            renderMomentsList();
+            saveDataSync();
+            // 局部更新：只改对应的昵称 DOM，不触发 initChatPage() 全量重绘（规则1/2）
+            document.querySelectorAll('.msg-row.mine .msg-nickname').forEach(function(el){ el.textContent = name.trim(); });
+            var mn = document.getElementById('momentMyNick'); if (mn) mn.textContent = name.trim();
+            var preview = document.getElementById('myNicknameValue');
+            if (preview) preview.textContent = name.trim();
+            updateMomentsNicknameDOM('mine', name.trim());
         }
     }
     function changeOtherAvatar() {
@@ -14442,14 +14854,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.documentElement.style.setProperty('--other-avatar-size', v + 'px');
         document.documentElement.style.setProperty('--avatar-size', v + 'px');
         saveData();
-        renderMessages();
+        // 头像尺寸由 CSS 变量驱动，无需全量重渲染
     }
     function updateMyAvatarSize(v) {
         appData.chatSettings.myAvatarSize = parseInt(v);
         document.getElementById('myAvatarSizeVal').textContent = v;
         document.documentElement.style.setProperty('--my-avatar-size', v + 'px');
         saveData();
-        renderMessages();
+        // 头像尺寸由 CSS 变量驱动，无需全量重渲染
     }
     /* 气泡设置动态预览：显示3对方+我方气泡，完整反映所有设置 */
     function updateBubbleSettingsPreview() {
@@ -14537,14 +14949,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.documentElement.style.setProperty('--other-avatar-radius', v + 'px');
         document.documentElement.style.setProperty('--avatar-radius', v + 'px');
         saveData();
-        renderMessages();
+        // 头像圆角由 CSS 变量驱动，无需全量重渲染
     }
     function updateMyAvatarRadius(v) {
         appData.chatSettings.myAvatarRadius = parseInt(v);
         document.getElementById('myAvatarRadiusVal').textContent = v;
         document.documentElement.style.setProperty('--my-avatar-radius', v + 'px');
         saveData();
-        renderMessages();
+        // 头像圆角由 CSS 变量驱动，无需全量重渲染
     }
     function selectFrame(type, frame) {
         if (type === 'other') {
@@ -14558,15 +14970,15 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 el.classList.toggle('active', el.dataset.frame === frame);
             });
         }
-        saveData();
-        renderMessages();
+        saveDataSync();
+        updateChatAvatarFrameDOM(type === 'other' ? 'other' : 'mine');
     }
     function uploadFrame(type) { currentEditType = 'frame_preview'; currentEditTarget = type; document.getElementById('fileInput').click(); }
     function showFrameAdjust(type, src) { let m = document.getElementById('frameAdjModal'); if(!m){m=document.createElement('div');m.id='frameAdjModal';m.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:rgba(0,0,0,0.3);';m.innerHTML='<div style="background:#fff;border-radius:16px;padding:20px;width:280px;"><div style="text-align:center;margin-bottom:12px;font-size:15px;">调整头像框</div><div style="display:flex;justify-content:center;margin-bottom:16px;"><div id="frameAdjBox" style="width:60px;height:60px;border-radius:8px;overflow:visible;position:relative;background:#ccc;"><img id="frameAdjAvatar" style="width:100%;height:100%;object-fit:cover;border-radius:8px;position:relative;z-index:1;"><img id="frameAdjFrame" style="position:absolute;top:-15%;left:-15%;width:130%;height:130%;object-fit:fill;pointer-events:none;z-index:2;"></div></div><div style="margin-bottom:8px;font-size:13px;">大小: <input type="range" id="frameSize" min="100" max="200" value="130" oninput="updFAdj()" style="width:55%;"><span id="frameSizeV">130</span>%</div><div style="margin-bottom:8px;font-size:13px;">水平: <input type="range" id="frameOX" min="-20" max="20" value="0" oninput="updFAdj()" style="width:60%;"><span id="frameOXV">0</span>px</div><div style="margin-bottom:16px;font-size:13px;">垂直: <input type="range" id="frameOY" min="-20" max="20" value="0" oninput="updFAdj()" style="width:60%;"><span id="frameOYV">0</span>px</div><div style="display:flex;gap:8px;justify-content:center;"><button onclick="confirmFr()" style="padding:8px 20px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">确认</button><button onclick="cancelFr()" style="padding:8px 20px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:6px;cursor:pointer;">取消</button></div></div>';document.body.appendChild(m);}m.style.display='flex';document.getElementById('frameAdjAvatar').src=appData.chatSettings[type==='other'?'otherAvatar':'myAvatar']||'';document.getElementById('frameAdjFrame').src=src;document.getElementById('frameOX').value=0;document.getElementById('frameOY').value=0;document.getElementById('frameSize').value=130;document.getElementById('frameOXV').textContent='0';document.getElementById('frameOYV').textContent='0';document.getElementById('frameSizeV').textContent='130';updFAdj();window._pFrT=type;window._pFrS=src;}
     function updFAdj(){const x=document.getElementById('frameOX').value,y=document.getElementById('frameOY').value,sz=document.getElementById('frameSize').value;document.getElementById('frameOXV').textContent=x;document.getElementById('frameOYV').textContent=y;document.getElementById('frameSizeV').textContent=sz;const offset=(sz-100)/2;document.getElementById('frameAdjFrame').style.width=sz+'%';document.getElementById('frameAdjFrame').style.height=sz+'%';document.getElementById('frameAdjFrame').style.top=(-offset)+'%';document.getElementById('frameAdjFrame').style.left=(-offset)+'%';document.getElementById('frameAdjFrame').style.transform='translate('+x+'px,'+y+'px)';}
-    function confirmFr(){const t=window._pFrT,s=window._pFrS,id='fr_'+Date.now();const frames=t==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;frames[id]={src:s,offsetX:parseInt(document.getElementById('frameOX').value),offsetY:parseInt(document.getElementById('frameOY').value),size:parseInt(document.getElementById('frameSize').value)};if(t==='other')appData.chatSettings.otherFrame=id;else appData.chatSettings.myFrame=id;saveData();renderFrames();renderMessages();cancelFr();}
+    function confirmFr(){const t=window._pFrT,s=window._pFrS,id='fr_'+Date.now();const frames=t==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;frames[id]={src:s,offsetX:parseInt(document.getElementById('frameOX').value),offsetY:parseInt(document.getElementById('frameOY').value),size:parseInt(document.getElementById('frameSize').value)};if(t==='other')appData.chatSettings.otherFrame=id;else appData.chatSettings.myFrame=id;saveData();renderFrames();updateChatAvatarFrameDOM(t);cancelFr();}
     function cancelFr(){const m=document.getElementById('frameAdjModal');if(m)m.style.display='none';}
-    function deleteFrame(type,fid){const frames=type==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;delete frames[fid];if(type==='other'&&appData.chatSettings.otherFrame===fid)appData.chatSettings.otherFrame='none';if(type==='my'&&appData.chatSettings.myFrame===fid)appData.chatSettings.myFrame='none';saveData();renderFrames();renderMessages();}
+    function deleteFrame(type,fid){const frames=type==='other'?appData.chatSettings.otherFrames:appData.chatSettings.myFrames;delete frames[fid];if(type==='other'&&appData.chatSettings.otherFrame===fid)appData.chatSettings.otherFrame='none';if(type==='my'&&appData.chatSettings.myFrame===fid)appData.chatSettings.myFrame='none';saveData();renderFrames();updateChatAvatarFrameDOM(type);}
     function applyBubbleRadiusVars(s) {
         // 优先级：四角（独立开关）> 双方圆方（开关）> 通用 bubbleRadius
         // 关闭对应开关时，该项设置不再影响气泡
@@ -15256,9 +15668,70 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         // 清空搜索框
         const si = document.getElementById('wordcardSearchInput');
         if (si) si.value = '';
-        saveData();
-        renderWordGroups();
-        renderWordCardList();
+        saveDataSync();
+        // 切换分组只改标签栏激活状态，不重建标签栏（规则1/例外）
+        document.querySelectorAll('.wordcard-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.group === group);
+        });
+
+        // 局部差量更新：复用已渲染卡片节点就地更新，不清空容器、不调用 renderWordCardList()（规则1）。
+        // 不能用 display 显隐切换：目标分组独有的卡片尚未在 DOM 中（renderWordCardList 仅渲染当前分组），
+        // 且已渲染节点保留的 data-card-index/onclick 属于旧分组，直接显隐会漏卡并导致索引错乱、误删误改。
+        const container = document.getElementById('wordcardList');
+        if (!container) return;
+        const cards = _wcGetCardsByGroup(group);
+        const existing = container.querySelectorAll('.wordcard-item');
+
+        // 按位置复用已有节点：存在则就地更新，不足则新建追加（结构与 renderWordCardList 一致）
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            let item = existing[i];
+            if (!item) {
+                item = document.createElement('div');
+                item.className = 'wordcard-item';
+                const newCb = document.createElement('input');
+                newCb.type = 'checkbox';
+                newCb.className = 'wordcard-checkbox';
+                item.appendChild(newCb);
+                const newTextEl = document.createElement('div');
+                newTextEl.className = 'wordcard-text';
+                item.appendChild(newTextEl);
+                const newOps = document.createElement('div');
+                newOps.className = 'wordcard-ops';
+                item.appendChild(newOps);
+                container.appendChild(item);
+            }
+            // 就地更新节点状态：索引、隐藏样式、勾选、文字、操作按钮均对齐当前分组
+            item.dataset.cardIndex = i;
+            item.classList.toggle('hidden-card', !!card.hidden);
+            const cb = item.querySelector('.wordcard-checkbox');
+            if (cb) {
+                cb.checked = appData.selectedCards.includes(card.text);
+                // 重新绑定 onchange，确保引用当前分组的卡片（复用节点时旧闭包已失效）
+                cb.onchange = function () {
+                    if (cb.checked) {
+                        if (!appData.selectedCards.includes(card.text)) appData.selectedCards.push(card.text);
+                    } else {
+                        appData.selectedCards = appData.selectedCards.filter(t => t !== card.text);
+                    }
+                    saveDataSync();
+                };
+            }
+            const textEl = item.querySelector('.wordcard-text');
+            if (textEl) textEl.textContent = card.text;
+            const ops = item.querySelector('.wordcard-ops');
+            if (ops) {
+                ops.innerHTML =
+                    '<span onclick="editWordCard(' + i + ')">修改</span>' +
+                    '<span onclick="toggleHideCard(' + i + ')">' + (card.hidden ? '显示' : '隐藏') + '</span>' +
+                    '<span onclick="deleteWordCard(' + i + ')">删除</span>';
+            }
+        }
+
+        // 新分组卡片较少时，移除多余的旧节点
+        for (let i = cards.length; i < existing.length; i++) {
+            if (existing[i] && existing[i].parentNode) existing[i].parentNode.removeChild(existing[i]);
+        }
     }
     function deleteWordGroup(gn){
         if(gn==='default') return;
@@ -15272,7 +15745,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         var groups = _wcGetGroups().filter(g=>g!==gn);
         _wcSetGroups(groups);
         if(_wcGetCurrentGroup()===gn) _wcSetCurrentGroup('default');
-        saveData();
+        saveDataSync();
         renderWordGroups();
         renderWordCardList();
     }
@@ -15289,7 +15762,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         var cards = _wcGetCards();
         cards[name.trim()] = [];
         _wcSetCurrentGroup(name.trim());
-        saveData();
+        saveDataSync();
         renderWordGroups();
         renderWordCardList();
     }
@@ -15311,6 +15784,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             visibleCount++;
             const item = document.createElement('div');
             item.className = 'wordcard-item' + (card.hidden ? ' hidden-card' : '');
+            item.dataset.cardIndex = index;
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -15323,7 +15797,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 } else {
                     appData.selectedCards = appData.selectedCards.filter(t => t !== card.text);
                 }
-                saveData();
+                saveDataSync();
             };
             item.appendChild(checkbox);
             
@@ -15361,14 +15835,15 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         // 字卡(word)导入支持 JSON 格式，仅提取纯字卡内容；其余类型保持"一句一行"
         const lines = (type === 'word') ? parseCardTexts(text) : text.split('\n').map(l => l.trim()).filter(l => l);
         if (lines.length === 0) return;
-        
+
         if (type === 'word') {
             const group = _wcGetCurrentGroup();
             var cardsObj = _wcGetCards();
             if (!cardsObj[group]) cardsObj[group] = [];
             const seen = new Set(cardsObj[group].map(c => (c.text || '').trim()));
             let duplicateCount = 0;
-            
+            const newItems = [];
+
             lines.forEach(line => {
                 const key = line.trim();
                 if (seen.has(key)) {
@@ -15376,49 +15851,127 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 } else {
                     seen.add(key);
                     cardsObj[group].push({ text: line, hidden: false });
+                    newItems.push(line);
                 }
             });
-            saveData();
-            renderWordCardList();
+            saveDataSync();
+
+            // 使用 DocumentFragment 批量插入新节点（规则5）
+            var container = document.getElementById('wordcardList');
+            if (container && newItems.length > 0) {
+                var searchInput = document.getElementById('wordcardSearchInput');
+                var keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                var startIndex = cardsObj[group].length - newItems.length;
+                var fragment = document.createDocumentFragment();
+
+                newItems.forEach(function(line, i) {
+                    if (keyword && !line.toLowerCase().includes(keyword)) return;
+                    var index = startIndex + i;
+                    var item = document.createElement('div');
+                    item.className = 'wordcard-item';
+                    item.dataset.cardIndex = index;
+
+                    var checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'wordcard-checkbox';
+                    checkbox.checked = appData.selectedCards.includes(line);
+                    (function(cardText) {
+                        checkbox.onchange = function() {
+                            if (checkbox.checked) {
+                                if (!appData.selectedCards.includes(cardText)) appData.selectedCards.push(cardText);
+                            } else {
+                                appData.selectedCards = appData.selectedCards.filter(function(t) { return t !== cardText; });
+                            }
+                            saveDataSync();
+                        };
+                    })(line);
+                    item.appendChild(checkbox);
+
+                    var textDiv = document.createElement('div');
+                    textDiv.className = 'wordcard-text';
+                    textDiv.textContent = line;
+                    item.appendChild(textDiv);
+
+                    var ops = document.createElement('div');
+                    ops.className = 'wordcard-ops';
+                    ops.innerHTML = '<span onclick="editWordCard(' + index + ')">修改</span>' +
+                        '<span onclick="toggleHideCard(' + index + ')">隐藏</span>' +
+                        '<span onclick="deleteWordCard(' + index + ')">删除</span>';
+                    item.appendChild(ops);
+
+                    fragment.appendChild(item);
+                });
+                container.appendChild(fragment);
+            }
+
             if (duplicateCount > 0) {
-                alert(`已添加 ${lines.length - duplicateCount} 张，重复 ${duplicateCount} 张已自动去重`);
+                alert('已添加 ' + (lines.length - duplicateCount) + ' 张，重复 ' + duplicateCount + ' 张已自动去重');
             }
         } else if (type === 'emoji') {
-            const seen = new Set(appData.specialCards.emoji.map(c => (c.text || '').trim()));
-            lines.forEach(line => {
-                const key = line.trim();
-                if (!seen.has(key)) { seen.add(key); appData.specialCards.emoji.push({text: line, hidden: false}); }
+            var seen = new Set(appData.specialCards.emoji.map(function(c) { return (c.text || '').trim(); }));
+            var newItems = [];
+            lines.forEach(function(line) {
+                var key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.emoji.push({text: line, hidden: false}); newItems.push(line); }
             });
-            saveData();
-            renderEmojiCardList();
+            saveDataSync();
+            _appendSpecialCardItems('emojiCardList', appData.specialCards.emoji, newItems, 'editEmojiCard', 'toggleEmojiHide', 'deleteEmojiCard');
         } else if (type === 'kaomoji') {
-            const seen = new Set(appData.specialCards.kaomoji.map(c => (c.text || '').trim()));
-            lines.forEach(line => {
-                const key = line.trim();
-                if (!seen.has(key)) { seen.add(key); appData.specialCards.kaomoji.push({text: line, hidden: false}); }
+            var seen = new Set(appData.specialCards.kaomoji.map(function(c) { return (c.text || '').trim(); }));
+            var newItems = [];
+            lines.forEach(function(line) {
+                var key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.kaomoji.push({text: line, hidden: false}); newItems.push(line); }
             });
-            saveData();
-            renderKaomojiCardList();
+            saveDataSync();
+            _appendSpecialCardItems('kaomojiCardList', appData.specialCards.kaomoji, newItems, 'editKaomojiCard', 'toggleKaomojiHide', 'deleteKaomojiCard');
         } else if (type === 'nudge') {
-            const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
-            lines.forEach(line => {
-                const key = line.trim();
-                if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); }
+            var seen = new Set(appData.specialCards.nudge.map(function(c) { return (c.text || '').trim(); }));
+            var newItems = [];
+            lines.forEach(function(line) {
+                var key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); newItems.push(line); }
             });
-            saveData();
-            renderNudgeCardList();
+            saveDataSync();
+            _appendSpecialCardItems('nudgeCardList', appData.specialCards.nudge, newItems, 'editNudgeCard', 'toggleNudgeHide', 'deleteNudgeCard');
         } else if (type === 'shopping') {
             if (!appData.specialCards.shopping) appData.specialCards.shopping = [];
-            const seen = new Set(appData.specialCards.shopping.map(c => (c.text || '').trim()));
-            lines.forEach(line => {
-                const key = line.trim();
-                if (!seen.has(key)) { seen.add(key); appData.specialCards.shopping.push({text: line, hidden: false}); }
+            var seen = new Set(appData.specialCards.shopping.map(function(c) { return (c.text || '').trim(); }));
+            var newItems = [];
+            lines.forEach(function(line) {
+                var key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.shopping.push({text: line, hidden: false}); newItems.push(line); }
             });
-            saveData();
-            renderShoppingCardList();
+            saveDataSync();
+            _appendSpecialCardItems('shoppingCardList', appData.specialCards.shopping, newItems, 'editShoppingCard', 'toggleShoppingHide', 'deleteShoppingCard');
         }
-        
+
         closeBatchUpload();
+    }
+    // 辅助函数：使用 DocumentFragment 批量追加特殊字卡新节点（规则5）
+    function _appendSpecialCardItems(containerId, fullArray, newItems, editFn, toggleFn, deleteFn) {
+        var container = document.getElementById(containerId);
+        if (!container || newItems.length === 0) return;
+        var startIndex = fullArray.length - newItems.length;
+        var fragment = document.createDocumentFragment();
+        newItems.forEach(function(text, i) {
+            var index = startIndex + i;
+            var item = document.createElement('div');
+            item.className = 'special-card-item';
+            item.innerHTML = '<div class="card-text">' + _escapeHtml(text) + '</div>' +
+                '<div class="card-ops">' +
+                '<span onclick="' + editFn + '(' + index + ')">修改</span>' +
+                '<span onclick="' + toggleFn + '(' + index + ')">隐藏</span>' +
+                '<span onclick="' + deleteFn + '(' + index + ')">删除</span>' +
+                '</div>';
+            fragment.appendChild(item);
+        });
+        container.appendChild(fragment);
+    }
+    function _escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
     // 解析导入文件为“纯字卡文本”数组。
     // 仅提取真正的字卡内容，不导入其他任何东西（不导入 emoji、拍一拍、状态、格言，
@@ -15525,13 +16078,15 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     }
                 });
 
-                saveData();
+                saveDataSync();
+                // 新建分组需要重建标签栏（增删分组允许调用 renderWordGroups）
+                renderWordGroups();
                 renderWordCardList();
 
                 if (duplicateCount > 0) {
-                    alert(`已创建分组"${groupName}"并添加 ${lines.length - duplicateCount} 张，重复 ${duplicateCount} 张已自动去重`);
+                    alert('已创建分组"' + groupName + '"并添加 ' + (lines.length - duplicateCount) + ' 张，重复 ' + duplicateCount + ' 张已自动去重');
                 } else {
-                    alert(`已创建分组"${groupName}"并添加 ${lines.length} 张字卡`);
+                    alert('已创建分组"' + groupName + '"并添加 ' + lines.length + ' 张字卡');
                 }
             };
             reader.readAsText(file);
@@ -15543,12 +16098,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             reader.onload = (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                 const seen = new Set(appData.specialCards.emoji.map(c => (c.text || '').trim()));
+                var newItems = [];
                 lines.forEach(line => {
                     const key = line.trim();
-                    if (!seen.has(key)) { seen.add(key); appData.specialCards.emoji.push({text: line, hidden: false}); }
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.emoji.push({text: line, hidden: false}); newItems.push(line); }
                 });
-                saveData();
-                renderEmojiCardList();
+                saveDataSync();
+                _appendSpecialCardItems('emojiCardList', appData.specialCards.emoji, newItems, 'editEmojiCard', 'toggleEmojiHide', 'deleteEmojiCard');
             };
             reader.readAsText(file);
             e.target.value = '';
@@ -15559,12 +16115,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             reader.onload = (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                 const seen = new Set(appData.specialCards.kaomoji.map(c => (c.text || '').trim()));
+                var newItems = [];
                 lines.forEach(line => {
                     const key = line.trim();
-                    if (!seen.has(key)) { seen.add(key); appData.specialCards.kaomoji.push({text: line, hidden: false}); }
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.kaomoji.push({text: line, hidden: false}); newItems.push(line); }
                 });
-                saveData();
-                renderKaomojiCardList();
+                saveDataSync();
+                _appendSpecialCardItems('kaomojiCardList', appData.specialCards.kaomoji, newItems, 'editKaomojiCard', 'toggleKaomojiHide', 'deleteKaomojiCard');
             };
             reader.readAsText(file);
             e.target.value = '';
@@ -15575,12 +16132,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             reader.onload = (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                 const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
+                var newItems = [];
                 lines.forEach(line => {
                     const key = line.trim();
-                    if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); }
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); newItems.push(line); }
                 });
-                saveData();
-                renderNudgeCardList();
+                saveDataSync();
+                _appendSpecialCardItems('nudgeCardList', appData.specialCards.nudge, newItems, 'editNudgeCard', 'toggleNudgeHide', 'deleteNudgeCard');
             };
             reader.readAsText(file);
             e.target.value = '';
@@ -15603,7 +16161,27 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         appData.selectedCards = [];
         // 使用同步保存，避免快速连续删除时防抖导致数据丢失/白屏
         saveDataSync();
-        renderWordCardList();
+        // 局部更新：移除选中字卡对应的 DOM 节点，修正后续索引（规则1/2/3）
+        var _delContainer = document.getElementById('wordcardList');
+        if (_delContainer) {
+            var _delItems = _delContainer.querySelectorAll('.wordcard-item');
+            _delItems.forEach(function(el) {
+                var _textEl = el.querySelector('.wordcard-text');
+                var _txt = _textEl ? _textEl.textContent.trim() : '';
+                if (selectedTexts.has(_txt)) el.remove();
+            });
+            // 修正剩余卡片的 data-card-index 和 onclick 索引
+            var _remaining = _delContainer.querySelectorAll('.wordcard-item');
+            _remaining.forEach(function(el, i) {
+                el.dataset.cardIndex = i;
+                var ops = el.querySelector('.wordcard-ops');
+                if (ops) {
+                    if (ops.children[0]) ops.children[0].setAttribute('onclick', 'editWordCard(' + i + ')');
+                    if (ops.children[1]) ops.children[1].setAttribute('onclick', 'toggleHideCard(' + i + ')');
+                    if (ops.children[2]) ops.children[2].setAttribute('onclick', 'deleteWordCard(' + i + ')');
+                }
+            });
+        } else { renderWordCardList(); }
     }
     function hideSelectedCards() {
         const group = _wcGetCurrentGroup();
@@ -15618,8 +16196,24 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             cardsObj[group].forEach(c => { if (selectedTexts.has(c.text)) c.hidden = true; });
         }
         appData.selectedCards = [];
-        saveData();
-        renderWordCardList();
+        saveDataSync();
+        // 局部更新：只切换对应卡片的隐藏状态和按钮文字（规则1/2）
+        var _hideContainer = document.getElementById('wordcardList');
+        if (_hideContainer) {
+            var _hideItems = _hideContainer.querySelectorAll('.wordcard-item');
+            _hideItems.forEach(function(el) {
+                var _textEl = el.querySelector('.wordcard-text');
+                var _txt = _textEl ? _textEl.textContent.trim() : '';
+                if (selectedTexts.has(_txt)) {
+                    el.classList.add('hidden-card');
+                    var ops = el.querySelector('.wordcard-ops');
+                    if (ops && ops.children[1]) ops.children[1].textContent = '显示';
+                }
+                // 取消勾选
+                var chk = el.querySelector('.wordcard-checkbox');
+                if (chk) chk.checked = false;
+            });
+        } else { renderWordCardList(); }
     }
     function clearAllCards() {
         const group = _wcGetCurrentGroup();
@@ -15629,8 +16223,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (confirm(`确定清空当前分组所有 ${cards.length} 张字卡吗？`)) {
             cardsObj[group] = [];
             appData.selectedCards = [];
-            saveData();
-            renderWordCardList();
+            saveDataSync();
+            // 局部更新：清空列表容器，不重建整个页面（规则1/2）
+            var container = document.getElementById('wordcardList');
+            if (container) container.innerHTML = '';
         }
     }
     // 手动去重：删除当前分组内重复的字卡（仅保留首次出现）
@@ -15650,8 +16246,30 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (dupCount === 0) { alert('当前分组没有重复字卡'); return; }
         cardsObj[group] = unique;
         appData.selectedCards = [];
-        saveData();
-        renderWordCardList();
+        saveDataSync();
+        // 局部更新：按文本移除重复项对应的 DOM 节点，修正后续索引（规则1/2/3）
+        var container = document.getElementById('wordcardList');
+        if (container) {
+            var seenText = {};
+            var items = container.querySelectorAll('.wordcard-item');
+            items.forEach(function(el){
+                var textEl = el.querySelector('.wordcard-text');
+                var txt = textEl ? textEl.textContent.trim() : '';
+                if (seenText[txt]) { el.remove(); }
+                else { seenText[txt] = true; }
+            });
+            // 修正剩余卡片的 data-card-index 和 onclick 索引
+            var remaining = container.querySelectorAll('.wordcard-item');
+            remaining.forEach(function(el, i){
+                el.dataset.cardIndex = i;
+                var ops = el.querySelector('.wordcard-ops');
+                if (ops) {
+                    if (ops.children[0]) ops.children[0].setAttribute('onclick', 'editWordCard(' + i + ')');
+                    if (ops.children[1]) ops.children[1].setAttribute('onclick', 'toggleHideCard(' + i + ')');
+                    if (ops.children[2]) ops.children[2].setAttribute('onclick', 'deleteWordCard(' + i + ')');
+                }
+            });
+        }
         alert(`已去重，删除重复字卡 ${dupCount} 张`);
     }
 
@@ -15662,18 +16280,59 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const newText = prompt('修改字卡内容', card.text);
         if (newText !== null && newText.trim()) {
             card.text = newText.trim();
-            saveData();
-            renderWordCardList();
+            saveDataSync();
+            // 局部更新：只改对应卡片的文字
+            var container = document.getElementById('wordcardList');
+            var item = container && container.querySelector('.wordcard-item[data-card-index="' + index + '"]');
+            if (item) {
+                var textEl = item.querySelector('.wordcard-text');
+                if (textEl) textEl.textContent = newText.trim();
+            } else { renderWordCardList(); }
         }
     }
     function toggleHideCard(index) {
         const group = _wcGetCurrentGroup();
         var cardsObj = _wcGetCards();
         cardsObj[group][index].hidden = !cardsObj[group][index].hidden;
-        saveData();
-        renderWordCardList();
+        saveDataSync();
+        // 局部更新：只改对应卡片的隐藏状态
+        var container = document.getElementById('wordcardList');
+        var item = container && container.querySelector('.wordcard-item[data-card-index="' + index + '"]');
+        if (item) {
+            item.classList.toggle('hidden-card', cardsObj[group][index].hidden);
+            var ops = item.querySelector('.wordcard-ops');
+            if (ops) ops.children[1].textContent = cardsObj[group][index].hidden ? '显示' : '隐藏';
+        } else { renderWordCardList(); }
     }
-    function deleteWordCard(index){var cardsObj=_wcGetCards();var list=cardsObj[_wcGetCurrentGroup()];if(list&&index>=0&&index<list.length){list.splice(index,1);saveDataSync();renderWordCardList();}}
+    function deleteWordCard(index){
+        var cardsObj=_wcGetCards();
+        var list=cardsObj[_wcGetCurrentGroup()];
+        if(list&&index>=0&&index<list.length){
+            list.splice(index,1);
+            saveDataSync();
+            // 局部更新：移除对应 DOM 元素，修正后续索引
+            var container=document.getElementById('wordcardList');
+            var item=container&&container.querySelector('.wordcard-item[data-card-index="'+index+'"]');
+            if(item){
+                container.removeChild(item);
+                // 修正后续卡片的 data-card-index 和 onclick 索引
+                var remaining=container.querySelectorAll('.wordcard-item');
+                remaining.forEach(function(el){
+                    var ci=parseInt(el.dataset.cardIndex,10);
+                    if(ci>index){
+                        var ni=ci-1;
+                        el.dataset.cardIndex=ni;
+                        var ops=el.querySelector('.wordcard-ops');
+                        if(ops){
+                            ops.children[0].setAttribute('onclick','editWordCard('+ni+')');
+                            ops.children[1].setAttribute('onclick','toggleHideCard('+ni+')');
+                            ops.children[2].setAttribute('onclick','deleteWordCard('+ni+')');
+                        }
+                    }
+                });
+            }else{renderWordCardList();}
+        }
+    }
 
     // 特殊字卡
     function renderSpecialSettings() {
@@ -15722,20 +16381,45 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const newText = prompt('修改emoji', appData.specialCards.emoji[index].text);
         if (newText !== null && newText.trim()) {
             appData.specialCards.emoji[index].text = newText.trim();
-            saveData();
-            renderEmojiCardList();
+            saveDataSync();
+            // 局部更新：只改对应卡片的文字
+            var container = document.getElementById('emojiCardList');
+            var item = container && container.children[index];
+            if (item) {
+                var textEl = item.querySelector('.card-text');
+                if (textEl) textEl.textContent = newText.trim();
+            } else { renderEmojiCardList(); }
         }
     }
     function toggleEmojiHide(index) {
         appData.specialCards.emoji[index].hidden = !appData.specialCards.emoji[index].hidden;
-        saveData();
-        renderEmojiCardList();
+        saveDataSync();
+        // 局部更新：只改对应卡片的隐藏状态
+        var container = document.getElementById('emojiCardList');
+        var item = container && container.children[index];
+        if (item) {
+            item.classList.toggle('hidden', appData.specialCards.emoji[index].hidden);
+            var ops = item.querySelector('.card-ops');
+            if (ops) ops.children[1].textContent = appData.specialCards.emoji[index].hidden ? '显示' : '隐藏';
+        } else { renderEmojiCardList(); }
     }
     function deleteEmojiCard(index) {
         if (confirm('确定删除这条emoji吗？')) {
             appData.specialCards.emoji.splice(index, 1);
-            saveData();
-            renderEmojiCardList();
+            saveDataSync();
+            // 局部更新：移除对应 DOM 元素，修正后续索引
+            var container = document.getElementById('emojiCardList');
+            if (container && container.children[index]) {
+                container.removeChild(container.children[index]);
+                for (var i = index; i < container.children.length; i++) {
+                    var ops = container.children[i].querySelector('.card-ops');
+                    if (ops) {
+                        ops.children[0].setAttribute('onclick', 'editEmojiCard(' + i + ')');
+                        ops.children[1].setAttribute('onclick', 'toggleEmojiHide(' + i + ')');
+                        ops.children[2].setAttribute('onclick', 'deleteEmojiCard(' + i + ')');
+                    }
+                }
+            } else { renderEmojiCardList(); }
         }
     }
     function batchUploadEmoji() {
@@ -15771,20 +16455,42 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const newText = prompt('修改颜文字', appData.specialCards.kaomoji[index].text);
         if (newText !== null && newText.trim()) {
             appData.specialCards.kaomoji[index].text = newText.trim();
-            saveData();
-            renderKaomojiCardList();
+            saveDataSync();
+            var container = document.getElementById('kaomojiCardList');
+            var item = container && container.children[index];
+            if (item) {
+                var textEl = item.querySelector('.card-text');
+                if (textEl) textEl.textContent = newText.trim();
+            } else { renderKaomojiCardList(); }
         }
     }
     function toggleKaomojiHide(index) {
         appData.specialCards.kaomoji[index].hidden = !appData.specialCards.kaomoji[index].hidden;
-        saveData();
-        renderKaomojiCardList();
+        saveDataSync();
+        var container = document.getElementById('kaomojiCardList');
+        var item = container && container.children[index];
+        if (item) {
+            item.classList.toggle('hidden', appData.specialCards.kaomoji[index].hidden);
+            var ops = item.querySelector('.card-ops');
+            if (ops) ops.children[1].textContent = appData.specialCards.kaomoji[index].hidden ? '显示' : '隐藏';
+        } else { renderKaomojiCardList(); }
     }
     function deleteKaomojiCard(index) {
         if (confirm('确定删除这条颜文字吗？')) {
             appData.specialCards.kaomoji.splice(index, 1);
-            saveData();
-            renderKaomojiCardList();
+            saveDataSync();
+            var container = document.getElementById('kaomojiCardList');
+            if (container && container.children[index]) {
+                container.removeChild(container.children[index]);
+                for (var i = index; i < container.children.length; i++) {
+                    var ops = container.children[i].querySelector('.card-ops');
+                    if (ops) {
+                        ops.children[0].setAttribute('onclick', 'editKaomojiCard(' + i + ')');
+                        ops.children[1].setAttribute('onclick', 'toggleKaomojiHide(' + i + ')');
+                        ops.children[2].setAttribute('onclick', 'deleteKaomojiCard(' + i + ')');
+                    }
+                }
+            } else { renderKaomojiCardList(); }
         }
     }
     function batchUploadKaomoji() {
@@ -15823,20 +16529,42 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const newText = prompt('修改留言内容', appData.specialCards.shopping[index].text);
         if (newText !== null && newText.trim()) {
             appData.specialCards.shopping[index].text = newText.trim();
-            saveData();
-            renderShoppingCardList();
+            saveDataSync();
+            var container = document.getElementById('shoppingCardList');
+            var item = container && container.children[index];
+            if (item) {
+                var textEl = item.querySelector('.card-text');
+                if (textEl) textEl.textContent = newText.trim();
+            } else { renderShoppingCardList(); }
         }
     }
     function toggleShoppingHide(index) {
         appData.specialCards.shopping[index].hidden = !appData.specialCards.shopping[index].hidden;
-        saveData();
-        renderShoppingCardList();
+        saveDataSync();
+        var container = document.getElementById('shoppingCardList');
+        var item = container && container.children[index];
+        if (item) {
+            item.classList.toggle('hidden', appData.specialCards.shopping[index].hidden);
+            var ops = item.querySelector('.card-ops');
+            if (ops) ops.children[1].textContent = appData.specialCards.shopping[index].hidden ? '显示' : '隐藏';
+        } else { renderShoppingCardList(); }
     }
     function deleteShoppingCard(index) {
         if (confirm('确定删除这条留言吗？')) {
             appData.specialCards.shopping.splice(index, 1);
-            saveData();
-            renderShoppingCardList();
+            saveDataSync();
+            var container = document.getElementById('shoppingCardList');
+            if (container && container.children[index]) {
+                container.removeChild(container.children[index]);
+                for (var i = index; i < container.children.length; i++) {
+                    var ops = container.children[i].querySelector('.card-ops');
+                    if (ops) {
+                        ops.children[0].setAttribute('onclick', 'editShoppingCard(' + i + ')');
+                        ops.children[1].setAttribute('onclick', 'toggleShoppingHide(' + i + ')');
+                        ops.children[2].setAttribute('onclick', 'deleteShoppingCard(' + i + ')');
+                    }
+                }
+            } else { renderShoppingCardList(); }
         }
     }
     function batchUploadShopping() {
@@ -15898,7 +16626,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         // 使用同步保存，避免快速连续删除时防抖导致数据丢失/白屏
         saveDataSync();
-        renderImageCards();
+        // 局部更新：移除对应 DOM 元素，修正后续索引
+        var grid = document.getElementById('imageCardGrid');
+        if (grid && grid.children[idx]) {
+            grid.removeChild(grid.children[idx]);
+            for (var i = idx; i < grid.children.length; i++) {
+                var delBtn = grid.children[i].querySelector('.publish-media-del');
+                if (delBtn) delBtn.setAttribute('onclick', 'event.stopPropagation();deleteImageCard(' + i + ')');
+            }
+        } else {
+            renderImageCards();
+        }
     }
     // 特殊字卡手动去重：nudge/emoji/kaomoji 按 text 去重，image 按图片数据去重
     function dedupSpecialCards(type) {
@@ -15921,12 +16659,53 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         if (dupCount === 0) { alert('没有重复内容'); return; }
         appData.specialCards[type] = unique;
-        saveData();
-        if (type === 'nudge') renderNudgeCardList();
-        else if (type === 'emoji') renderEmojiCardList();
-        else if (type === 'kaomoji') renderKaomojiCardList();
-        else if (type === 'image') renderImageCards();
-        else if (type === 'shopping') renderShoppingCardList();
+        saveDataSync();
+        // 局部更新：移除重复项对应的 DOM 节点，修正后续索引（规则1/2/3）
+        if (type === 'image' || type === 'video') {
+            var _imgGrid = document.getElementById('imageCardGrid');
+            if (_imgGrid) {
+                var _imgSeen = {};
+                var _imgItems = _imgGrid.querySelectorAll('.image-card-item');
+                _imgItems.forEach(function(el) {
+                    var _im = el.querySelector('img');
+                    var _src = _im ? _im.getAttribute('src') : '';
+                    if (_imgSeen[_src]) el.remove();
+                    else _imgSeen[_src] = true;
+                });
+                var _imgRemain = _imgGrid.querySelectorAll('.image-card-item');
+                _imgRemain.forEach(function(el, i) {
+                    var _delBtn = el.querySelector('.publish-media-del');
+                    if (_delBtn) _delBtn.setAttribute('onclick', 'event.stopPropagation();deleteImageCard(' + i + ')');
+                });
+            } else { renderImageCards(); }
+        } else {
+            var _capType = type.charAt(0).toUpperCase() + type.slice(1);
+            var _ddContainer = document.getElementById(type + 'CardList');
+            if (_ddContainer) {
+                var _ddSeen = {};
+                var _ddItems = _ddContainer.querySelectorAll('.special-card-item');
+                _ddItems.forEach(function(el) {
+                    var _textEl = el.querySelector('.card-text');
+                    var _txt = _textEl ? _textEl.textContent.trim() : '';
+                    if (_ddSeen[_txt]) el.remove();
+                    else _ddSeen[_txt] = true;
+                });
+                var _ddRemain = _ddContainer.querySelectorAll('.special-card-item');
+                _ddRemain.forEach(function(el, i) {
+                    var ops = el.querySelector('.card-ops');
+                    if (ops) {
+                        if (ops.children[0]) ops.children[0].setAttribute('onclick', 'edit' + _capType + 'Card(' + i + ')');
+                        if (ops.children[1]) ops.children[1].setAttribute('onclick', 'toggle' + _capType + 'Hide(' + i + ')');
+                        if (ops.children[2]) ops.children[2].setAttribute('onclick', 'delete' + _capType + 'Card(' + i + ')');
+                    }
+                });
+            } else {
+                if (type === 'nudge') renderNudgeCardList();
+                else if (type === 'emoji') renderEmojiCardList();
+                else if (type === 'kaomoji') renderKaomojiCardList();
+                else if (type === 'shopping') renderShoppingCardList();
+            }
+        }
         alert(`已去重，删除重复 ${dupCount} 项`);
     }
 
@@ -15995,7 +16774,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function resetMomentsWallpaper() {
         appData.moments.wallpaper = '';
         if (appData.moments.videoWallpaper !== undefined) appData.moments.videoWallpaper = '';
-        saveData();
+        saveDataSync();
         const header = document.getElementById('momentsHeader');
         // 移除旧的视频元素
         const oldVideo = header.querySelector('video.moments-bg-video');
@@ -16248,9 +17027,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (moment.sender === 'mine') scheduleOtherMomentReaction(id, {like:true, comment:false});
         }
         
-        document.getElementById('momentOps_' + id).classList.remove('show');
+        var opsEl = document.getElementById('momentOps_' + id);
+        if (opsEl) opsEl.classList.remove('show');
         saveData();
-        renderMomentsList();
+        // 局部更新：只刷新该条朋友圈的点赞评论区
+        refreshMomentLikeComment(id);
     }
 
     let _replyingComment = { momentId: null, commentId: null, replyTo: null };
@@ -16373,7 +17154,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         _replyingComment = { momentId: null, commentId: null, replyTo: null };
         input.placeholder = '评论...';
         saveData();
-        renderMomentsList();
+        // 局部更新：只刷新该条朋友圈的点赞评论区
+        refreshMomentLikeComment(id);
 
         // 只要我回复/评论，对方就会在设置时间到达后回复；离线后上线会补发
         scheduleMomentAction(id, {
@@ -16389,7 +17171,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         appData.moments.list = appData.moments.list.filter(m => m.id !== id);
         // 使用同步保存，避免快速连续删除时防抖导致数据丢失/白屏
         saveDataSync();
-        renderMomentsList();
+        // 局部更新：移除对应 DOM 元素
+        var item = document.querySelector('.moment-item[data-id="' + id + '"]');
+        if (item) {
+            item.remove();
+        } else {
+            renderMomentsList();
+        }
     }
 
     // 发朋友圈
@@ -16413,11 +17201,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (!files.length) return;
         Array.from(files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = (ev) => {
+            reader.onload = async (ev) => {
                 if (appData.publishMediaList.length < 9) {
+                    var src = ev.target.result;
+                    // 安卓图片必须压缩（规则7），视频不压缩
+                    if (file.type.startsWith('image')) {
+                        try { src = await _compressImgIfAndroid(src); } catch(_ce){}
+                    }
                     appData.publishMediaList.push({
                         type: file.type.startsWith('video') ? 'video' : 'image',
-                        src: ev.target.result
+                        src: src
                     });
                     renderPublishMedia();
                 }
@@ -16458,7 +17251,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             return;
         }
         const momentId = Date.now();
-        appData.moments.list.unshift({
+        var newMoment = {
             id: momentId,
             sender: 'mine',
             text: text,
@@ -16466,13 +17259,95 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             likes: [],
             comments: [],
             time: Date.now()
-        });
-        saveData();
+        };
+        appData.moments.list.unshift(newMoment);
+        saveDataSync();
         closePublishMoment();
-        renderMomentsList();
+
+        // 局部更新：只插入新动态节点，不重建列表（规则5）
+        var container = document.getElementById('momentsList');
+        if (container) {
+            var newItem = _buildMomentItemEl(newMoment);
+            if (container.firstChild) {
+                container.insertBefore(newItem, container.firstChild);
+            } else {
+                container.appendChild(newItem);
+            }
+        }
 
         // 按设置概率安排对方主动评论/点赞；页面离开后上线也会补发
         scheduleOtherMomentReaction(momentId, {like:true, comment:true});
+    }
+    // 辅助函数：构建单条朋友圈 DOM 元素（供 publishMoment 局部插入使用）
+    function _buildMomentItemEl(moment) {
+        var s = appData.chatSettings;
+        var item = document.createElement('div');
+        item.className = 'moment-item';
+        item.dataset.id = moment.id;
+
+        var avatar = document.createElement('div');
+        avatar.className = 'moment-avatar';
+        var avatarSrc = moment.sender === 'mine' ? s.myAvatar : s.otherAvatar;
+        if (avatarSrc) avatar.innerHTML = '<img src="' + avatarSrc + '" alt="">';
+        item.appendChild(avatar);
+
+        var content = document.createElement('div');
+        content.className = 'moment-content';
+
+        var nickname = document.createElement('div');
+        nickname.className = 'moment-nickname';
+        nickname.textContent = moment.sender === 'mine' ? s.myNickname : s.otherNickname;
+        content.appendChild(nickname);
+
+        if (moment.text) {
+            var textEl = document.createElement('div');
+            textEl.className = 'moment-text';
+            textEl.textContent = moment.text;
+            content.appendChild(textEl);
+        }
+
+        if (moment.media && moment.media.length > 0) {
+            var imgWrap = document.createElement('div');
+            imgWrap.className = 'moment-images' + (moment.media.length === 1 ? ' single' : '');
+            moment.media.forEach(function(m) {
+                if (m.type === 'image') {
+                    imgWrap.innerHTML += '<img src="' + m.src + '" alt="" onclick="event.stopPropagation();viewMomentImage(\'' + m.src + '\')" style="cursor:pointer;">';
+                } else {
+                    imgWrap.innerHTML += '<video src="' + m.src + '" controls playsinline="playsinline" webkit-playsinline="webkit-playsinline" preload="auto" style="width:100%;max-height:300px;object-fit:cover;"></video>';
+                }
+            });
+            content.appendChild(imgWrap);
+        }
+
+        var footer = document.createElement('div');
+        footer.className = 'moment-footer';
+        footer.innerHTML =
+            '<div class="moment-time">' + formatTime(moment.time) + '</div>' +
+            '<div class="moment-ops-wrapper">' +
+            '<div class="moment-more" onclick="toggleMomentOps(' + moment.id + ')">⋯</div>' +
+            '<div class="moment-ops" id="momentOps_' + moment.id + '">' +
+            '<span onclick="likeMoment(' + moment.id + ')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>赞</span>' +
+            '<span onclick="toggleCommentInput(' + moment.id + ')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>评论</span>' +
+            '<span class="danger" onclick="deleteMoment(' + moment.id + ')" style="color:#ff3b30;">删除</span>' +
+            '</div></div>';
+        content.appendChild(footer);
+
+        var likeComment = document.createElement('div');
+        likeComment.className = 'like-comment-area';
+        likeComment.id = 'likeComment_' + moment.id;
+
+        var commentInputRow = document.createElement('div');
+        commentInputRow.className = 'comment-input-row';
+        commentInputRow.id = 'commentInput_' + moment.id;
+        commentInputRow.style.display = 'none';
+        commentInputRow.innerHTML =
+            '<input type="text" placeholder="评论..." id="commentInputVal_' + moment.id + '" onkeydown="if(event.key===\'Enter\')submitComment(' + moment.id + ')">' +
+            '<button onclick="submitComment(' + moment.id + ')">发送</button>';
+        likeComment.appendChild(commentInputRow);
+
+        content.appendChild(likeComment);
+        item.appendChild(content);
+        return item;
     }
     // 单人日记对方字卡回复触发器
     function triggerDiaryReply(diaryId) {
@@ -17058,6 +17933,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function createDiaryCard(diary, index, s) {
         const card = document.createElement('div');
         card.className = 'diary-new-card' + (diary.hidden ? ' locked' : '');
+        card.dataset.diaryId = diary.id;
         if (s.bgImage) card.style.background = 'url(' + s.bgImage + ') center/cover no-repeat';
         else card.style.background = s.cardBg || '#fff';
         card.style.color = s.textColor || '#333';
@@ -17130,7 +18006,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         senderInfo.innerHTML = '<span>' + escapeHtml(senderNick) + '</span><span>' + new Date(diary.time).toLocaleDateString('zh-CN') + '</span>';
         card.appendChild(senderInfo);
 
-        card.onclick = () => openDiaryDetail(index);
+        card.onclick = () => {
+            /* 规则3：用 ID 定位索引，避免删除后索引错位 */
+            var currentIdx = appData.diary.singleList.findIndex(d => d.id === diary.id);
+            if (currentIdx >= 0) openDiaryDetail(currentIdx);
+        };
         return card;
     }
 
@@ -17582,11 +18462,40 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             };
             if (!appData.diary.singleList) appData.diary.singleList = [];
             appData.diary.singleList.unshift(newDiary);
-            saveData();
+            saveDataSync();
+            // 局部更新：只插入新日记卡片，不重建列表（规则5）
+            var _diaryPage = document.getElementById('diaryPage');
+            if (_diaryPage && _diaryPage.style.display === 'flex' && tab === 'single') {
+                var _container = document.getElementById('diaryList');
+                if (_container) {
+                    var _s = appData.diary.settings;
+                    var _newCard = createDiaryCard(newDiary, 0, _s);
+                    if (newDiary.tag) {
+                        // 有标签：找到对应标签组标题，插入其后
+                        var _headers = _container.querySelectorAll('.diary-tag-group-header');
+                        var _foundHeader = null;
+                        for (var h = 0; h < _headers.length; h++) {
+                            if (_headers[h].textContent.indexOf(newDiary.tag) >= 0) { _foundHeader = _headers[h]; break; }
+                        }
+                        if (_foundHeader) {
+                            _container.insertBefore(_newCard, _foundHeader.nextSibling);
+                        } else {
+                            // 标签组不存在：创建新标题并插入到容器最前面
+                            var _newHeader = document.createElement('div');
+                            _newHeader.className = 'diary-tag-group-header';
+                            _newHeader.innerHTML = '<svg class="diary-group-icon" viewBox="0 0 24 24" fill="none" stroke="#4a90d9" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' + escapeHtml(newDiary.tag);
+                            _container.insertBefore(_newHeader, _container.firstChild);
+                            _container.insertBefore(_newCard, _newHeader.nextSibling);
+                        }
+                    } else {
+                        // 无标签：插入到末尾
+                        _container.appendChild(_newCard);
+                    }
+                }
+            }
             // 触发对方字卡回复（有概率回复，概率由设置中的replyProb决定，默认80%）
             triggerDiaryReply(newDiary.id);
         }
-        renderDiaryList();
         closeWriteDiary();
       } catch (e) { console.error('saveDiary失败:', e); }
     }
@@ -17678,17 +18587,38 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function deleteCurrentDiary() {
         const info = appData.currentViewingDiary;
         if (!info) return;
+        var deletedDiaryId = null;
         if (info.tab === 'double') {
             // Bug1：双人日记按 entry.id 定位再删除，避免索引错位删错条目
             const idx = getDoubleDiaryIndexById(info.id);
             if (idx < 0) { closeDiaryDetail(); return; }
+            deletedDiaryId = appData.diary.doubleList[idx] ? appData.diary.doubleList[idx].id : null;
             appData.diary.doubleList.splice(idx, 1);
         } else {
             const list = appData.diary.singleList;
+            deletedDiaryId = list[info.index] ? list[info.index].id : null;
             list.splice(info.index, 1);
         }
-        saveData();
-        renderDiaryList();
+        saveDataSync();
+        /* 局部更新：直接移除对应的 .diary-new-card（规则2），不调用 renderDiaryList */
+        if (deletedDiaryId) {
+            var _card = document.querySelector('.diary-new-card[data-diary-id="' + deletedDiaryId + '"]');
+            if (_card) {
+                // 检查是否需要移除孤立的标签分组标题
+                var _prev = _card.previousElementSibling;
+                var _next = _card.nextElementSibling;
+                _card.remove();
+                // 如果前一个是标题且后一个是标题或null（即该分组已无卡片），移除标题
+                if (_prev && _prev.classList.contains('diary-tag-group-header') &&
+                    (!_next || _next.classList.contains('diary-tag-group-header'))) {
+                    _prev.remove();
+                }
+            } else {
+                renderDiaryList();
+            }
+        } else {
+            renderDiaryList();
+        }
         closeDiaryDetail();
     }
     function editCurrentDiary(){
@@ -17711,7 +18641,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             textEl.contentEditable='false';
             textEl.style.border='none';
             textEl.style.outline='none';
-            saveData();
+            saveDataSync();
             renderDiaryList();
             // Bug6：编辑完只更新弹窗内容（重新渲染为格式化文本），不关弹窗，让用户立即看到更新
             openDiaryDetail(info.index);
@@ -18748,6 +19678,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         list.forEach((letter, index) => {
             const item = document.createElement('div');
             item.className = 'letter-item' + (letter.favorite ? ' favorite' : '');
+            item.dataset.letterId = letter.id;
             item.style.backgroundColor = s.cardBg || '#ffffff';
             if (s.cardBorderColor) item.style.borderColor = s.cardBorderColor;
             if (s.textColor) item.style.color = s.textColor;
@@ -18782,8 +19713,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 item.style.transition = 'none';
                 item.style.transform = 'translateX(0)';
                 deleteBtn.style.display = 'none';
-                var deletedLetter = list[index];
-                list.splice(index, 1);
+                /* 规则3：用 ID 定位索引，避免删除后索引错位 */
+                var currentIdx = list.findIndex(l => l.id === letter.id);
+                if (currentIdx < 0) return;
+                var deletedLetter = list[currentIdx];
+                list.splice(currentIdx, 1);
                 /* Bug4：从收藏列表删除时，同步把原信的 favorite 标记取消 */
                 if (tab === 'favorite' && deletedLetter) {
                     deletedLetter.favorite = false;
@@ -18802,7 +19736,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         return l !== deletedLetter && !(l.id && deletedLetter.id && l.id === deletedLetter.id);
                     });
                 }
-                saveData();
+                saveDataSync();
                 /* Bug2：删除后不全量重建列表，仅移除当前 DOM 项，保持滚动位置不跳动 */
                 if (item.parentNode) item.remove();
             };
@@ -18870,7 +19804,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     isSwipedOpen = false;
                     return;
                 }
-                openLetterDetail(index);
+                /* 规则3：用 ID 定位索引，避免删除后索引错位 */
+                var currentIdx = list.findIndex(l => l.id === letter.id);
+                if (currentIdx >= 0) openLetterDetail(currentIdx);
             });
             container.appendChild(item);
         });
@@ -18994,12 +19930,19 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             // 从收藏列表中移除引用
             appData.letter.favorite = appData.letter.favorite.filter(function(l) { return l !== deletedLetter; });
         }
-        saveData();
-        /* Bug2：删除后记录 scrollTop 并恢复，避免列表跳动 */
-        var _listEl = document.getElementById('letterList');
-        var _savedTop = _listEl ? _listEl.scrollTop : 0;
-        renderLetterList();
-        if (_listEl) _listEl.scrollTop = _savedTop;
+        saveDataSync();
+        /* 局部更新：直接移除对应的 .letter-item（规则2），不调用 renderLetterList */
+        var _letterId = deletedLetter ? deletedLetter.id : null;
+        if (_letterId) {
+            var _itemToRemove = document.querySelector('.letter-item[data-letter-id="' + _letterId + '"]');
+            if (_itemToRemove) {
+                _itemToRemove.remove();
+            } else {
+                renderLetterList();
+            }
+        } else {
+            renderLetterList();
+        }
         closeLetterDetail();
     }
     function toggleFavoriteLetter() {
@@ -19020,10 +19963,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         } else {
             appData.letter.favorite = appData.letter.favorite.filter(f => f.id !== letter.id);
         }
-        saveData();
+        saveDataSync();
         const favBtn = document.getElementById('toggleFavBtn');
         favBtn.textContent = letter.favorite ? '取消收藏' : '收藏';
-        renderLetterList();
+        /* 局部更新：只切换对应的 .letter-item 的 favorite 类（规则2） */
+        var _letterEl = document.querySelector('.letter-item[data-letter-id="' + letter.id + '"]');
+        if (_letterEl) {
+            _letterEl.classList.toggle('favorite', letter.favorite);
+        }
     }
     function openLetterSettings() {
       try {
@@ -19079,8 +20026,33 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             favorite: false
         };
         appData.letter.sent.push(letter);
-        saveData();
+        saveDataSync();
         closeSendLetter();
+        // 局部更新：如果信封页面可见且当前在"已发"标签，插入新信件节点（规则5）
+        var _letterPage = document.getElementById('letterPage');
+        if (_letterPage && _letterPage.style.display === 'flex' && appData.letter.currentTab === 'sent') {
+            var _container = document.getElementById('letterList');
+            if (_container) {
+                var _s = appData.letter.settings;
+                var _newItem = document.createElement('div');
+                _newItem.className = 'letter-item';
+                _newItem.dataset.letterId = letter.id;
+                _newItem.style.backgroundColor = _s.cardBg || '#ffffff';
+                if (_s.cardBorderColor) _newItem.style.borderColor = _s.cardBorderColor;
+                if (_s.textColor) _newItem.style.color = _s.textColor;
+                if (_s.fontFamily) _newItem.style.fontFamily = _s.fontFamily;
+                if (_s.fontSize) _newItem.style.fontSize = _s.fontSize + 'px';
+                _newItem.style.transition = 'transform 0.3s ease';
+                _newItem.innerHTML = '<div class="letter-title">' + _escapeHtml(letter.title) + '</div>' +
+                    '<div class="letter-preview">' + _escapeHtml((letter.content || '').substring(0, 50)) + '</div>' +
+                    '<div class="letter-date">' + new Date(letter.time).toLocaleString('zh-CN') + '</div>';
+                _newItem.addEventListener('click', function() {
+                    var idx = appData.letter.sent.findIndex(function(l) { return l.id === letter.id; });
+                    if (idx >= 0) openLetterDetail(idx);
+                });
+                _container.appendChild(_newItem);
+            }
+        }
         // 对方回信模拟
         var replyMin = Math.max(0, appData.chatSettings.letterReplyMin || 0);
         var replyMax = Math.max(replyMin, appData.chatSettings.letterReplyMax || 0);
@@ -19092,7 +20064,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             scheduledAt: Date.now() + replyDelay
         };
         appData.letter.pendingReplies.push(pendingReply);
-        saveData();
+        saveDataSync();
         scheduleLetterReply(pendingReply);
     }
     function scheduleLetterReply(pending) {
@@ -19107,7 +20079,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 if (appData.letter.pendingReplies) {
                     appData.letter.pendingReplies = appData.letter.pendingReplies.filter(function(p){ return p !== pending; });
                 }
-                saveData();
+                saveDataSync();
                 return;
             }
             const replyContent=allCards.sort(()=>0.5-Math.random()).slice(0,Math.min(Math.floor(Math.random()*10)+5,allCards.length)).join(' ');
@@ -19139,12 +20111,41 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (appData.letter.pendingReplies) {
                 appData.letter.pendingReplies = appData.letter.pendingReplies.filter(function(p){ return p !== pending; });
             }
-            saveData();
+            saveDataSync();
             // 在聊天界面提醒对方回了信
             if (typeof addSystemMsg === 'function') {
                 addSystemMsg((appData.chatSettings.otherNickname || '对方') + '回了你的信「' + pending.originalTitle + '」，快去信封查看吧');
             }
-            if (document.getElementById('letterPage').style.display === 'flex') renderLetterList();
+            /* 局部更新：如果信封页面可见且在"回信"标签，插入新回信节点（规则5） */
+            var _letterPage2 = document.getElementById('letterPage');
+            if (_letterPage2 && _letterPage2.style.display === 'flex' && appData.letter.currentTab === 'reply') {
+                var _container2 = document.getElementById('letterList');
+                if (_container2 && appData.letter.reply.length > 0) {
+                    var _replyLetter = appData.letter.reply[0];
+                    var _s2 = appData.letter.settings;
+                    var _newReplyItem = document.createElement('div');
+                    _newReplyItem.className = 'letter-item';
+                    _newReplyItem.dataset.letterId = _replyLetter.id;
+                    _newReplyItem.style.backgroundColor = _s2.cardBg || '#ffffff';
+                    if (_s2.cardBorderColor) _newReplyItem.style.borderColor = _s2.cardBorderColor;
+                    if (_s2.textColor) _newReplyItem.style.color = _s2.textColor;
+                    if (_s2.fontFamily) _newReplyItem.style.fontFamily = _s2.fontFamily;
+                    if (_s2.fontSize) _newReplyItem.style.fontSize = _s2.fontSize + 'px';
+                    _newReplyItem.style.transition = 'transform 0.3s ease';
+                    _newReplyItem.innerHTML = '<div class="letter-title">' + _escapeHtml(_replyLetter.title) + '</div>' +
+                        '<div class="letter-preview">' + _escapeHtml((_replyLetter.content || '').substring(0, 50)) + '</div>' +
+                        '<div class="letter-date">' + new Date(_replyLetter.time).toLocaleString('zh-CN') + '</div>';
+                    _newReplyItem.addEventListener('click', function() {
+                        var idx = appData.letter.reply.findIndex(function(l) { return l.id === _replyLetter.id; });
+                        if (idx >= 0) openLetterDetail(idx);
+                    });
+                    if (_container2.firstChild) {
+                        _container2.insertBefore(_newReplyItem, _container2.firstChild);
+                    } else {
+                        _container2.appendChild(_newReplyItem);
+                    }
+                }
+            }
         }, delay);
     }
     // 检查未完成的信封回信（页面刷新后恢复）
@@ -20284,6 +21285,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         try {
             var wrapper = document.createElement('div');
             wrapper.className = 'contact-item-wrapper';
+            wrapper.dataset.contactId = item.data.id;
             var el = document.createElement('div');
             el.className = 'contact-item';
             if (item.type === 'group') el.classList.add('avatar-circle');
@@ -20514,14 +21516,73 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function togglePinContact(type, id) {
         try {
             var list = type === 'group' ? appData.contactList.groups : appData.contactList.contacts;
+            var contact = null;
             for (var i = 0; i < list.length; i++) {
                 if (list[i].id === id) {
                     list[i].pinned = !list[i].pinned;
+                    contact = list[i];
                     break;
                 }
             }
-            saveData();
-            renderContactList(document.getElementById('contactSearchInput').value);
+            saveDataSync();
+            // 局部更新：移动 DOM 元素位置，不重建列表
+            var wrapper = document.querySelector('.contact-item-wrapper[data-contact-id="' + id + '"]');
+            if (wrapper && contact) {
+                var container = document.getElementById('contactListItems');
+                if (!container) return;
+                // 更新置顶图标
+                var nameEl = wrapper.querySelector('.contact-name');
+                if (nameEl) {
+                    var existingPin = nameEl.querySelector('span');
+                    if (contact.pinned && !existingPin) {
+                        var pinIcon = document.createElement('span');
+                        pinIcon.style.cssText = 'display:inline-block;margin-right:4px;vertical-align:middle;color:#999;font-size:14px;';
+                        pinIcon.textContent = '★';
+                        nameEl.insertBefore(pinIcon, nameEl.firstChild);
+                    } else if (!contact.pinned && existingPin) {
+                        existingPin.remove();
+                    }
+                }
+                // 更新置顶按钮文字
+                var pinBtn = wrapper.querySelector('.contact-action-btn.pin');
+                if (pinBtn) pinBtn.textContent = contact.pinned ? '取消置顶' : '置顶';
+                // 移动到正确位置：置顶在前
+                var items = container.querySelectorAll('.contact-item-wrapper');
+                var insertBefore = null;
+                if (contact.pinned) {
+                    // 置顶项放在所有置顶项之后、非置顶项之前
+                    var foundNonPinned = false;
+                    for (var j = 0; j < items.length; j++) {
+                        if (items[j] === wrapper) continue;
+                        var w = items[j];
+                        var wId = w.dataset.contactId;
+                        var wContact = null;
+                        for (var k = 0; k < list.length; k++) { if (list[k].id === wId) { wContact = list[k]; break; } }
+                        if (wContact && !wContact.pinned) { insertBefore = w; break; }
+                    }
+                } else {
+                    // 非置顶项放在所有非置顶项的最后
+                    // 只需移到最后即可（在所有置顶和非置顶之后）
+                    // 但不能放在 section title 之前
+                    insertBefore = null; // append to end
+                }
+                if (insertBefore) {
+                    container.insertBefore(wrapper, insertBefore);
+                } else if (!contact.pinned) {
+                    // 非置顶：移到最后（在 section title 之后）
+                    container.appendChild(wrapper);
+                } else {
+                    // 置顶但没有找到非置顶项：放在最后其他置顶项之后
+                    var titleEl = container.querySelector('.contact-list-section-title');
+                    if (titleEl) {
+                        container.insertBefore(wrapper, titleEl.nextSibling);
+                    } else {
+                        container.insertBefore(wrapper, container.firstChild);
+                    }
+                }
+            } else {
+                renderContactList();
+            }
         } catch(e) { console.error('togglePinContact error:', e); }
     }
     function deleteContact(type, id) {
@@ -20543,8 +21604,24 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 var _titleEl = document.getElementById('chatTitle');
                 if (_titleEl) _titleEl.textContent = '对方';
             }
-            saveData();
-            renderContactList(document.getElementById('contactSearchInput').value);
+            saveDataSync();
+            // 局部更新：直接移除对应 DOM 元素（规则2）
+            var wrapper = document.querySelector('.contact-item-wrapper[data-contact-id="' + id + '"]');
+            if (wrapper) {
+                wrapper.remove();
+                // 如果删完后没有联系人了，显示空提示
+                var container = document.getElementById('contactListItems');
+                if (container && !container.querySelector('.contact-item-wrapper')) {
+                    var sectionTitle = container.querySelector('.contact-list-section-title');
+                    if (sectionTitle) sectionTitle.remove();
+                    var empty = document.createElement('div');
+                    empty.style.cssText = 'text-align:center;padding:40px 0;color:#999;font-size:14px;';
+                    empty.textContent = '暂无联系人，点击右上角添加';
+                    container.appendChild(empty);
+                }
+            } else {
+                renderContactList();
+            }
         } catch(e) { console.error('deleteContact error:', e); }
     }
     function enterChatFromContactList(type, id) {
@@ -20599,7 +21676,43 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         } catch(e) { console.error('enterChatFromContactList error:', e); }
     }
     function filterContacts(query) {
-        renderContactList(query);
+        // 局部更新：只切换显示/隐藏，不重建列表（规则2）
+        var container = document.getElementById('contactListItems');
+        if (!container) { renderContactList(query); return; }
+        var q = (query || '').trim().toLowerCase();
+        var items = container.querySelectorAll('.contact-item-wrapper');
+        items.forEach(function(wrapper) {
+            var contactId = wrapper.dataset.contactId;
+            var contact = null;
+            var contacts = (appData.contactList && appData.contactList.contacts) || [];
+            for (var i = 0; i < contacts.length; i++) {
+                if (contacts[i].id === contactId) { contact = contacts[i]; break; }
+            }
+            if (!contact) { wrapper.style.display = ''; return; }
+            if (!q) {
+                wrapper.style.display = '';
+            } else {
+                var name = (contact.name || '').toLowerCase();
+                var remark = (contact.remark || '').toLowerCase();
+                wrapper.style.display = (name.indexOf(q) >= 0 || remark.indexOf(q) >= 0) ? '' : 'none';
+            }
+        });
+        // 如果全部被隐藏，显示无结果提示
+        var visibleCount = 0;
+        items.forEach(function(w) { if (w.style.display !== 'none') visibleCount++; });
+        var noResult = container.querySelector('.contact-no-result');
+        if (visibleCount === 0 && q) {
+            if (!noResult) {
+                noResult = document.createElement('div');
+                noResult.className = 'contact-no-result';
+                noResult.style.cssText = 'text-align:center;padding:40px 0;color:#999;font-size:14px;';
+                noResult.textContent = '无搜索结果';
+                container.appendChild(noResult);
+            }
+            noResult.style.display = '';
+        } else if (noResult) {
+            noResult.style.display = 'none';
+        }
     }
     function showContactAddOptions() {
         document.getElementById('contactAddOverlay').classList.add('active');
@@ -20731,7 +21844,30 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             document.getElementById('newContactName').value = '';
             document.getElementById('newContactRemark').value = '';
             closeContactAddModal();
-            renderContactList();
+            // 局部更新：只插入新联系人节点（规则5）
+            var container = document.getElementById('contactListItems');
+            if (container) {
+                // 检查是否有搜索过滤
+                var searchInput = document.getElementById('contactSearchInput');
+                var filter = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                var matchesFilter = !filter || contactName.toLowerCase().indexOf(filter) >= 0 || contactRemark.toLowerCase().indexOf(filter) >= 0;
+                if (matchesFilter) {
+                    // 移除空提示
+                    var emptyMsg = container.querySelector('div[style*="text-align:center"]');
+                    if (emptyMsg && emptyMsg.textContent.indexOf('暂无联系人') >= 0) emptyMsg.remove();
+                    // 确保 section title 存在
+                    var sectionTitle = container.querySelector('.contact-list-section-title');
+                    if (!sectionTitle) {
+                        sectionTitle = document.createElement('div');
+                        sectionTitle.className = 'contact-list-section-title';
+                        sectionTitle.textContent = '联系人';
+                        container.appendChild(sectionTitle);
+                    }
+                    // 新联系人非置顶，追加到最后
+                    var newItem = createContactItemEl({ type: 'contact', data: newContact });
+                    container.appendChild(newItem);
+                }
+            }
         } catch(e) { 
             console.error('confirmAddContact error:', e); 
             _addingContact = false;
@@ -20774,7 +21910,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             });
             saveDataSync();
             closeContactAddModal();
-            renderContactList();
+            // 局部更新：群聊不显示在联系人列表中（renderContactList 已移除群聊显示），无需重建列表（规则1/2）
         } catch(e) { console.error('confirmCreateGroup error:', e); }
     }
     // 联系人列表设置函数
@@ -20854,6 +21990,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function openChatSettingsFromGlobal() {
         document.getElementById('settingsPage').style.display = 'flex';
         applyChatDisplaySettings();
+        /* 渲染字卡统计，确保从全局设置进入也能看到最新数据 */
+        try {
+            renderWordCloudStats();
+            renderWordFreqRank();
+            renderMessageCountStats();
+        } catch(e) {}
     }
     function initGlobalSettingsPage() {
         const gs = appData.globalSettings || {};
@@ -21464,6 +22606,35 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
         } catch(e) { console.warn('IndexedDB 图片导出失败:', e); }
 
+        // 收集一起听歌 app 的独立 localStorage 数据（lt_ 开头的 key）
+        try {
+            var _includeLT = !hasUnchecked || (selectedKeys && selectedKeys.ltData);
+            if (_includeLT) {
+                var ltDataCollected = {};
+                var _idbKeys = exportObj.indexedDBImages || {};
+                for (var _li = 0; _li < localStorage.length; _li++) {
+                    var _lk = localStorage.key(_li);
+                    if (_lk && _lk.indexOf('lt_') === 0 && !_idbKeys[_lk]) {
+                        ltDataCollected[_lk] = localStorage.getItem(_lk);
+                    }
+                }
+                if (Object.keys(ltDataCollected).length > 0) {
+                    exportObj.ltData = ltDataCollected;
+                }
+            }
+        } catch(e) { console.warn('听歌数据导出失败:', e); }
+
+        // 收集塔罗 app 的独立 localStorage 数据
+        try {
+            var _includeTarot = !hasUnchecked || (selectedKeys && selectedKeys.tarotData);
+            if (_includeTarot) {
+                var _tarotHistory = localStorage.getItem('tarot_history_v1');
+                if (_tarotHistory) {
+                    exportObj.tarotData = { 'tarot_history_v1': _tarotHistory };
+                }
+            }
+        } catch(e) { console.warn('塔罗数据导出失败:', e); }
+
         const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -21583,6 +22754,28 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         // 恢复 IndexedDB 图片数据
                         if (data.indexedDBImages && window.importImgDB) {
                             try { await window.importImgDB(data.indexedDBImages); } catch(e) {}
+                        }
+                        // 恢复一起听歌 app 的独立 localStorage 数据
+                        if (data.ltData) {
+                            var _restoreLT = !hasSelection || (selectedKeys && selectedKeys.ltData);
+                            if (_restoreLT) {
+                                try {
+                                    Object.keys(data.ltData).forEach(function(k) {
+                                        try { localStorage.setItem(k, data.ltData[k]); } catch(e) {}
+                                    });
+                                } catch(e) {}
+                            }
+                        }
+                        // 恢复塔罗 app 的独立 localStorage 数据
+                        if (data.tarotData) {
+                            var _restoreTarot = !hasSelection || (selectedKeys && selectedKeys.tarotData);
+                            if (_restoreTarot) {
+                                try {
+                                    Object.keys(data.tarotData).forEach(function(k) {
+                                        try { localStorage.setItem(k, data.tarotData[k]); } catch(e) {}
+                                    });
+                                } catch(e) {}
+                            }
                         }
                         alert('导入成功，即将刷新页面');
                         setTimeout(() => location.reload(), 500);
@@ -24461,10 +25654,25 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // ========== 余额应用 ==========
     function openBalanceApp() {
         document.getElementById('balanceAppPage').style.display = 'flex';
-        // Initialize _balanceContactId to first contact if empty
+        // 恢复上次选择的联系人（持久化在 balanceData 中）
+        if (!_balanceContactId && appData.balanceData && appData.balanceData._balanceContactId) {
+            var _saved = appData.balanceData._balanceContactId;
+            var _contacts = (appData.contactList && appData.contactList.contacts) || [];
+            var _found = false;
+            for (var i = 0; i < _contacts.length; i++) {
+                if (_contacts[i].id === _saved) { _found = true; break; }
+            }
+            if (_found) _balanceContactId = _saved;
+        }
+        // Initialize _balanceContactId to first contact if still empty
         if (!_balanceContactId) {
             var contacts = (appData.contactList && appData.contactList.contacts) || [];
             if (contacts.length > 0) _balanceContactId = contacts[0].id || '';
+        }
+        /* 持久化当前选择 */
+        if (appData.balanceData) {
+            appData.balanceData._balanceContactId = _balanceContactId;
+            if (typeof saveData === 'function') saveData();
         }
         renderBalanceApp();
     }
@@ -27339,6 +28547,8 @@ function mlsjIconClock() {
         if (_balanceRendering) return;
         var sel = document.getElementById('balanceContactSelector');
         _balanceContactId = sel ? sel.value : '';
+        /* 持久化当前选择的联系人，刷新后可恢复 */
+        if (appData.balanceData) appData.balanceData._balanceContactId = _balanceContactId;
         if (typeof saveData === 'function') saveData();
         renderBalanceApp();
     }
@@ -27349,9 +28559,16 @@ function mlsjIconClock() {
         if (_balanceContactId) {
             var c = _findContactById(_balanceContactId);
             if (c) {
-                // 仅在 balanceData 不存在时初始化，使用固定默认值100，不依赖 globalBd.other
+                // 初始化联系人余额：other 继承全局值（而非固定100），确保历史操作可见
                 if (!c.balanceData || typeof c.balanceData.other !== 'number') {
-                    c.balanceData = { other: 100, records: [] };
+                    var _initOther = (typeof globalBd.other === 'number') ? globalBd.other : 100;
+                    c.balanceData = { other: _initOther, records: [] };
+                    /* 同步全局历史记录到新联系人 */
+                    if (Array.isArray(globalBd.records)) {
+                        globalBd.records.forEach(function(r) {
+                            c.balanceData.records.push(r);
+                        });
+                    }
                 }
                 return {
                     mine: globalBd.mine,
@@ -27363,6 +28580,26 @@ function mlsjIconClock() {
             }
         }
         return globalBd;
+    }
+    /* 获取指定联系人的对方余额（不传则使用 _balanceContactId，再退回全局） */
+    function getOtherBalance(contactId) {
+        var globalBd = appData.balanceData;
+        if (!globalBd) return 100;
+        var cid = (contactId !== undefined && contactId !== null && contactId !== '') ? contactId : _balanceContactId;
+        if (cid) {
+            var c = _findContactById(cid);
+            if (c) {
+                if (!c.balanceData || typeof c.balanceData.other !== 'number') {
+                    var _initOther = (typeof globalBd.other === 'number') ? globalBd.other : 100;
+                    c.balanceData = { other: _initOther, records: [] };
+                    if (Array.isArray(globalBd.records)) {
+                        globalBd.records.forEach(function(r) { c.balanceData.records.push(r); });
+                    }
+                }
+                return c.balanceData.other;
+            }
+        }
+        return globalBd.other;
     }
     function renderBalanceApp() {
         _balanceRendering = true;
@@ -27428,13 +28665,19 @@ function mlsjIconClock() {
         container.innerHTML = html;
         } finally { _balanceRendering = false; }
     }
-    function addBalanceRecord(target, amount, desc) {
+    function addBalanceRecord(target, amount, desc, contactId) {
         var globalBd = appData.balanceData;
         if (!globalBd) globalBd = appData.balanceData = { mine: 100, other: 100, records: [] };
-        var c = _balanceContactId ? _findContactById(_balanceContactId) : null;
-        // 使用固定默认值100，不依赖 globalBd.other
+        /* 支持显式传入 contactId（转账等场景需要按聊天上下文定位联系人） */
+        var _cid = (contactId !== undefined && contactId !== null && contactId !== '') ? contactId : _balanceContactId;
+        var c = _cid ? _findContactById(_cid) : null;
+        // 初始化联系人余额：other 继承全局值（而非固定100）
         if (c && (!c.balanceData || typeof c.balanceData.other !== 'number')) {
-            c.balanceData = { other: 100, records: [] };
+            var _initOther = (typeof globalBd.other === 'number') ? globalBd.other : 100;
+            c.balanceData = { other: _initOther, records: [] };
+            if (Array.isArray(globalBd.records)) {
+                globalBd.records.forEach(function(r) { c.balanceData.records.push(r); });
+            }
         }
 
         if (target === 'mine') {
@@ -27550,6 +28793,14 @@ function mlsjIconClock() {
         restoreAppIcons();
         restoreWidgets();
         restoreWidgetOffsets();
+        /* 恢复上次选择的余额联系人，确保购物城/写歌/五子棋等操作写入正确的联系人余额 */
+        if (typeof _balanceContactId !== 'undefined' && !_balanceContactId && appData.balanceData && appData.balanceData._balanceContactId) {
+            var _savedBalCid = appData.balanceData._balanceContactId;
+            var _balContacts = (appData.contactList && appData.contactList.contacts) || [];
+            for (var _bi = 0; _bi < _balContacts.length; _bi++) {
+                if (_balContacts[_bi].id === _savedBalCid) { _balanceContactId = _savedBalCid; break; }
+            }
+        }
         // 恢复图标大小
         if (appData.iconSize) {
             document.documentElement.style.setProperty('--app-icon-size', appData.iconSize + 'px');
@@ -29411,7 +30662,7 @@ function shopRenderCart() {
     var total = shopCartTotal();
     shopEnsureBalance();
     /* Bug20修复：otherBal 可能为 NaN（算术运算产生），直接 .toFixed(2) 会显示 ¥NaN */
-    var otherBal = parseFloat(appData.balanceData.other);
+    var otherBal = parseFloat(getOtherBalance());
     if (isNaN(otherBal)) otherBal = 0;
     var balHtml = '对方余额 ¥' + otherBal.toFixed(2) +
         (otherBal < 0 ? ' <span class="shop-owe-tag">赊账中</span>' : '');
@@ -29483,7 +30734,7 @@ function shopCheckout() {
     // 结算时扣对方余额（余额不足则变负数 -> 赊账）
     shopEnsureBalance();
     addBalanceRecord('other', -total, desc);
-    var debt = appData.balanceData.other < 0;
+    var debt = getOtherBalance() < 0;
 
     var oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     sd.orders.push({
@@ -29655,7 +30906,7 @@ function shopShipOrder(id) {
             shopEnsureBalance();
             addBalanceRecord('other', -order.total, '次元购物城消费');
             order.paid = true;
-            order.debt = appData.balanceData.other < 0;
+            order.debt = getOtherBalance() < 0;
         }
         saveData();
         shopToast('已发货，预计 3 天送达');
@@ -30940,14 +32191,14 @@ function shopProcessPendingCards() {
                 });
                 msg.orderId = _oid;
                 shopEnsureBalance();
-                addBalanceRecord('other', -(_p.price || 0), '次元购物城代付/求购');
-                sd.orders[sd.orders.length - 1].debt = appData.balanceData.other < 0;
+                addBalanceRecord('other', -(_p.price || 0), '次元购物城代付/求购', msg.contactId || null);
+                sd.orders[sd.orders.length - 1].debt = getOtherBalance(msg.contactId || null) < 0;
                 addSystemMsg(_cardContactName + ' 已同意，¥' + (_p.price || 0) + ' 已从对方余额扣除');
             } else {
                 msg.status = 'rejected';
                 /* 根据对方余额显示不同留言 */
                 shopEnsureBalance();
-                var _otherBal = appData.balanceData.other;
+                var _otherBal = getOtherBalance(msg.contactId || null);
                 var _rejectMsg = '';
                 if (_otherBal < 0) {
                     _rejectMsg = '天啊‼️陛下！对方已经负债了呀❗️❗️';
@@ -34790,6 +36041,13 @@ window.autoSizeInput=function(el){
   if(w>110) w=110;
   el.style.width=w+'px';
 };
+/* 保存第三页四个输入框文字到 localStorage */
+window.saveP3InputTexts=function(){
+  var inputs=document.querySelectorAll('.p3-glass-input');
+  var texts=[];
+  inputs.forEach(function(inp){ texts.push(inp.value||''); });
+  try{ localStorage.setItem('p3_input_texts',JSON.stringify(texts)); }catch(e){}
+};
 /* 全局函数定义 - 确保在任何情况下都可调用 */
 window.replaceP3Avatar=function(e){
   if(e){ e.stopPropagation(); e.preventDefault(); }
@@ -34856,8 +36114,18 @@ window.replaceP3Avatar=function(e){
     }else{
       try{ var v=localStorage.getItem(AV_KEY); if(v) applyAvatar(v); }catch(e){}
     }
-    /* 初始化所有 p3-glass-input 的自动宽度 */
+    /* 初始化所有 p3-glass-input 的自动宽度，并恢复已保存的文字 */
     document.querySelectorAll('.p3-glass-input').forEach(function(inp){
+      /* 恢复保存的文字 */
+      try{
+        var saved=JSON.parse(localStorage.getItem('p3_input_texts'));
+        if(Array.isArray(saved)){
+          var idx=parseInt(inp.dataset.p3Input,10);
+          if(!isNaN(idx)&&saved[idx]!==undefined&&saved[idx]!==''){
+            inp.value=saved[idx];
+          }
+        }
+      }catch(e){}
       window.autoSizeInput(inp);
     });
   }
