@@ -9809,19 +9809,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     window.saveImgDB = async function(key, dataUrl) {
         try {
             if (!dataUrl || dataUrl.length < 100) { // 小数据直接存 localStorage
-                try { localStorage.setItem(key, dataUrl || ''); return true; } catch(e) {
-                    /* localStorage 满了，小数据也写入 IndexedDB 作为兜底 */
-                    const db0 = await imgDBOpen();
-                    if (db0) {
-                        return new Promise((resolve) => {
-                            const tx = db0.transaction(IDB_IMG_STORE, 'readwrite');
-                            tx.objectStore(IDB_IMG_STORE).put(dataUrl || '', key);
-                            tx.oncomplete = () => resolve(true);
-                            tx.onerror = () => resolve(false);
-                        });
-                    }
-                    return false;
-                }
+                try { localStorage.setItem(key, dataUrl || ''); } catch(e) {}
                 return true;
             }
             const db = await imgDBOpen();
@@ -9865,8 +9853,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                        'lt_bgImg', 'lt_bgImage', 'lt_avatar1', 'lt_avatar2',
                        'lt_profileBg', 'lt_togetherAv',
                        'p3_center_avatar', 'p3_rectangle_img',
-                       'lt_settings', 'lt_songs', 'lt_comments',
-                       'lt_profileData', 'lt_favorites', 'lt_playedSongs', 'lt_scheduledReplies'];
+                       'lt_settings', 'lt_songs', 'lt_comments'];
         imgKeys.forEach(function(key) {
             try {
                 var val = localStorage.getItem(key);
@@ -10756,30 +10743,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 return merged;
             }
         } catch (e) {
-            console.error('localStorage数据加载失败，尝试备份键:', e);
-            // 主数据解析失败，尝试 backup 键
-            try {
-                let rawBak = localStorage.getItem(STORAGE_KEY + '_backup');
-                if (rawBak) {
-                    const parsedBak = JSON.parse(rawBak);
-                    stripTokensInObj(parsedBak);
-                    function mergeDeepBak(target, source) {
-                        for (const key in source) {
-                            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                                target[key] = mergeDeepBak(target[key] || {}, source[key]);
-                            } else if (!(key in target)) {
-                                target[key] = source[key];
-                            }
-                        }
-                        return target;
-                    }
-                    const mergedBak = mergeDeepBak(parsedBak, JSON.parse(JSON.stringify(defaultData)));
-                    migrateData(mergedBak);
-                    return mergedBak;
-                }
-            } catch(e2) {
-                console.error('备份键也加载失败，使用默认值:', e2);
-            }
+            console.error('localStorage数据加载失败，使用默认值:', e);
         }
         var fallback = JSON.parse(JSON.stringify(defaultData));
         migrateData(fallback);
@@ -21608,14 +21572,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         } finally {
             _activeContactId = _savedActiveId;
         }
-        // 收集 localStorage 中的辅助数据（排除主数据键避免冗余）
+        // 收集 localStorage 中的辅助数据
         const extra = {};
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const _k = localStorage.key(i);
-                if (_k && _k !== STORAGE_KEY && _k !== STORAGE_KEY + '_backup') {
-                    extra[_k] = localStorage.getItem(_k);
-                }
+                if (_k) extra[_k] = localStorage.getItem(_k);
             }
         } catch(e) {}
         if (Object.keys(extra).length > 0) exportObj.extraStorage = extra;
@@ -21745,41 +21707,23 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         if (Object.keys(filteredData).length > 0) {
                             importMergeDeep(appData, filteredData);
                         }
-                        // 恢复 extraStorage（独立 localStorage 键）
-                        // 全不选 → 恢复全部；有勾选 → 按模块恢复对应前缀的键
-                        const _extraSrc = data.extraStorage || {};
-                        function _restoreExtraKeys(prefixList) {
-                            Object.keys(_extraSrc).forEach(function(_ek) {
-                                if (prefixList.some(function(p){ return _ek === p || _ek.indexOf(p) === 0; })) {
-                                    try { localStorage.setItem(_ek, _extraSrc[_ek]); } catch(e) {}
-                                }
-                            });
-                        }
-                        if (!hasSelection) {
-                            // 未选择：恢复全部 extraStorage
-                            Object.keys(_extraSrc).forEach(function(_ek) {
-                                try { localStorage.setItem(_ek, _extraSrc[_ek]); } catch(e) {}
-                            });
-                        } else {
-                            // globalSettings：壁纸/外观 + 所有非模块专属的独立键
-                            if (selectedKeys.globalSettings) {
-                                _restoreExtraKeys(['p3_', '_swCustom', 'swReverbType', 'qianyi_notified', 'p3_layout', 'p3_badge']);
-                            }
-                            // ltData：一起听歌所有 lt_ 前缀键
-                            if (selectedKeys.ltData) {
-                                _restoreExtraKeys(['lt_']);
-                            }
-                            // tarotData：塔罗
-                            if (selectedKeys.tarotData) {
-                                _restoreExtraKeys(['tarot_']);
-                            }
-                            // contactList：联系人随机食物等
-                            if (selectedKeys.contactList) {
-                                _restoreExtraKeys(['randomfood_data', 'ta_chat_']);
-                            }
+                        // 恢复全局备份中独立存储的辅助数据
+                        // 未选择→全部恢复；选了壁纸/外观→恢复独立键；选了一起听歌→恢复lt_前缀；选了塔罗→恢复tarot_前缀
+                        if (!hasSelection || selectedKeys.globalSettings || selectedKeys.ltData || selectedKeys.tarotData) {
+                            const _extraSrc = data.extraStorage || {};
+                            try {
+                                Object.keys(_extraSrc).forEach(function(_ek) {
+                                    var shouldRestore = !hasSelection || selectedKeys.globalSettings;
+                                    if (selectedKeys.ltData && _ek.indexOf('lt_') === 0) shouldRestore = true;
+                                    if (selectedKeys.tarotData && _ek.indexOf('tarot_') === 0) shouldRestore = true;
+                                    if (shouldRestore) {
+                                        try { localStorage.setItem(_ek, _extraSrc[_ek]); } catch(e) {}
+                                    }
+                                });
+                            } catch(e) {}
                         }
                         saveDataSync(); // 立即同步保存，确保刷新前数据已写入
-                        // 恢复 IndexedDB 图片数据（await 确保写入完成后再刷新）
+                        // 恢复 IndexedDB 图片数据
                         if (data.indexedDBImages && window.importImgDB) {
                             try { await window.importImgDB(data.indexedDBImages); } catch(e) {}
                         }
@@ -32387,7 +32331,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     sheet.addEventListener('click',function(ev){
       var act=ev.target.getAttribute&&ev.target.getAttribute('data-act');
       if(act==='upload'){ mwFileTarget=target; mwFileInput.click(); mask.remove(); }
-      else if(act==='reset'){ var _rk=target==='a1'?MWA1_KEY:MWA2_KEY; localStorage.removeItem(_rk); if(window.removeImgDB){window.removeImgDB(_rk);} applyMwAvatars(); mask.remove(); p3Toast('已恢复默认'); }
+      else if(act==='reset'){ localStorage.removeItem(target==='a1'?MWA1_KEY:MWA2_KEY); applyMwAvatars(); mask.remove(); p3Toast('已恢复默认'); }
       else if(act==='cancel'){ mask.remove(); }
     });
     mask.addEventListener('click',function(ev){ if(ev.target===mask) mask.remove(); });
@@ -32418,7 +32362,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     sheet.addEventListener('click',function(ev){
       var act=ev.target.getAttribute&&ev.target.getAttribute('data-act');
       if(act==='upload'){ mwFileTarget='bg'; mwFileInput.click(); mask.remove(); }
-      else if(act==='reset'){ localStorage.removeItem(MWBG_KEY); localStorage.removeItem(MWFC_KEY); if(window.removeImgDB){window.removeImgDB(MWBG_KEY);} applyMwBg(); mask.remove(); p3Toast('已恢复默认'); }
+      else if(act==='reset'){ localStorage.removeItem(MWBG_KEY); localStorage.removeItem(MWFC_KEY); applyMwBg(); mask.remove(); p3Toast('已恢复默认'); }
       else if(act==='cancel'){ mask.remove(); }
     });
     mask.addEventListener('click',function(ev){ if(ev.target===mask) mask.remove(); });
@@ -32844,12 +32788,6 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   }
   function save(key,val){
     _ltCache[key]=val;
-    /* 设置修改标志，防止 IDB 异步恢复覆盖 */
-    if(key===K.songs)_ltSongsModified=true;
-    else if(key===K.comments)_ltCommentsModified=true;
-    else if(key===K.fav)_ltFavModified=true;
-    else if(key===K.settings)_ltSettingsModified=true;
-    else if(key===K.play)_ltPlayModified=true;
     var json;
     try{ json=JSON.stringify(val); }catch(e){ return; }
     try{
@@ -32861,55 +32799,44 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   }
   var _ltCache={};
   /* 异步从 IndexedDB 恢复数据到内存缓存 */
-  /* 注意：直接查 IndexedDB，不经过 loadImgDB（后者 localStorage 优先会遮蔽 IDB 数据） */
   function restoreLTFromIDB(){
+    if(!window.loadImgDB) return;
+    /* 清理可能被 DEFAULT_SONGS 污染的 lt_songs，让 loadImgDB 能从 IDB 恢复真实数据（含MP3链接） */
+    try {
+      var lsSongs = localStorage.getItem(K.songs);
+      if (lsSongs) {
+        var parsed = JSON.parse(lsSongs);
+        if (Array.isArray(parsed) && parsed.length === 5 && parsed[0] && parsed[0].id === 's1' && !parsed[0].url) {
+          localStorage.removeItem(K.songs);
+        }
+      }
+    } catch(e) {}
     Object.keys(K).forEach(function(k){
       var key=K[k];
-      (function(ltKey){
-        try {
-          var dbReq = indexedDB.open('qianyi_img_db_v1', 1);
-          dbReq.onupgradeneeded = function(e) {
-            var db = e.target.result;
-            if (!db.objectStoreNames.contains('images')) db.createObjectStore('images');
-          };
-          dbReq.onsuccess = function(e) {
-            var db = e.target.result;
-            if (!db || !db.objectStoreNames.contains('images')) { db && db.close(); return; }
-            try {
-              var tx = db.transaction('images', 'readonly');
-              var req = tx.objectStore('images').get(ltKey);
-              req.onsuccess = function() {
-                if (req.result) {
-                  try {
-                    var parsed = JSON.parse(req.result);
-                    _ltCache[ltKey] = parsed;
-                    _ltIDBRestored = true;
-                    try { _applyIDBRestored(); } catch(e){}
-                  } catch(e){}
-                }
-                db.close();
-              };
-              req.onerror = function() { db.close(); };
-            } catch(err) { db.close(); }
-          };
-          dbReq.onerror = function() {};
-        } catch(e) {}
-      })(key);
+      window.loadImgDB(key, function(val){
+        if(val){
+          try{
+            var parsed=JSON.parse(val);
+            _ltCache[key]=parsed;
+            /* 恢复后更新界面 */
+            _ltIDBRestored=true;
+            try{ _applyIDBRestored(); }catch(e){}
+          }catch(e){}
+        }
+      });
     });
   }
   var _ltIDBRestored=false;
-  /* 修改标志：防止 IDB 异步恢复覆盖用户在窗口期内的修改 */
-  var _ltSongsModified=false, _ltCommentsModified=false, _ltFavModified=false, _ltSettingsModified=false, _ltPlayModified=false;
   function _applyIDBRestored(){
     if(!_ltIDBRestored) return;
-    /* 更新关键变量（仅当用户未在窗口期内修改时恢复） */
-    if(_ltCache[K.songs] && !_ltSongsModified){ songs=_ltCache[K.songs]; /* 写回 localStorage，修复之前被 DEFAULT_SONGS 污染的情况 */ try{localStorage.setItem(K.songs,JSON.stringify(songs));}catch(e){} }
-    if(_ltCache[K.settings] && !_ltSettingsModified){ settings=_ltCache[K.settings]; otherName=settings.otherName||'对方'; try{localStorage.setItem(K.settings,JSON.stringify(settings));}catch(e){} }
+    /* 更新关键变量 */
+    if(_ltCache[K.songs]){ songs=_ltCache[K.songs]; try{localStorage.setItem(K.songs,JSON.stringify(songs));}catch(e){} }
+    if(_ltCache[K.settings]){ settings=_ltCache[K.settings]; otherName=settings.otherName||'对方'; }
     if(_ltCache[K.contactId]!==undefined){ ltContactId=_ltCache[K.contactId]; }
     if(_ltCache[K.cumTime]!==undefined){ cumulativeTime=_ltCache[K.cumTime]; }
-    if(_ltCache[K.play] && !_ltPlayModified){ playstate=_ltCache[K.play]; }
-    if(_ltCache[K.comments] && !_ltCommentsModified){ comments=_ltCache[K.comments]; }
-    if(_ltCache[K.fav] && !_ltFavModified){ favorites=_ltCache[K.fav]; }
+    if(_ltCache[K.play]){ playstate=_ltCache[K.play]; }
+    if(_ltCache[K.comments]){ comments=_ltCache[K.comments]; }
+    if(_ltCache[K.fav]){ favorites=_ltCache[K.fav]; }
     if(_ltCache[K.together]!==undefined){ together=_ltCache[K.together]; }
     if(_ltCache[K.played] && !_ltPlayedModified){ playedSongs=_ltCache[K.played]; }
     if(_ltCache[K.profile]){ profileData=_ltCache[K.profile]; }
@@ -32927,8 +32854,6 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   var LT_FALLBACK_REPLIES=['这首歌好好听','想到你了','今天也在一起听歌呢','旋律一响就想起你','单曲循环了一整天','听到这句就笑了','你是不是也在听','想和你一起看演唱会','这首歌的副歌太绝了','安静的时候听最合适','耳机分你一半','今天的天气适合这首歌','听到前奏就沦陷了','你也喜欢这句歌词吗','一起听到天黑','节奏刚好踩在心跳上','想把这首歌设成你的来电铃声','又是一个听歌的夜晚','这首歌藏着一个故事','陪你听完整张专辑'];
 
   /* ============ 状态 ============ */
-  /* 注意：songs 回退到 DEFAULT_SONGS 时只放内存，不写回 localStorage，
-     避免遮蔽 IndexedDB 中的真实数据（含MP3链接），等 restoreLTFromIDB 恢复 */
   var songs=load(K.songs,null); if(!songs){songs=DEFAULT_SONGS.slice();}
   var favorites=load(K.fav,[]);
   var comments=load(K.comments,[]);
