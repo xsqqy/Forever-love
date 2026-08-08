@@ -9616,61 +9616,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             return true;
         } catch(e) { return false; }
     }
-    // ===== 二进制抽取层：localStorage 只存纯文本，图片/音频/视频全部走 IndexedDB =====
-    // 内存中的 appData 始终保持完整的 data URL（UI 代码无需任何改动）；
-    // 仅在持久化时把二进制抽到 blobs 仓库，持久化副本只保留 __BLOB__:<key> 引用。
+    // ===== 旧数据兼容层 =====
+    // 新版直接存储完整 appData（含图片）到 IndexedDB，不再 tokenize。
+    // 以下 _BLOB_TOKEN_PREFIX / collectTokenKeys / resolveTokensInObj / blobGetMany
+    // 仅用于从旧版 IndexedDB（tokenized 数据）一次性恢复图片，恢复后以新格式重写。
     var _BLOB_TOKEN_PREFIX = '__BLOB__:';
-    var _blobsWritten = new Set(); // 已写入的 blob key（内容寻址，幂等），避免每次保存重复写入
-    // 判断一个字符串是否应抽到 IndexedDB：
-    //  1) 体积可能超过 100KB 的任何数据；或
-    //  2) 媒体 data URL（image/audio/video，svg 是小体积文本图标，留在 localStorage）
-    function isBlobValue(s) {
-        if (typeof s !== 'string' || s.length < 64) return false;
-        if (s.length > 100 * 1024) return true;
-        if (/^data:(image\/(?!svg)|audio\/|video\/)/i.test(s)) return true;
-        return false;
-    }
-    // 内容寻址哈希（双 FNV-1a，64bit 级碰撞空间），保证相同内容得到相同 key
-    function hashStr(s) {
-        var h1 = 0x811c9dc5 >>> 0, h2 = 0x01000193 >>> 0;
-        for (var i = 0; i < s.length; i++) {
-            var c = s.charCodeAt(i);
-            h1 ^= c; h1 = (h1 + ((h1 << 1) + (h1 << 4) + (h1 << 7) + (h1 << 8) + (h1 << 24))) >>> 0;
-            h2 ^= c; h2 = (h2 + ((h2 << 1) + (h2 << 4) + (h2 << 7) + (h2 << 8) + (h2 << 24))) >>> 0;
-        }
-        return h1.toString(16) + h2.toString(16);
-    }
-    // 深度遍历，把二进制字符串替换为 __BLOB__:<key> 引用，并收集到 blobs（key->原值）
-    function tokenizeObj(obj, blobs) {
-        if (!obj || typeof obj !== 'object') return;
-        if (Array.isArray(obj)) {
-            for (var i = 0; i < obj.length; i++) {
-                if (typeof obj[i] === 'string') {
-                    if (isBlobValue(obj[i])) {
-                        var key = 'b' + obj[i].length + '_' + hashStr(obj[i]);
-                        blobs[key] = obj[i];
-                        obj[i] = _BLOB_TOKEN_PREFIX + key;
-                    }
-                } else if (obj[i] && typeof obj[i] === 'object') {
-                    tokenizeObj(obj[i], blobs);
-                }
-            }
-        } else {
-            for (var k in obj) {
-                if (!obj.hasOwnProperty(k)) continue;
-                var v = obj[k];
-                if (typeof v === 'string') {
-                    if (isBlobValue(v)) {
-                        var key2 = 'b' + v.length + '_' + hashStr(v);
-                        blobs[key2] = v;
-                        obj[k] = _BLOB_TOKEN_PREFIX + key2;
-                    }
-                } else if (v && typeof v === 'object') {
-                    tokenizeObj(v, blobs);
-                }
-            }
-        }
-    }
     // 收集对象中所有 __BLOB__:<key> 引用的 key（用于批量拉取）
     function collectTokenKeys(obj, keysSet) {
         if (!obj || typeof obj !== 'object') return;
@@ -9719,30 +9669,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
         }
     }
-    // 同步加载阶段（localStorage）把引用置空，由 IndexedDB 异步恢复，避免 UI 拿到 __BLOB__ 字面量
-    function stripTokensInObj(obj) {
-        if (!obj || typeof obj !== 'object') return;
-        if (Array.isArray(obj)) {
-            for (var i = 0; i < obj.length; i++) {
-                if (typeof obj[i] === 'string' && obj[i].indexOf(_BLOB_TOKEN_PREFIX) === 0) {
-                    obj[i] = '';
-                } else if (obj[i] && typeof obj[i] === 'object') {
-                    stripTokensInObj(obj[i]);
-                }
-            }
-        } else {
-            for (var k in obj) {
-                if (!obj.hasOwnProperty(k)) continue;
-                var v = obj[k];
-                if (typeof v === 'string' && v.indexOf(_BLOB_TOKEN_PREFIX) === 0) {
-                    obj[k] = '';
-                } else if (v && typeof v === 'object') {
-                    stripTokensInObj(v);
-                }
-            }
-        }
-    }
-    // 批量从 blobs 仓库拉取（单事务，避免逐条 get 的事务开销）
+    // 批量从 blobs 仓库拉取（单事务，避免逐条 get 的事务开销）—— 仅用于恢复旧版数据
     function blobGetMany(keys) {
         return new Promise(function(resolve) {
             if (!keys || keys.length === 0) { resolve({}); return; }
@@ -9762,32 +9689,6 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 } catch(e) { resolve({}); }
             }).catch(function() { resolve({}); });
         });
-    }
-    // 原子持久化：appData 引用与新 blobs 写入同一个事务，保证引用与数据一致
-    function persistTokenizedToIDB(tokenizedJson, blobs) {
-        idbOpen().then(function(db) {
-            if (!db) {
-                // 降级：仅写 appData（引用缺失时加载会安全置空）
-                idbSet('appData', tokenizedJson);
-                idbSet('appData_backup', tokenizedJson);
-                return;
-            }
-            try {
-                var tx = db.transaction([IDB_STORE, IDB_BLOB_STORE], 'readwrite');
-                tx.objectStore(IDB_STORE).put(tokenizedJson, 'appData');
-                tx.objectStore(IDB_STORE).put(tokenizedJson, 'appData_backup');
-                var newKeys = [];
-                for (var k in blobs) {
-                    if (!_blobsWritten.has(k)) { tx.objectStore(IDB_BLOB_STORE).put(blobs[k], k); newKeys.push(k); }
-                }
-                tx.oncomplete = function() { for (var i = 0; i < newKeys.length; i++) _blobsWritten.add(newKeys[i]); };
-                tx.onerror = function() { console.warn('IndexedDB 持久化事务失败'); };
-            } catch(e) {
-                console.error('persistTokenizedToIDB error:', e);
-                idbSet('appData', tokenizedJson);
-                idbSet('appData_backup', tokenizedJson);
-            }
-        }).catch(function() {});
     }
     // ===== IndexedDB 图片存储层（绕过 localStorage 5MB 限制）=====
     let _imgDB = null;
@@ -10694,9 +10595,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (!raw) raw = localStorage.getItem('qianyi_data_backup');
             if (raw) {
                 const parsed = JSON.parse(raw);
-                // localStorage 只保留纯文本；同步加载阶段把二进制引用置空，
-                // 由 loadDataFromIDB() 异步从 IndexedDB blobs 仓库恢复真实数据
-                stripTokensInObj(parsed);
+                // 新版：localStorage 仅用于一次性迁移，数据可能包含旧版 __BLOB__ 引用，
+                // loadDataFromIDB() 会从 IndexedDB 读取完整数据覆盖，无需在此处理引用。
                 function mergeDeep(target, source) {
                     for (const key in source) {
                         if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
@@ -10850,11 +10750,23 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 // 重新初始化界面以应用IndexedDB数据
                 if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
             } else {
-                // IndexedDB 没有数据，把当前 localStorage 数据写入 IndexedDB
+                // IndexedDB 没有数据，从 localStorage 一次性迁移到 IndexedDB
                 // loadData() 已经执行过迁移，确保版本号正确
                 if (!appData.dataVersion) appData.dataVersion = CURRENT_DATA_VERSION;
                 _idbReady = true;
                 saveDataSync();
+                // 迁移完成后，立即删除 localStorage 中的旧数据（不保留冷备份）
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(STORAGE_KEY + '_backup');
+                    // 清理所有旧版本 key
+                    var _oldKeys = ['qianyi_data_v7', 'qianyi_data_v7_backup',
+                                    'qianyi_data_v6', 'qianyi_data_v6_backup',
+                                    'qianyi_data_v5', 'qianyi_data_v5_backup',
+                                    'qianyi_data', 'qianyi_data_backup'];
+                    _oldKeys.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });
+                    console.log('[存储迁移] localStorage 旧数据已清除，数据已迁移至 IndexedDB');
+                } catch(e) { console.warn('清除 localStorage 旧数据失败:', e); }
             }
             // 数据就绪后执行每日检查（此时 appData 已是真实数据，saveData 可安全写入）
             runDailyChecks();
@@ -10870,34 +10782,19 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
     // saveData 防抖：避免频繁序列化大对象导致卡顿
     let _saveDataTimer = null;
-    let _lastGoodJson = null; // 缓存上次成功序列化的（已抽取二进制的）JSON，用于回滚
+    let _lastGoodJson = null; // 缓存上次成功序列化的 JSON，用于回滚
     // 同步立即保存：用于删除等不可逆操作，避免防抖导致的数据丢失/白屏
-    // localStorage 只存纯文本：图片/音频/视频等二进制先抽取到 IndexedDB blobs 仓库，
-    // 持久化副本只保留 __BLOB__:<key> 引用，从而把 localStorage 控制在几百 KB 以内。
+    // 新版：直接存储完整 appData（含图片）到 IndexedDB，不写 localStorage
     function saveDataSync() {
         if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; }
         var _savedActiveId = _activeContactId;
         _activeContactId = null; // 序列化时使用主聊天记录，避免联系人记录被误存为主记录
         try {
             var fullJson = JSON.stringify(appData);
-            // 克隆后抽取二进制：内存中的 appData 保持完整不变，仅持久化副本被抽取
-            var clone = JSON.parse(fullJson);
-            var blobs = {};
-            tokenizeObj(clone, blobs);
-            var tokenizedJson = JSON.stringify(clone);
-            _lastGoodJson = tokenizedJson; // 记录成功序列化的数据（纯文本版）
+            _lastGoodJson = fullJson;
             if (_idbReady) {
-                // 原子写入 appData 引用与新 blobs，保证引用与数据一致
-                persistTokenizedToIDB(tokenizedJson, blobs);
-            }
-            // 数据未加载完毕前不写入 localStorage，防止默认数据覆盖真实备份
-            if (_idbReady) {
-                try {
-                    localStorage.setItem(STORAGE_KEY, tokenizedJson);
-                    localStorage.setItem(STORAGE_KEY + '_backup', tokenizedJson);
-                } catch (e) {
-                    console.warn('localStorage空间不足，仅使用IndexedDB存储');
-                }
+                idbSet('appData', fullJson);
+                idbSet('appData_backup', fullJson);
             }
             return true;
         } catch (e) {
@@ -10909,8 +10806,6 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         idbSet('appData', _lastGoodJson);
                         idbSet('appData_backup', _lastGoodJson);
                     }
-                    try { localStorage.setItem(STORAGE_KEY, _lastGoodJson); } catch(e2) {}
-                    try { localStorage.setItem(STORAGE_KEY + '_backup', _lastGoodJson); } catch(e3) {}
                     console.warn('已回滚到上次成功保存的数据');
                 } catch (e2) {
                     console.error('回滚失败:', e2);
@@ -10929,25 +10824,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             _activeContactId = null; // 序列化时使用主聊天记录
             try {
                 var fullJson = JSON.stringify(appData);
-                // 克隆后抽取二进制：内存中的 appData 保持完整不变，仅持久化副本被抽取
-                var clone = JSON.parse(fullJson);
-                var blobs = {};
-                tokenizeObj(clone, blobs);
-                var tokenizedJson = JSON.stringify(clone);
-                _lastGoodJson = tokenizedJson;
-                // 主存储：IndexedDB（支持30G大容量）—— 数据未加载完毕前不写入，防止默认数据覆盖真实数据
+                _lastGoodJson = fullJson;
+                // 主存储：IndexedDB（直接存储完整 appData，含图片）
                 if (_idbReady) {
-                    persistTokenizedToIDB(tokenizedJson, blobs);
-                }
-                // 备份：localStorage（纯文本，体积小）
-                // 数据未加载完毕前不写入，防止默认数据覆盖真实备份
-                if (_idbReady) {
-                    try {
-                        localStorage.setItem(STORAGE_KEY, tokenizedJson);
-                        localStorage.setItem(STORAGE_KEY + '_backup', tokenizedJson);
-                    } catch (e) {
-                        console.warn('localStorage空间不足，仅使用IndexedDB存储');
-                    }
+                    idbSet('appData', fullJson);
+                    idbSet('appData_backup', fullJson);
                 }
             } catch (e) {
                 console.error('数据序列化失败:', e);
@@ -10958,8 +10839,6 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                             idbSet('appData', _lastGoodJson);
                             idbSet('appData_backup', _lastGoodJson);
                         }
-                        try { localStorage.setItem(STORAGE_KEY, _lastGoodJson); } catch(e2) {}
-                        try { localStorage.setItem(STORAGE_KEY + '_backup', _lastGoodJson); } catch(e3) {}
                         console.warn('已回滚到上次成功保存的数据');
                     } catch (e2) {
                         console.error('回滚失败:', e2);
@@ -21574,17 +21453,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         } finally {
             _activeContactId = _savedActiveId;
         }
-        // 收集 localStorage 中的辅助数据
-        const extra = {};
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const _k = localStorage.key(i);
-                if (_k) extra[_k] = localStorage.getItem(_k);
-            }
-        } catch(e) {}
-        if (Object.keys(extra).length > 0) exportObj.extraStorage = extra;
 
-        // 收集 IndexedDB 中的图片数据
+        // 收集 IndexedDB 中的独立图片数据（拍立得、学生证、圆形头像等）
         try {
             if (window.exportImgDB) {
                 const imgData = await window.exportImgDB();
@@ -21709,22 +21579,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         if (Object.keys(filteredData).length > 0) {
                             importMergeDeep(appData, filteredData);
                         }
-                        // 恢复全局备份中独立存储的辅助数据
-                        // 未选择→全部恢复；选了壁纸/外观→恢复独立键；选了一起听歌→恢复lt_前缀；选了塔罗→恢复tarot_前缀
-                        if (!hasSelection || selectedKeys.globalSettings || selectedKeys.ltData || selectedKeys.tarotData) {
-                            const _extraSrc = data.extraStorage || {};
-                            try {
-                                Object.keys(_extraSrc).forEach(function(_ek) {
-                                    var shouldRestore = !hasSelection || selectedKeys.globalSettings;
-                                    if (selectedKeys.ltData && _ek.indexOf('lt_') === 0) shouldRestore = true;
-                                    if (selectedKeys.tarotData && _ek.indexOf('tarot_') === 0) shouldRestore = true;
-                                    if (shouldRestore) {
-                                        try { localStorage.setItem(_ek, _extraSrc[_ek]); } catch(e) {}
-                                    }
-                                });
-                            } catch(e) {}
-                        }
-                        saveDataSync(); // 立即同步保存，确保刷新前数据已写入
+                        saveDataSync(); // 立即同步保存到 IndexedDB，确保刷新前数据已写入
                         // 恢复 IndexedDB 图片数据
                         if (data.indexedDBImages && window.importImgDB) {
                             try { await window.importImgDB(data.indexedDBImages); } catch(e) {}
