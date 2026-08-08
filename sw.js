@@ -2,7 +2,7 @@
 // 缓存名使用固定版本号（与 index.html 中的 _SW_BUILD 对应）。
 // 旧实现使用 'qianyi-cache-' + Date.now()，导致每次 SW 重新安装都生成全新缓存名，
 // 旧缓存被反复清空重建，配合主线程的 controllerchange→reload 在安卓上引发界面闪烁与刷新死循环。
-const CACHE_NAME = 'qianyi-cache-v20260802a';
+const CACHE_NAME = 'qianyi-cache-v20260808a';
 const SILENT_AUDIO = './silent.mp3';
 
 // 安装时缓存静音音频，并跳过等待以便新版本尽快激活（激活后静默接管，主线程不再强制刷新）
@@ -59,14 +59,17 @@ self.addEventListener('message', function(event) {
     }
 });
 
-// 通知点击：聚焦窗口
+// 通知点击：聚焦窗口并通知主线程直接进入对应聊天界面
 self.addEventListener('notificationclick', function(event) {
+    var _data = (event.notification && event.notification.data) || {};
     event.notification.close();
     event.waitUntil(
-        self.clients.matchAll({ type: 'window' }).then(function(clientList) {
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
             for (var i = 0; i < clientList.length; i++) {
                 var client = clientList[i];
-                if ('focus' in client) return client.focus();
+                // 通知主线程：用户点击了系统通知，请直接进入对应聊天
+                try { client.postMessage({ type: 'NOTIF_CLICK', contactId: _data.contactId || null }); } catch(e) {}
+                if ('focus' in client) { return client.focus(); }
             }
             if (self.clients.openWindow) return self.clients.openWindow('./');
         })
