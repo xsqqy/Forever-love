@@ -6528,11 +6528,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 .lt-profile-avatar{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#cfd2d7,#b7bac0);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.14);flex-shrink:0;}
 .lt-profile-avatar svg{width:42px;height:42px;}
 .lt-profile-avatar img{width:100%;height:100%;object-fit:cover;}
-.lt-profile-name{font-size:20px;font-weight:600;margin-top:1px;cursor:pointer;max-width:80%;text-align:center;word-break:break-all;color:var(--lt-profile-text,inherit);}
+.lt-profile-name{font-size:20px;font-weight:600;margin-top:1px;cursor:pointer;max-width:80%;text-align:center;word-break:break-all;}
 .lt-profile-date{margin-top:1px;font-size:13px;color:var(--lt-sub);cursor:pointer;text-align:center;max-width:92%;word-break:break-all;padding:1px 0;}
 .lt-profile-stats{display:flex;justify-content:center;gap:36px;margin-top:2px;}
 .lt-stat{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
-.lt-stat-num{font-size:17px;font-weight:600;color:var(--lt-profile-text,inherit);}
+.lt-stat-num{font-size:17px;font-weight:600;}
 .lt-stat-label{font-size:11px;color:var(--lt-sub);margin-top:1px;}
 .lt-profile-imgs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:3px;width:100%;}
 .lt-profile-img{aspect-ratio:1/1;border-radius:12px;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;position:relative;}
@@ -6550,7 +6550,6 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 .lt-player-center.lt-mode-together .lt-cover{display:flex;}
 .lt-together{display:none;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px;}
 .lt-player-center.lt-mode-together .lt-together{display:flex;}
-.lt-player-center.lt-mode-together{padding-top:calc(env(safe-area-inset-top, 0px) + 30px);}
 .lt-together-avatars{position:relative;width:140px;height:72px;}
 .lt-t-avatar{width:72px;height:72px;border-radius:50%;border:none;background:linear-gradient(135deg,#cfd2d7,#b7bac0);position:absolute;box-shadow:0 6px 16px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;}
 .lt-t-avatar.b{left:68px;background:linear-gradient(135deg,#aeb1b7,#969aa1);}
@@ -6612,8 +6611,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 .lt-cmt-reply{background:none;border:none;cursor:pointer;font-size:11px;color:var(--lt-sub);font-family:inherit;padding:2px;}
 .lt-cmt-del{background:none;border:none;cursor:pointer;font-size:11px;color:#b0b0b0;font-family:inherit;padding:2px;}
 .lt-cmt-del:active{color:#e04040;}
-.lt-cmt-input{display:flex;gap:8px;padding:14px 12px;background:var(--lt-card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--lt-line);flex-shrink:0;align-items:center;}
-.lt-cmt-input input{flex:1;height:36px;border-radius:18px;background:rgba(0,0,0,0.06);border:none;padding:0 14px;font-size:13px;font-family:inherit;color:var(--lt-text);outline:none;}
+.lt-cmt-input{display:flex;gap:8px;padding:12px 12px;background:var(--lt-card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--lt-line);flex-shrink:0;align-items:center;}
+.lt-cmt-input input{flex:1;height:36px;border-radius:18px;background:rgba(0,0,0,0.06);border:none;padding:0 16px;font-size:13px;font-family:inherit;color:var(--lt-text);outline:none;}
 .lt-cmt-input input:focus{background:rgba(0,0,0,0.09);}
 .lt-send-btn{width:36px;height:36px;border-radius:50%;background:#1a1a1a;border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .lt-send-btn svg{width:18px;height:18px;}
@@ -6688,7 +6687,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
 /* ===== contact picker for invite ===== */
 .lt-contact-picker{position:absolute;inset:0;z-index:52;display:flex;flex-direction:column;background:#fff;}
-.lt-cp-header{display:flex;align-items:center;gap:6px;padding:14px 12px 8px;flex-shrink:0;border-bottom:1px solid var(--lt-line);}
+.lt-cp-header{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top, 0px) + 14px) 12px 8px;flex-shrink:0;border-bottom:1px solid var(--lt-line);}
 .lt-cp-title{flex:1;text-align:center;font-size:17px;font-weight:600;}
 .lt-cp-list{flex:1;overflow-y:auto;padding:8px 14px;}
 .lt-cp-item{display:flex;align-items:center;gap:12px;padding:12px 8px;border-radius:10px;cursor:pointer;}
@@ -13059,12 +13058,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         // 批量模式下不立即渲染，由调用方统一触发
         if (_batchRendering) return;
-        // 对方发来的消息使用同步保存，防止后台被系统杀死时防抖延迟导致消息丢失
-        if (msg.sender === 'other') {
-            saveDataSync();
-        } else {
-            saveData();
-        }
+        saveData();
         renderMessages(true);
         scrollToBottom();
         // 触发站内消息通知（仅对方发来的消息）
@@ -13192,7 +13186,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         /* 批量结束：统一渲染一次（try/finally 确保异常时也能重置标志） */
         _batchRendering = false;
         }
-        saveDataSync();
+        saveData();
         renderMessages(true);
         scrollToBottom();
         /* 批量模式下 addMessage 提前返回未触发通知，此处补发：仅当不在聊天界面时通知最后一条消息 */
@@ -32675,8 +32669,8 @@ function bindSwipeRightToExit(pageEl, exitFn) {
           <input type="color" id="lt-set-fontcolor" value="#1a1a1a">
         </div>
         <div class="lt-set-color-row">
-          <label>主页字体颜色</label>
-          <input type="color" id="lt-set-profilefontcolor" value="#1a1a1a">
+          <label>主页字体颜色（昵称/关注/粉丝/等级）</label>
+          <input type="color" id="lt-set-homefontcolor" value="#1a1a1a">
         </div>
         <div class="lt-set-slider-row">
           <label>字体大小 <span id="lt-set-fontsize-val">14</span>px</label>
@@ -32771,7 +32765,8 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     together:'lt_togetherActive', replies:'lt_scheduledReplies', played:'lt_playedSongs',
     settings:'lt_settings', bg:'lt_bgImage', cumTime:'lt_cumulativeTime',
     ltFontColor:'lt_fontColor', ltFontSize:'lt_fontSize', ltBgColor:'lt_bgColor', ltBgImage:'lt_bgImg',
-    ltProfileBg:'lt_profileBg', ltProfileFontColor:'lt_profileFontColor',
+    ltHomeFontColor:'lt_homeFontColor',
+    ltProfileBg:'lt_profileBg',
     ltAvatar1:'lt_avatar1', ltAvatar2:'lt_avatar2',
     mwBg:'lt_mwBgImg', mwFontColor:'lt_mwFontColor', mwAvatar1:'lt_mwAvatar1', mwAvatar2:'lt_mwAvatar2',
     togetherAv:'lt_togetherAv',
@@ -32827,16 +32822,8 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     if(_ltCache[K.together]!==undefined){ together=_ltCache[K.together]; }
     if(_ltCache[K.played] && !_ltPlayedModified){ playedSongs=_ltCache[K.played]; }
     if(_ltCache[K.profile]){ profileData=_ltCache[K.profile]; }
-    if(_ltCache[K.ltProfileBg]!==undefined){ ltProfileBg=_ltCache[K.ltProfileBg]; }
-    if(_ltCache[K.ltProfileFontColor]!==undefined){ ltProfileFontColor=_ltCache[K.ltProfileFontColor]; }
-    if(_ltCache[K.ltFontColor]!==undefined){ ltFontColor=_ltCache[K.ltFontColor]; }
-    if(_ltCache[K.ltFontSize]!==undefined){ ltFontSize=_ltCache[K.ltFontSize]; }
-    if(_ltCache[K.ltBgColor]!==undefined){ ltBgColor=_ltCache[K.ltBgColor]; }
-    if(_ltCache[K.ltBgImage]!==undefined){ ltBgImage=_ltCache[K.ltBgImage]; }
-    if(_ltCache[K.ltAvatar1]!==undefined){ ltAvatar1=_ltCache[K.ltAvatar1]; }
-    if(_ltCache[K.ltAvatar2]!==undefined){ ltAvatar2=_ltCache[K.ltAvatar2]; }
     /* 重新渲染界面 */
-    try{ applyLtAppearance(); applyLtAvatars(); renderProfileCard(); renderPlayer(); renderMini(); updateCenter(); renderList(); updateEndTogetherBtn(); }catch(e){}
+    try{ renderProfileCard(); renderPlayer(); renderMini(); updateCenter(); renderList(); updateEndTogetherBtn(); }catch(e){}
   }
 
   var DEFAULT_SONGS=[
@@ -32865,11 +32852,11 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   var bgImage=load(K.bg,null);
   var cumulativeTime=load(K.cumTime,0); /* total together time across sessions (seconds) */
   var ltFontColor=load(K.ltFontColor,null);
+  var ltHomeFontColor=load(K.ltHomeFontColor,null);
   var ltFontSize=load(K.ltFontSize,null);
   var ltBgColor=load(K.ltBgColor,null);
   var ltBgImage=load(K.ltBgImage,null);
   var ltProfileBg=load(K.ltProfileBg,null);
-  var ltProfileFontColor=load(K.ltProfileFontColor,null);
   var ltAvatar1=load(K.ltAvatar1,null);
   var ltAvatar2=load(K.ltAvatar2,null);
   var mwBgImg=load(K.mwBg,null);
@@ -33669,7 +33656,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     $('lt-set-dist').value=settings.distance||'';
     $('lt-set-replydelay').value=settings.replyDelayMin||1;
     $('lt-set-fontcolor').value=ltFontColor||'#1a1a1a';
-    $('lt-set-profilefontcolor').value=ltProfileFontColor||'#1a1a1a';
+    $('lt-set-homefontcolor').value=ltHomeFontColor||'#1a1a1a';
     $('lt-set-fontsize').value=ltFontSize||14;
     $('lt-set-fontsize-val').textContent=ltFontSize||14;
     $('lt-set-bgcolor').value=ltBgColor||'#f6f7f9';
@@ -33682,7 +33669,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     var rd=parseInt($('lt-set-replydelay').value,10);if(!isNaN(rd)&&rd>=1)settings.replyDelayMin=rd;else settings.replyDelayMin=1;
     save(K.settings,settings);
     ltFontColor=$('lt-set-fontcolor').value;save(K.ltFontColor,ltFontColor);
-    ltProfileFontColor=$('lt-set-profilefontcolor').value;save(K.ltProfileFontColor,ltProfileFontColor);
+    ltHomeFontColor=$('lt-set-homefontcolor').value;save(K.ltHomeFontColor,ltHomeFontColor);
     ltFontSize=parseInt($('lt-set-fontsize').value,10);save(K.ltFontSize,ltFontSize);
     ltBgColor=$('lt-set-bgcolor').value;save(K.ltBgColor,ltBgColor);
     $('lt-settings-modal').style.display='none';
@@ -33698,8 +33685,10 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     phone.style.setProperty('--lt-text',fc);
     phone.style.setProperty('--lt-sub',hexToRgbaLt(fc,0.58));
     phone.style.setProperty('--lt-faint',hexToRgbaLt(fc,0.4));
-    /* 主页字体颜色 - 专门影响昵称/关注/粉丝/等级数字 */
-    phone.style.setProperty('--lt-profile-text', ltProfileFontColor||fc);
+    /* homepage font color - affects nickname and stats numbers */
+    var hfc=ltHomeFontColor||fc;
+    var pn=$('lt-profile-name'); if(pn) pn.style.color=hfc;
+    phone.querySelectorAll('.lt-stat-num').forEach(function(el){ el.style.color=hfc; });
     /* font size */
     if(ltFontSize){ phone.style.fontSize=ltFontSize+'px'; }
     /* background color/image (list + comments screens, NOT player screen) */
@@ -33766,8 +33755,8 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   function applyLtAvatars(){
     var av1=$('lt-rel-av1'), av2=$('lt-rel-av2');
     var t1=$('lt-t-av1'), t2=$('lt-t-av2');
-    [av1,t1].forEach(function(el){ if(!el)return; if(ltAvatar1){ el.innerHTML='<img src="'+escapeHTML(ltAvatar1)+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'; el.style.background='none'; } else { el.innerHTML=icon('person'); el.style.background=''; } });
-    [av2,t2].forEach(function(el){ if(!el)return; if(ltAvatar2){ el.innerHTML='<img src="'+escapeHTML(ltAvatar2)+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'; el.style.background='none'; } else { el.innerHTML=icon('person'); el.style.background=''; } });
+    [av1,t1].forEach(function(el){ if(!el)return; if(ltAvatar1){ el.innerHTML='<img src="'+escapeHTML(ltAvatar1)+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'; } else { el.innerHTML=icon('person'); } });
+    [av2,t2].forEach(function(el){ if(!el)return; if(ltAvatar2){ el.innerHTML='<img src="'+escapeHTML(ltAvatar2)+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'; } else { el.innerHTML=icon('person'); } });
   }
   function pickLtAvatar(which){
     pickImage(function(data){
@@ -33953,10 +33942,10 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       var av1=$('lt-t-av1'), av2=$('lt-t-av2');
       if(e.target===av1||av1.contains(e.target)){
         e.stopPropagation();
-        showSheet('更换我的头像',[{label:'上传头像图片',onClick:function(){pickImage(function(data){av1.style.backgroundImage='url("'+data.replace(/"/g,'')+'")';av1.style.backgroundSize='cover';av1.style.backgroundPosition='center';save(K.avatar1,data);});}},{label:'恢复默认头像',onClick:function(){av1.style.backgroundImage='';save(K.avatar1,null);}}]);
+        showSheet('更换我的头像',[{label:'上传头像图片',onClick:function(){pickImage(function(data){av1.innerHTML='';av1.style.backgroundImage='url("'+data.replace(/"/g,'')+'")';av1.style.backgroundSize='cover';av1.style.backgroundPosition='center';save(K.avatar1,data);});}},{label:'恢复默认头像',onClick:function(){av1.style.backgroundImage='';av1.innerHTML=icon('person');save(K.avatar1,null);}}]);
       } else if(e.target===av2||av2.contains(e.target)){
         e.stopPropagation();
-        showSheet('更换对方头像',[{label:'上传头像图片',onClick:function(){pickImage(function(data){av2.style.backgroundImage='url("'+data.replace(/"/g,'')+'")';av2.style.backgroundSize='cover';av2.style.backgroundPosition='center';save(K.togetherAv,data);});}},{label:'恢复默认头像',onClick:function(){av2.style.backgroundImage='';save(K.togetherAv,null);}}]);
+        showSheet('更换对方头像',[{label:'上传头像图片',onClick:function(){pickImage(function(data){av2.innerHTML='';av2.style.backgroundImage='url("'+data.replace(/"/g,'')+'")';av2.style.backgroundSize='cover';av2.style.backgroundPosition='center';save(K.togetherAv,data);});}},{label:'恢复默认头像',onClick:function(){av2.style.backgroundImage='';av2.innerHTML=icon('person');save(K.togetherAv,null);}}]);
       }
     };
     $('lt-act-like').onclick=function(){var s=currentSong();if(s)toggleFav(s.id);};
