@@ -1460,6 +1460,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         .transfer-msg.claimed .transfer-desc,.transfer-msg.refunded .transfer-desc,
         .transfer-msg.claimed .transfer-status,.transfer-msg.refunded .transfer-status{color:var(--transfer-remark-color-claimed,rgba(255,255,255,0.85));}
         .transfer-msg .transfer-amount{font-size:20px;font-weight:500;margin-bottom:4px;}
+        /* 语音消息样式（类似微信语音条）- 跟随聊天美化设置 */
+        .msg-row .msg-bubble.audio-msg{cursor:pointer;min-width:160px;}
+        .msg-row .msg-bubble.audio-msg .voice-play-icon{color:var(--color-deep-gray);transition:transform 0.15s ease;}
+        .voice-bar.playing .voice-play-icon{transform:scale(0.9);}
         /* 转账形状独立于气泡圆角设置，始终使用自己的border-radius */
         .msg-row.multi-select-mode .multi-check{display:flex;}
         .multi-check{display:none;width:22px;height:22px;border:2px solid #ccc;border-radius:4px;align-items:center;justify-content:center;margin:0 4px;flex-shrink:0;cursor:pointer;font-size:14px;color:#fff;}
@@ -7423,7 +7427,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 <span>转账</span>
 </div>
-<div class="plus-item" data-icon="nudge" onclick="openNudgeModal()">
+<div class="plus-item" data-icon="nudge" onclick="openMyNudgePicker()">
 <div class="plus-icon">
 <svg viewbox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7 3 9 3 14h6c0-5 3-7 3-14z"></path><line x1="12" x2="12" y1="2" y2="3"></line></svg>
 </div>
@@ -8043,6 +8047,26 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <input id="readNoReplyProb" max="100" min="0" oninput="document.getElementById('readNoReplyProbVal').textContent=this.value;updateReplySettings()" type="range" value="0"/>
 <span id="readNoReplyProbVal">0</span><span style="font-size:10px;color:#999;margin-left:4px;">0-100</span>
 </div>
+<div class="settings-row">
+<label>自动回复概率(%)</label>
+<input id="autoReplyProb" max="100" min="0" oninput="document.getElementById('autoReplyProbVal').textContent=this.value;updateReplySettings()" type="range" value="0"/>
+<span id="autoReplyProbVal">0</span><span style="font-size:10px;color:#999;margin-left:4px;">0-100</span>
+</div>
+<div class="settings-row">
+<label>纯文字概率(%)</label>
+<input id="textProb" max="100" min="0" oninput="document.getElementById('textProbVal').textContent=this.value;updateReplySettings()" type="range" value="70"/>
+<span id="textProbVal">70</span><span style="font-size:10px;color:#999;margin-left:4px;">0-100</span>
+</div>
+<div class="settings-row">
+<label>纯语音概率(%)</label>
+<input id="voiceProb" max="100" min="0" oninput="document.getElementById('voiceProbVal').textContent=this.value;updateReplySettings()" type="range" value="20"/>
+<span id="voiceProbVal">20</span><span style="font-size:10px;color:#999;margin-left:4px;">0-100</span>
+</div>
+<div class="settings-row">
+<label>文字+语音概率(%)</label>
+<input id="mixedProb" max="100" min="0" oninput="document.getElementById('mixedProbVal').textContent=this.value;updateReplySettings()" type="range" value="10"/>
+<span id="mixedProbVal">10</span><span style="font-size:10px;color:#999;margin-left:4px;">0-100</span>
+</div>
 <div class="chat-dnd-block-section" id="chatDndBlockSection" style="display:none;">
 <div class="section-title" style="font-size:14px;font-weight:600;margin-bottom:8px;">联系人管理</div>
 <div class="dnd-block-row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
@@ -8085,6 +8109,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="wordcard-list" id="wordcardList"></div>
 <div class="special-section">
 <div class="section-title">特殊字卡</div>
+<div class="special-item">
+<div class="special-header">
+<span>我的拍一拍字卡</span>
+<div class="special-actions">
+<button onclick="batchUploadMyNudge()">批量上传</button>
+<button onclick="uploadMyNudgeFile()">文件上传</button>
+<button onclick="dedupSpecialCards('myNudge')">去重</button>
+</div>
+</div>
+<div class="special-card-list" id="myNudgeCardList"></div>
+</div>
 <div class="special-item">
 <div class="special-header">
 <span>拍一拍字卡</span>
@@ -8153,6 +8188,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 </div>
 <div class="image-card-grid" id="imageCardGrid"></div>
+</div>
+<div class="special-item">
+<div class="special-header">
+<span>语音字卡</span>
+<div class="special-actions">
+<button onclick="uploadAudioCards()">上传语音</button>
+<button onclick="dedupSpecialCards('audio')">去重</button>
+</div>
+</div>
+<div class="special-card-list" id="audioCardList"></div>
 </div>
 <div class="special-item">
 <div class="special-header">
@@ -9081,6 +9126,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 </div>
 </div>
+<!-- 我的拍一拍字卡选择面板 -->
+<div class="modal" id="myNudgePickerModal">
+<div class="modal-content" style="max-height:70vh;display:flex;flex-direction:column;">
+<div class="modal-title">选择拍一拍</div>
+<div id="myNudgePickerList" style="flex:1;overflow-y:auto;padding:4px 0;"></div>
+<div class="modal-btns">
+<div class="modal-btn cancel" onclick="closeMyNudgePicker()">取消</div>
+</div>
+</div>
+</div>
 <!-- 盲选抽牌创建模态框 -->
 <div class="modal" id="blindCardModal">
 <div class="modal-content">
@@ -9484,6 +9539,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <input accept="video/*" class="hidden-input" id="videoInput" onchange="handleVideoUpload(event)" type="file"/>
 <input accept=".txt,.json,.jsonl" class="hidden-input" id="textFileInput" onchange="handleTextFileUpload(event)" type="file"/>
 <input accept=".ttf,.otf" class="hidden-input" id="fontFileInput" onchange="handleFontUpload(event)" type="file"/>
+<input accept="audio/*" class="hidden-input" id="audioFileInput" multiple="" onchange="handleAudioCardUpload(event)" type="file"/>
 <div style="font-size:11px;color:#999;margin-top:4px;">ttf文件上传可能会导致网站卡顿，谨慎使用！</div>
 <script>
     // ===== 全局错误捕获：防止未处理异常导致页面白屏崩溃 =====
@@ -10029,6 +10085,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             proactiveMaxMin: 5,
             // 已读不回概率(%)
             readNoReplyProb: 0,
+            // 自动回复概率(%)
+            autoReplyProb: 0,
+            // 回复模式概率(%)
+            textProb: 70,
+            voiceProb: 20,
+            mixedProb: 10,
             topBgPadding: 0,
             bottomBgPadding: 0,
             footerPosOffset: 0,
@@ -10050,11 +10112,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         contactWordCards: {},  // { contactId: { groups: ['default'], currentGroup: 'default', cards: { default: [] } } }
         specialCards: {
             nudge: [],
+            myNudge: [],
             emoji: [],
             kaomoji: [],
             image: [],
             video: [],
-            shopping: []
+            shopping: [],
+            audio: []
         },
         specialSettings: {
             enableEmoji: false,
@@ -10258,6 +10322,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     let callStartTime = 0;
     let isIncomingCall = false;
     let isMinimized = false;
+    let isVideoCallActive = false; // 标记当前是否处于视频通话中，通话期间禁止再次触发新的视频通话
     let videoBgSrc = appData.videoBg || '';
     let videoLongPressTimer = null;
 
@@ -10691,6 +10756,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 if (Array.isArray(merged.nudgeCards) && merged.nudgeCards.length > 0 && typeof merged.nudgeCards[0] === 'string') {
                     merged.specialCards.nudge = merged.nudgeCards.map(t => ({text: t, hidden: false}));
                     merged.nudgeCards = [];
+                }
+                // 确保 myNudge（我的拍一拍字卡）字段存在
+                if (merged.specialCards && !Array.isArray(merged.specialCards.myNudge)) {
+                    merged.specialCards.myNudge = [];
                 }
                 // 迁移旧版头像/气泡统一设置到分方设置
                 if (merged.chatSettings) {
@@ -12345,6 +12414,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         // 已读不回
         document.getElementById('readNoReplyProb').value = s.readNoReplyProb || 0;
         document.getElementById('readNoReplyProbVal').textContent = s.readNoReplyProb || 0;
+        // 自动回复概率
+        document.getElementById('autoReplyProb').value = s.autoReplyProb || 0;
+        document.getElementById('autoReplyProbVal').textContent = s.autoReplyProb || 0;
+        // 回复模式概率
+        document.getElementById('textProb').value = s.textProb !== undefined ? s.textProb : 70;
+        document.getElementById('textProbVal').textContent = s.textProb !== undefined ? s.textProb : 70;
+        document.getElementById('voiceProb').value = s.voiceProb !== undefined ? s.voiceProb : 20;
+        document.getElementById('voiceProbVal').textContent = s.voiceProb !== undefined ? s.voiceProb : 20;
+        document.getElementById('mixedProb').value = s.mixedProb !== undefined ? s.mixedProb : 10;
+        document.getElementById('mixedProbVal').textContent = s.mixedProb !== undefined ? s.mixedProb : 10;
         
         renderEmojis();
         renderFrames();
@@ -12794,6 +12873,40 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     <div class="blind-card-options">${optionsHtml}</div>
                 `;
                 bubble.onclick = () => openBcPlay(msg.id);
+            } else if (msg.type === 'audio') {
+                bubble.className += ' audio-msg';
+                var _dur = msg.duration || 0;
+                var _durStr = _dur ? (Math.floor(_dur/60) + ':' + String(_dur%60).padStart(2,'0')) : '0:00';
+                bubble.innerHTML = '<div class="voice-bar" data-msg-id="' + msg.id + '" onclick="toggleVoicePlay(this)" style="display:flex;align-items:center;gap:8px;min-width:140px;cursor:pointer;">'
+                    + '<svg class="voice-play-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">'
+                    + '<polygon points="5 3 19 12 5 21 5 3"/></svg>'
+                    + '<div style="flex:1;min-width:0;">'
+                    + '<div class="voice-progress-track" style="height:3px;background:rgba(0,0,0,0.1);border-radius:2px;overflow:hidden;"><div class="voice-progress-fill" style="width:0%;height:100%;background:var(--color-deep-gray);border-radius:2px;transition:width 0.1s linear;"></div></div>'
+                    + '</div>'
+                    + '<span class="voice-duration" style="font-size:12px;flex-shrink:0;">' + _durStr + '</span>'
+                    + '</div>';
+                bubble.dataset.audioKey = msg.content || '';
+                // 异步加载音频数据
+                if (msg.content && window.loadImgDB) {
+                    window.loadImgDB(msg.content, function(dataUrl) {
+                        if (dataUrl) {
+                            var audioEl = document.createElement('audio');
+                            audioEl.preload = 'metadata';
+                            audioEl.src = dataUrl;
+                            audioEl.dataset.msgId = msg.id;
+                            audioEl.style.display = 'none';
+                            bubble.appendChild(audioEl);
+                            // 更新时长（如果消息中没有记录）
+                            if (!_dur) {
+                                audioEl.addEventListener('loadedmetadata', function() {
+                                    var d = Math.ceil(audioEl.duration) || 0;
+                                    var durEl = bubble.querySelector('.voice-duration');
+                                    if (durEl && d) durEl.textContent = Math.floor(d/60) + ':' + String(d%60).padStart(2,'0');
+                                });
+                            }
+                        }
+                    });
+                }
             }
             
             // 分条气泡圆角：根据消息序号覆盖圆角
@@ -12801,7 +12914,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             // -1 表示沿用对应方的CSS变量（含四角圆角），>=0 时用具体值覆盖
             // 转账消息形状独立，跳过分条圆角逻辑
             var _msgR = -1;
-            if (s.msgRadiusEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard') {
+            if (s.msgRadiusEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard' && msg.type !== 'audio') {
                 if (msg.sender === 'other') {
                     _msgR = otherMsgCount === 1 ? s.otherMsg1Radius : (otherMsgCount === 2 ? s.otherMsg2Radius : s.otherMsg3Radius);
                 } else {
@@ -12816,7 +12929,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
             // 分条四角圆方（新增）：优先级最高，按消息序号设置四角
             // 仅当开启分条四角圆方且非转账消息时生效
-            if (s.msgCornersEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard') {
+            if (s.msgCornersEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard' && msg.type !== 'audio') {
                 var _tl = 8, _tr = 8, _br = 8, _bl = 8;
                 if (msg.sender === 'other') {
                     if (otherMsgCount === 1) { _tl = s.otherMsg1TL; _tr = s.otherMsg1TR; _br = s.otherMsg1BR; _bl = s.otherMsg1BL; }
@@ -12864,7 +12977,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
             // 分条气泡大小（新增）：按消息序号覆盖padding
             // 仅当开启分条气泡大小且非转账消息时生效
-            if (s.msgSizeEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard') {
+            if (s.msgSizeEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard' && msg.type !== 'audio') {
                 var _msgPad = -1;
                 if (msg.sender === 'other') {
                     _msgPad = otherMsgCount === 1 ? s.otherMsg1Size : (otherMsgCount === 2 ? s.otherMsg2Size : s.otherMsg3Size);
@@ -12878,7 +12991,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
             // 分条气泡字体大小（新增）：按消息序号覆盖字号
             // 仅当开启分条气泡字体大小且非转账消息时生效
-            if (s.msgFontEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard') {
+            if (s.msgFontEnabled && msg.type !== 'transfer' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'blindCard' && msg.type !== 'audio') {
                 var _msgFont = -1;
                 if (msg.sender === 'other') {
                     _msgFont = otherMsgCount === 1 ? s.otherMsg1Font : (otherMsgCount === 2 ? s.otherMsg2Font : s.otherMsg3Font);
@@ -13241,11 +13354,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             sender: 'mine',
             type: 'text',
             content: text,
-            quote: currentQuoteMsg ? (currentQuoteMsg.type === 'text' ? currentQuoteMsg.content : (currentQuoteMsg.type === 'image' ? '[图片]' : (currentQuoteMsg.type === 'video' ? '[视频]' : (currentQuoteMsg.type === 'emoji' ? '[表情]' : (currentQuoteMsg.type === 'transfer' ? '[转账]' : (currentQuoteMsg.type === 'system' ? '[系统消息]' : currentQuoteMsg.content)))))) : null
+            quote: currentQuoteMsg ? (currentQuoteMsg.type === 'text' ? currentQuoteMsg.content : (currentQuoteMsg.type === 'image' ? '[图片]' : (currentQuoteMsg.type === 'video' ? '[视频]' : (currentQuoteMsg.type === 'emoji' ? '[表情]' : (currentQuoteMsg.type === 'transfer' ? '[转账]' : (currentQuoteMsg.type === 'system' ? '[系统消息]' : (currentQuoteMsg.type === 'audio' ? '[语音]' : currentQuoteMsg.content))))))) : null
         });
 
         input.value = '';
         currentQuoteMsg = null;
+        // 自动回复概率：用户发送消息成功后，按概率自动触发对方回复
+        if (appData.chatSettings.autoReplyProb > 0) {
+            if (Math.random() * 100 <= appData.chatSettings.autoReplyProb) {
+                triggerReceive();
+            }
+        }
       } catch (e) { console.error('sendTextMessage失败:', e); }
     }
     var _batchRendering = false;
@@ -13328,6 +13447,36 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
         }
         
+        // === 回复模式选择（纯文字/纯语音/文字+语音） ===
+        var _textP = s.textProb !== undefined ? s.textProb : 70;
+        var _voiceP = s.voiceProb !== undefined ? s.voiceProb : 20;
+        var _mixedP = s.mixedProb !== undefined ? s.mixedProb : 10;
+        var _totalModeP = _textP + _voiceP + _mixedP;
+        var _replyMode = 'text';
+        var _visibleAudio = getVisibleAudioCards();
+        if (_totalModeP > 0 && _visibleAudio.length > 0) {
+            var _modeRand = Math.random() * _totalModeP;
+            if (_modeRand < _voiceP) {
+                _replyMode = 'voice';
+            } else if (_modeRand < _voiceP + _mixedP) {
+                _replyMode = 'mixed';
+            }
+        }
+        var _sendVoiceAfterReply = (_replyMode === 'mixed');
+        
+        // 纯语音模式：发送一条语音消息后返回
+        if (_replyMode === 'voice') {
+            var _ac = _visibleAudio[Math.floor(Math.random() * _visibleAudio.length)];
+            addMessage({
+                id: Date.now() + Math.random(),
+                sender: 'other',
+                type: 'audio',
+                content: _ac.audioUrl,
+                duration: _ac.duration || 0
+            });
+            return;
+        }
+        
         if (Math.random() * 100 < s.emojiProb && appData.emojis.other.length > 0) {
             const emoji = appData.emojis.other[Math.floor(Math.random() * appData.emojis.other.length)];
             addMessage({
@@ -13336,11 +13485,35 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 type: 'emoji',
                 content: emoji
             });
+            // 文字+语音模式：emoji回复后追加语音
+            if (_sendVoiceAfterReply) {
+                var _ac2 = _visibleAudio[Math.floor(Math.random() * _visibleAudio.length)];
+                addMessage({
+                    id: Date.now() + Math.random(),
+                    sender: 'other',
+                    type: 'audio',
+                    content: _ac2.audioUrl,
+                    duration: _ac2.duration || 0
+                });
+            }
             return;
         }
         
         const allCards = getAllVisibleWordCards();
-        if (allCards.length === 0) return;
+        if (allCards.length === 0) {
+            // 文字+语音模式：无文字字卡时仍发送语音
+            if (_sendVoiceAfterReply) {
+                var _ac3 = _visibleAudio[Math.floor(Math.random() * _visibleAudio.length)];
+                addMessage({
+                    id: Date.now() + Math.random(),
+                    sender: 'other',
+                    type: 'audio',
+                    content: _ac3.audioUrl,
+                    duration: _ac3.duration || 0
+                });
+            }
+            return;
+        }
         
         /* 批量模式：循环内只 push 数据，循环结束后统一渲染一次，避免多次全量重排 */
         _batchRendering = true;
@@ -13409,6 +13582,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (_lastMsg && _lastMsg.sender === 'other') {
                 showChatNotification(_lastMsg);
             }
+        }
+        
+        // 文字+语音模式：文字回复后追加语音消息
+        if (_sendVoiceAfterReply) {
+            var _acMix = _visibleAudio[Math.floor(Math.random() * _visibleAudio.length)];
+            addMessage({
+                id: Date.now() + Math.random(),
+                sender: 'other',
+                type: 'audio',
+                content: _acMix.audioUrl,
+                duration: _acMix.duration || 0
+            });
         }
 
         if (Math.random() * 100 < (s.transferProb !== undefined ? s.transferProb : 5)) {
@@ -13661,6 +13846,51 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.getElementById('transferHandleModal').classList.add('show');
         document.getElementById('overlay').classList.add('show');
     }
+    // 语音消息播放/暂停切换
+    var _currentVoiceAudio = null;
+    var _currentVoiceBar = null;
+    function toggleVoicePlay(voiceBarEl) {
+        var bubble = voiceBarEl.closest('.msg-bubble');
+        if (!bubble) return;
+        var audioEl = bubble.querySelector('audio');
+        if (!audioEl) return;
+        // 如果当前有其他语音在播放，先停止
+        if (_currentVoiceAudio && _currentVoiceAudio !== audioEl) {
+            _currentVoiceAudio.pause();
+            _currentVoiceAudio.currentTime = 0;
+            if (_currentVoiceBar) {
+                _currentVoiceBar.classList.remove('playing');
+                var _prevIcon = _currentVoiceBar.querySelector('.voice-play-icon');
+                if (_prevIcon) _prevIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+                var _prevFill = _currentVoiceBar.querySelector('.voice-progress-fill');
+                if (_prevFill) _prevFill.style.width = '0%';
+            }
+        }
+        var icon = voiceBarEl.querySelector('.voice-play-icon');
+        var fill = voiceBarEl.querySelector('.voice-progress-fill');
+        if (audioEl.paused) {
+            audioEl.play().catch(function(e) { console.warn('语音播放失败:', e); });
+            _currentVoiceAudio = audioEl;
+            _currentVoiceBar = voiceBarEl;
+            voiceBarEl.classList.add('playing');
+            if (icon) icon.innerHTML = '<rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect>';
+            audioEl.ontimeupdate = function() {
+                if (fill && audioEl.duration > 0) {
+                    fill.style.width = (audioEl.currentTime / audioEl.duration * 100) + '%';
+                }
+            };
+            audioEl.onended = function() {
+                voiceBarEl.classList.remove('playing');
+                if (icon) icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+                if (fill) fill.style.width = '0%';
+                audioEl.currentTime = 0;
+            };
+        } else {
+            audioEl.pause();
+            voiceBarEl.classList.remove('playing');
+            if (icon) icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        }
+    }
     function claimTransfer() {
         const msg = appData.chatHistory.find(m => m.id === currentOpsMsgId);
         if (msg) {
@@ -13794,6 +14024,111 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function uploadNudgeFile() {
         currentEditType = 'nudgeTextFile';
         document.getElementById('textFileInput').click();
+    }
+
+    // ===== 我的拍一拍字卡 =====
+    function renderMyNudgeCardList() {
+        const container = document.getElementById('myNudgeCardList');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!appData.specialCards.myNudge) appData.specialCards.myNudge = [];
+        appData.specialCards.myNudge.forEach((card, index) => {
+            const item = document.createElement('div');
+            item.className = 'special-card-item' + (card.hidden ? ' hidden' : '');
+            item.innerHTML = `
+                <div class="card-text">${card.text}</div>
+                <div class="card-ops">
+                    <span onclick="editMyNudgeCard(${index})">修改</span>
+                    <span onclick="toggleMyNudgeHide(${index})">${card.hidden ? '显示' : '隐藏'}</span>
+                    <span onclick="deleteMyNudgeCard(${index})">删除</span>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+    function editMyNudgeCard(index) {
+        const newText = prompt('修改拍一拍内容', appData.specialCards.myNudge[index].text);
+        if (newText && newText.trim()) {
+            appData.specialCards.myNudge[index].text = newText.trim();
+            saveDataSync();
+            var container = document.getElementById('myNudgeCardList');
+            var item = container && container.children[index];
+            if (item) {
+                var textEl = item.querySelector('.card-text');
+                if (textEl) textEl.textContent = newText.trim();
+            } else { renderMyNudgeCardList(); }
+        }
+    }
+    function toggleMyNudgeHide(index) {
+        appData.specialCards.myNudge[index].hidden = !appData.specialCards.myNudge[index].hidden;
+        saveDataSync();
+        var container = document.getElementById('myNudgeCardList');
+        var item = container && container.children[index];
+        if (item) {
+            item.classList.toggle('hidden', appData.specialCards.myNudge[index].hidden);
+            var ops = item.querySelector('.card-ops');
+            if (ops) ops.children[1].textContent = appData.specialCards.myNudge[index].hidden ? '显示' : '隐藏';
+        } else { renderMyNudgeCardList(); }
+    }
+    function deleteMyNudgeCard(index) {
+        if (confirm('确定删除这条拍一拍吗？')) {
+            appData.specialCards.myNudge.splice(index, 1);
+            saveDataSync();
+            var container = document.getElementById('myNudgeCardList');
+            if (container && container.children[index]) {
+                container.removeChild(container.children[index]);
+                for (var i = index; i < container.children.length; i++) {
+                    var ops = container.children[i].querySelector('.card-ops');
+                    if (ops) {
+                        ops.children[0].setAttribute('onclick', 'editMyNudgeCard(' + i + ')');
+                        ops.children[1].setAttribute('onclick', 'toggleMyNudgeHide(' + i + ')');
+                        ops.children[2].setAttribute('onclick', 'deleteMyNudgeCard(' + i + ')');
+                    }
+                }
+            } else { renderMyNudgeCardList(); }
+        }
+    }
+    function batchUploadMyNudge() {
+        appData.batchUploadType = 'myNudge';
+        document.getElementById('batchUploadTextarea').value = '';
+        document.getElementById('batchUploadTextarea').placeholder = '一行一句拍一拍文案';
+        document.getElementById('batchUploadModal').classList.add('show');
+        document.getElementById('overlay').classList.add('show');
+    }
+    function uploadMyNudgeFile() {
+        currentEditType = 'myNudgeTextFile';
+        document.getElementById('textFileInput').click();
+    }
+
+    // ===== 我的拍一拍选择面板（聊天「+」入口） =====
+    function openMyNudgePicker() {
+        document.getElementById('plusPanel').classList.remove('show');
+        var list = (appData.specialCards && appData.specialCards.myNudge) ? appData.specialCards.myNudge.filter(function(c){return !c.hidden && c.text;}) : [];
+        var container = document.getElementById('myNudgePickerList');
+        container.innerHTML = '';
+        if (list.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#999;padding:30px 10px;font-size:14px;">暂无拍一拍字卡，请前往字卡APP添加</div>';
+        } else {
+            list.forEach(function(card) {
+                var btn = document.createElement('div');
+                btn.className = 'my-nudge-pick-item';
+                btn.textContent = card.text;
+                btn.style.cssText = 'padding:12px 16px;margin:6px 0;background:#f5f5f5;border-radius:10px;font-size:14px;cursor:pointer;transition:background 0.15s;text-align:center;';
+                btn.onclick = function() { sendMyNudge(card.text); };
+                container.appendChild(btn);
+            });
+        }
+        document.getElementById('myNudgePickerModal').classList.add('show');
+        document.getElementById('overlay').classList.add('show');
+    }
+    function closeMyNudgePicker() {
+        document.getElementById('myNudgePickerModal').classList.remove('show');
+        document.getElementById('overlay').classList.remove('show');
+    }
+    function sendMyNudge(text) {
+        var myNick = (appData.chatSettings && appData.chatSettings.myNickname) || '我';
+        addSystemMsg(myNick + ' ' + text);
+        closeMyNudgePicker();
     }
 
     // ===== 盲选抽牌 =====
@@ -14451,6 +14786,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
         // 最小化状态点击恢复
         container.addEventListener('click', function(e) {
+            // 点击更换背景按钮以外的区域时自动隐藏该按钮
+            if (!e.target.closest('#videoBgMenu')) {
+                var _bgMenu = document.getElementById('videoBgMenu');
+                if (_bgMenu) _bgMenu.classList.remove('show');
+            }
             if (isMinimized && !e.target.closest('.video-btn') && !e.target.closest('.video-minimize')) {
                 toggleMinimizeVideo();
             }
@@ -14458,6 +14798,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
 
     function startVideoCall() {
+        // 通话期间禁止再次触发新的视频通话
+        if (isVideoCallActive) return;
+        isVideoCallActive = true;
         document.getElementById('plusPanel').classList.remove('show');
         isIncomingCall = false;
         document.getElementById('answerBtn').style.display = 'none';
@@ -14485,6 +14828,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }, answerDelay);
     }
     function incomingVideoCall() {
+        // 通话期间禁止再次触发新的视频通话
+        if (isVideoCallActive) return;
+        isVideoCallActive = true;
         isIncomingCall = true;
         document.getElementById('answerBtn').style.display = 'flex';
         ensureVideoCallPageInBody();
@@ -14516,6 +14862,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function endCall() {
         clearTimeout(callTimer);
         clearInterval(callDurationTimer);
+        // 通话结束，重置视频通话活跃标志，允许下次正常触发
+        isVideoCallActive = false;
         
         let durationText = '';
         if (callStartTime > 0) {
@@ -14604,6 +14952,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
     }
     function changeVideoBg() {
+        // 点击「更换背景」后立即隐藏按钮，避免按钮一直停留在画面上
+        document.getElementById('videoBgMenu').classList.remove('show');
         currentEditType = 'videoBg';
         document.getElementById('fileInput').click();
     }
@@ -15628,6 +15978,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         s.proactiveMaxMin = safeInt('proactiveMaxMin', s.proactiveMaxMin);
         // 已读不回
         s.readNoReplyProb = safeInt('readNoReplyProb', s.readNoReplyProb);
+        // 自动回复概率
+        s.autoReplyProb = safeInt('autoReplyProb', s.autoReplyProb);
+        // 回复模式概率
+        s.textProb = safeInt('textProb', s.textProb !== undefined ? s.textProb : 70);
+        s.voiceProb = safeInt('voiceProb', s.voiceProb !== undefined ? s.voiceProb : 20);
+        s.mixedProb = safeInt('mixedProb', s.mixedProb !== undefined ? s.mixedProb : 10);
         
         saveData();
         // 重新调度主动发消息定时器
@@ -15657,10 +16013,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         renderWordCardList();
         renderSpecialSettings();
         renderNudgeCardList();
+        renderMyNudgeCardList();
         renderEmojiCardList();
         renderKaomojiCardList();
         renderImageCards();
         renderShoppingCardList();
+        renderAudioCardList();
     }
     function closeWordCard() {
         document.getElementById('wordcardPage').style.display = 'none';
@@ -15968,6 +16326,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             });
             saveDataSync();
             _appendSpecialCardItems('nudgeCardList', appData.specialCards.nudge, newItems, 'editNudgeCard', 'toggleNudgeHide', 'deleteNudgeCard');
+        } else if (type === 'myNudge') {
+            if (!appData.specialCards.myNudge) appData.specialCards.myNudge = [];
+            var seen = new Set(appData.specialCards.myNudge.map(function(c) { return (c.text || '').trim(); }));
+            var newItems = [];
+            lines.forEach(function(line) {
+                var key = line.trim();
+                if (!seen.has(key)) { seen.add(key); appData.specialCards.myNudge.push({text: line, hidden: false}); newItems.push(line); }
+            });
+            saveDataSync();
+            _appendSpecialCardItems('myNudgeCardList', appData.specialCards.myNudge, newItems, 'editMyNudgeCard', 'toggleMyNudgeHide', 'deleteMyNudgeCard');
         } else if (type === 'shopping') {
             if (!appData.specialCards.shopping) appData.specialCards.shopping = [];
             var seen = new Set(appData.specialCards.shopping.map(function(c) { return (c.text || '').trim(); }));
@@ -16173,6 +16541,24 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 });
                 saveDataSync();
                 _appendSpecialCardItems('nudgeCardList', appData.specialCards.nudge, newItems, 'editNudgeCard', 'toggleNudgeHide', 'deleteNudgeCard');
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        } else if (currentEditType === 'myNudgeTextFile') {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+                if (!appData.specialCards.myNudge) appData.specialCards.myNudge = [];
+                const seen = new Set(appData.specialCards.myNudge.map(c => (c.text || '').trim()));
+                var newItems = [];
+                lines.forEach(line => {
+                    const key = line.trim();
+                    if (!seen.has(key)) { seen.add(key); appData.specialCards.myNudge.push({text: line, hidden: false}); newItems.push(line); }
+                });
+                saveDataSync();
+                _appendSpecialCardItems('myNudgeCardList', appData.specialCards.myNudge, newItems, 'editMyNudgeCard', 'toggleMyNudgeHide', 'deleteMyNudgeCard');
             };
             reader.readAsText(file);
             e.target.value = '';
@@ -16684,6 +17070,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 if (seen[src]) { dupCount++; }
                 else { seen[src] = true; unique.push(src); }
             });
+        } else if (type === 'audio') {
+            list.forEach(card => {
+                const key = (card.audioUrl || '').trim();
+                if (seen[key]) { dupCount++; }
+                else { seen[key] = true; unique.push(card); }
+            });
         } else {
             list.forEach(card => {
                 const key = (card.text || '').trim();
@@ -16695,7 +17087,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         appData.specialCards[type] = unique;
         saveDataSync();
         // 局部更新：移除重复项对应的 DOM 节点，修正后续索引（规则1/2/3）
-        if (type === 'image' || type === 'video') {
+        if (type === 'audio') {
+            // 语音字卡按 audioUrl 去重，直接重新渲染列表
+            renderAudioCardList();
+        } else if (type === 'image' || type === 'video') {
             var _imgGrid = document.getElementById('imageCardGrid');
             if (_imgGrid) {
                 var _imgSeen = {};
@@ -16735,12 +17130,133 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 });
             } else {
                 if (type === 'nudge') renderNudgeCardList();
+                else if (type === 'myNudge') renderMyNudgeCardList();
                 else if (type === 'emoji') renderEmojiCardList();
                 else if (type === 'kaomoji') renderKaomojiCardList();
                 else if (type === 'shopping') renderShoppingCardList();
+                else if (type === 'audio') renderAudioCardList();
             }
         }
         alert(`已去重，删除重复 ${dupCount} 项`);
+    }
+
+    // ========== 语音字卡管理 ==========
+    function uploadAudioCards() {
+        if (!appData.specialCards.audio) appData.specialCards.audio = [];
+        document.getElementById('audioFileInput').click();
+    }
+    function handleAudioCardUpload(e) {
+        const files = e.target.files;
+        if (!files || !files.length) return;
+        if (!appData.specialCards.audio) appData.specialCards.audio = [];
+        let processed = 0;
+        const total = files.length;
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                var audioDataUrl = ev.target.result;
+                var audioKey = 'audio_card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+                // 存储到 IndexedDB（复用 saveImgDB 管道）
+                if (window.saveImgDB) {
+                    window.saveImgDB(audioKey, audioDataUrl);
+                }
+                // 读取时长
+                var tempAudio = new Audio();
+                tempAudio.src = audioDataUrl;
+                tempAudio.addEventListener('loadedmetadata', function() {
+                    var duration = Math.ceil(tempAudio.duration) || 0;
+                    appData.specialCards.audio.push({
+                        text: file.name || '语音消息',
+                        hidden: false,
+                        audioUrl: audioKey,
+                        duration: duration
+                    });
+                    processed++;
+                    if (processed === total) {
+                        saveDataSync();
+                        renderAudioCardList();
+                    }
+                });
+                tempAudio.addEventListener('error', function() {
+                    // 无法读取时长时仍然保存
+                    appData.specialCards.audio.push({
+                        text: file.name || '语音消息',
+                        hidden: false,
+                        audioUrl: audioKey,
+                        duration: 0
+                    });
+                    processed++;
+                    if (processed === total) {
+                        saveDataSync();
+                        renderAudioCardList();
+                    }
+                });
+            };
+            reader.onerror = function() { processed++; };
+            reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+    }
+    function renderAudioCardList() {
+        var container = document.getElementById('audioCardList');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!appData.specialCards.audio || !appData.specialCards.audio.length) {
+            container.innerHTML = '<div style="padding:12px;color:#999;font-size:12px;text-align:center;">暂无语音字卡</div>';
+            return;
+        }
+        appData.specialCards.audio.forEach(function(card, index) {
+            var item = document.createElement('div');
+            item.className = 'special-card-item' + (card.hidden ? ' hidden' : '');
+            item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #f0f0f0;font-family:var(--font-family);';
+            var durText = card.duration ? (Math.floor(card.duration/60) + ':' + String(card.duration%60).padStart(2,'0')) : '0:00';
+            item.innerHTML = '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">'
+                + '<span class="card-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#1a1a1a;">' + escapeHtml(card.text || '语音消息') + '</span>'
+                + '<span style="font-size:11px;color:#999;flex-shrink:0;">' + durText + '</span>'
+                + '</div>'
+                + '<div class="card-ops" style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'
+                + '<svg onclick="previewAudioCard(' + index + ')" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+                + '<span onclick="toggleAudioHide(' + index + ')" style="font-size:12px;color:#4a90d9;cursor:pointer;">' + (card.hidden ? '显示' : '隐藏') + '</span>'
+                + '<span onclick="deleteAudioCard(' + index + ')" style="font-size:12px;color:#e74c3c;cursor:pointer;">删除</span>'
+                + '</div>';
+            container.appendChild(item);
+        });
+    }
+    function toggleAudioHide(index) {
+        if (!appData.specialCards.audio || index < 0 || index >= appData.specialCards.audio.length) return;
+        appData.specialCards.audio[index].hidden = !appData.specialCards.audio[index].hidden;
+        saveDataSync();
+        renderAudioCardList();
+    }
+    function deleteAudioCard(index) {
+        if (!appData.specialCards.audio || index < 0 || index >= appData.specialCards.audio.length) return;
+        var card = appData.specialCards.audio[index];
+        // 清理 IndexedDB 中的语音文件
+        if (card && card.audioUrl && window.removeImgDB) {
+            window.removeImgDB(card.audioUrl);
+        }
+        appData.specialCards.audio.splice(index, 1);
+        saveDataSync();
+        renderAudioCardList();
+    }
+    var _previewAudioEl = null;
+    function previewAudioCard(index) {
+        if (!appData.specialCards.audio || index < 0 || index >= appData.specialCards.audio.length) return;
+        var card = appData.specialCards.audio[index];
+        if (!card.audioUrl) return;
+        if (window.loadImgDB) {
+            window.loadImgDB(card.audioUrl, function(dataUrl) {
+                if (!dataUrl) { alert('语音文件加载失败'); return; }
+                if (_previewAudioEl) { _previewAudioEl.pause(); _previewAudioEl = null; }
+                _previewAudioEl = new Audio(dataUrl);
+                _previewAudioEl.play().catch(function(e) { console.warn('语音播放失败:', e); });
+            });
+        }
+    }
+    // 获取可见的语音字卡
+    function getVisibleAudioCards() {
+        if (!appData.specialCards || !appData.specialCards.audio) return [];
+        return appData.specialCards.audio.filter(function(c) { return !c.hidden && c.audioUrl; });
     }
 
     // ========== 朋友圈功能 ==========
@@ -22501,6 +23017,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             content.textContent = '[盲选抽牌] ' + msg.question;
         } else if (msg.type === 'shopShareCard') {
             content.textContent = '[购物卡片] ' + (msg.title || '');
+        } else if (msg.type === 'audio') {
+            content.textContent = '[语音]';
         } else {
             content.textContent = msg.content || '[消息]';
         }
@@ -22854,7 +23372,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     } else if (type === 'wordcards') {
                         if (!appData.wordCards) appData.wordCards = { default: [] };
                         if (!Array.isArray(appData.wordGroups)) appData.wordGroups = ['default'];
-                        if (!appData.specialCards) appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [], video: [] };
+                        if (!appData.specialCards) appData.specialCards = { nudge: [], myNudge: [], emoji: [], kaomoji: [], image: [], video: [], shopping: [], audio: [] };
+                        if (!appData.specialCards.myNudge) appData.specialCards.myNudge = [];
                         // 导入分组定义，确保自定义分组能在界面中显示
                         if (Array.isArray(data.wordGroups)) {
                             data.wordGroups.forEach(g => {
@@ -23418,7 +23937,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
     function clearStorageData(key) {
         if (key === 'chatHistory') appData.chatHistory = [];
-        else if (key === 'wordCards') { appData.wordCards = { default: [] }; appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [], video: [] }; }
+        else if (key === 'wordCards') { appData.wordCards = { default: [] }; appData.specialCards = { nudge: [], myNudge: [], emoji: [], kaomoji: [], image: [], video: [], shopping: [], audio: [] }; }
         else if (key === 'diary') appData.diary = { singleList: [], doubleList: [], currentTab: 'single', settings: appData.diary.settings };
         else if (key === 'letter') appData.letter = { currentTab: 'inbox', inbox: [], reply: [], sent: [], favorite: [], settings: appData.letter.settings };
         else if (key === 'moments') appData.moments = { list: [], wallpaper: '', lastDailyDate: '' };
@@ -29362,6 +29881,7 @@ function mlsjIconClock() {
                                 if (m.type === 'emoji') _body = '[表情包]';
                                 else if (m.type === 'image') _body = '[图片]';
                                 else if (m.type === 'transfer') _body = '[转账] ¥' + m.amount;
+                                else if (m.type === 'audio') _body = '[语音]';
                                 else _body = m.content || '[消息]';
                                 if (_swReady && navigator.serviceWorker.controller) {
                                     sendSWNotification(_name, _body, 'qianyi-msg-' + m.id);
@@ -29466,6 +29986,29 @@ function mlsjIconClock() {
     });
 
     // ===== 增强版站内通知：同时触发系统通知 =====
+    // 确保通知对应的消息已写入聊天记录（修复通知点击后聊天记录中找不到对应消息的问题）
+    function _ensureNotifMsgInHistory(msg) {
+        if (!msg || !msg.id) return;
+        try {
+            // 确定消息应写入的联系人上下文（与 showChatNotification 的 _notifContactId 逻辑一致）
+            var _targetCid = msg.contactId || _activeContactId || _lastChatContactId || null;
+            if (!msg.contactId) msg.contactId = _targetCid; // 确保消息携带正确的 contactId
+            var _savedEnsureId = _activeContactId;
+            if (_targetCid) _activeContactId = _targetCid;
+            var hist = appData.chatHistory;
+            var exists = false;
+            if (hist && hist.length > 0) {
+                for (var i = hist.length - 1; i >= 0 && i >= hist.length - 50; i--) {
+                    if (hist[i].id === msg.id) { exists = true; break; }
+                }
+            }
+            if (!exists) {
+                appData.chatHistory.push(msg);
+                saveDataSync();
+            }
+            _activeContactId = _savedEnsureId;
+        } catch(e) { console.warn('确保通知消息落盘失败:', e); }
+    }
     // 重写 showChatNotification，在原有站内弹窗基础上增加系统通知
     var _originalShowChatNotification = showChatNotification;
     // 重写 showChatNotification：站内通知与系统（后台）通知严格分离
@@ -29474,6 +30017,8 @@ function mlsjIconClock() {
     //   - 后台（document.hidden）→ 仅发送系统通知，【不】显示站内弹窗
     //   （修复此前“站内+站外同时通知”，以及“从聊天页切到后台后回复不通知”的问题）
     showChatNotification = function(msg) {
+        // 确保通知对应的消息已写入聊天记录（防止通知点击后聊天记录中找不到该消息）
+        _ensureNotifMsgInHistory(msg);
         // 防重复通知：如果该消息已经通知过，直接跳过
         if (msg && msg.id && isMsgNotified(msg.id)) return;
         // 标记已通知（在调用逻辑前标记，避免并发时重复）
@@ -29492,6 +30037,7 @@ function mlsjIconClock() {
                 else if (msg.type === 'transfer') body = '[转账] ¥' + msg.amount;
                 else if (msg.type === 'blindCard') body = '[盲选抽牌] ' + msg.question;
                 else if (msg.type === 'shopShareCard') body = '[购物卡片] ' + (msg.title || '');
+                else if (msg.type === 'audio') body = '[语音]';
                 else body = msg.content || '[消息]';
                 // 优先通过 SW 发送系统通知（支持后台通知和点击跳转）
                 if (_swReady && navigator.serviceWorker.controller) {
@@ -30652,11 +31198,19 @@ function shopInitData() {
 
     // 确保 specialCards.shopping 区域存在
     if (!appData.specialCards) {
-        appData.specialCards = { nudge: [], emoji: [], kaomoji: [], image: [], video: [], shopping: [] };
+        appData.specialCards = { nudge: [], myNudge: [], emoji: [], kaomoji: [], image: [], video: [], shopping: [], audio: [] };
+        changed = true;
+    }
+    if (!appData.specialCards.myNudge) {
+        appData.specialCards.myNudge = [];
         changed = true;
     }
     if (!appData.specialCards.shopping) {
         appData.specialCards.shopping = [];
+        changed = true;
+    }
+    if (!appData.specialCards.audio) {
+        appData.specialCards.audio = [];
         changed = true;
     }
 
