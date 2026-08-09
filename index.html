@@ -7460,7 +7460,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-page" id="settingsPage">
 <div class="settings-header">
 <div class="settings-back" onclick="closeChatSettings()">‹</div>
-<div class="settings-title">聊天设置</div>
+<div class="settings-title" onclick="closeChatSettings()" style="cursor:pointer;">聊天设置</div>
 
 </div>
 <div class="settings-content">
@@ -8063,7 +8063,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <!-- 字卡主界面 -->
 <div class="wordcard-page" id="wordcardPage">
 <div class="wordcard-header">
-<div class="wordcard-title">字卡</div>
+<div class="wordcard-title" onclick="closeWordCard()" style="cursor:pointer;">字卡</div>
 <div class="wordcard-contact-btn" id="wordcardContactBtn" onclick="toggleContactScopeBar()">共用字卡</div>
 </div>
 <div class="wordcard-contact-bar" id="wordcardContactBar"></div>
@@ -8242,7 +8242,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-page" id="globalSettingsPage" style="z-index:350;">
 <div class="settings-header">
 <div class="settings-back" onclick="closeGlobalSettings()">‹</div>
-<div class="settings-title">设置</div>
+<div class="settings-title" onclick="closeGlobalSettings()" style="cursor:pointer;">设置</div>
 </div>
 <div class="settings-content">
 <div class="settings-section">
@@ -8473,7 +8473,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-page" id="beautifyPage" style="z-index:350;">
 <div class="settings-header">
 <div class="settings-back" onclick="closeBeautifyApp()">‹</div>
-<div class="settings-title">美化</div>
+<div class="settings-title" onclick="closeBeautifyApp()" style="cursor:pointer;">美化</div>
 </div>
 <div style="display:flex;border-bottom:1px solid #e0e0e0;background:#f0f0f0;">
 <div class="beautify-main-tab active" data-tab="chat" onclick="switchBeautifyTab('chat')" style="flex:1;text-align:center;padding:10px 0;font-size:14px;cursor:pointer;border-bottom:2px solid #1a1a1a;color:#1a1a1a;">聊天全局</div>
@@ -8556,7 +8556,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-page" id="storagePage" style="z-index:350;">
 <div class="settings-header">
 <div class="settings-back" onclick="closeStorageApp()">‹</div>
-<div class="settings-title">存储数据</div>
+<div class="settings-title" onclick="closeStorageApp()" style="cursor:pointer;">存储数据</div>
 </div>
 <div class="settings-content">
 <div class="settings-section">
@@ -8759,7 +8759,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         <div class="wordlib-back" onclick="closeWordLibApp()">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </div>
-        <div class="wordlib-title">词库</div>
+        <div class="wordlib-title" onclick="closeWordLibApp()" style="cursor:pointer;">词库</div>
         
     </div>
     <div class="wordlib-body" id="wordlibBody">
@@ -8782,7 +8782,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-page" id="gobanAppPage" style="z-index:350;">
 <div class="settings-header">
 <div class="settings-back" onclick="closeGobanApp()">‹</div>
-<div class="settings-title">五子棋</div>
+<div class="settings-title" onclick="closeGobanApp()" style="cursor:pointer;">五子棋</div>
 </div>
 <div class="settings-content" id="gobanAppContent" style="padding:16px;"></div>
 </div>
@@ -8799,7 +8799,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-page" id="balanceAppPage" style="z-index:350;background:#f9f9f9;">
 <div class="settings-header">
 <div class="settings-back" onclick="closeBalanceApp()">‹</div>
-<div class="settings-title">余额</div>
+<div class="settings-title" onclick="closeBalanceApp()" style="cursor:pointer;">余额</div>
 </div>
 <div style="padding:0 16px 8px;">
 <select id="balanceContactSelector" onchange="switchBalanceContact()" style="width:100%;padding:10px 14px;border:none;border-radius:8px;font-size:14px;background:#f5f5f5;color:#333;outline:none;-webkit-appearance:none;appearance:none;font-family:var(--font-family);"></select>
@@ -9002,6 +9002,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
 <!-- 通用遮罩 -->
 <div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+<!-- 联系人列表顶部白色返回键（独立于列表页，确保始终可点击且不被通知横幅遮挡） -->
+<div id="clBackBtn" onclick="closeContactList()" style="position:fixed;top:calc(env(safe-area-inset-top, 0px) + 10px);left:12px;width:36px;height:36px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:10001;-webkit-tap-highlight-color:transparent;color:#ffffff;">
+<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+</div>
 <!-- 站内消息通知弹窗 - 微信风格 -->
 <div id="chatNotification" onclick="openChatFromNotification()" style="position:fixed;top:calc(env(safe-area-inset-top,12px) + 12px);left:12px;right:12px;z-index:9999;background:rgba(245,245,245,0.97);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.12);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s ease;opacity:0;pointer-events:none;overflow:hidden;max-width:calc(100% - 24px);font-family:var(--font-family);cursor:pointer;">
 <div style="display:flex;align-items:center;padding:14px 16px;gap:12px;">
@@ -20997,11 +21001,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
 
     // ========== 联系人列表功能 ==========
+    // 控制联系人列表顶部白色返回键的显示/隐藏
+    function _toggleClBackBtn(show) {
+        var btn = document.getElementById('clBackBtn');
+        if (btn) btn.style.display = show ? 'flex' : 'none';
+    }
     function openContactList() {
         try {
             _activeContactId = null; // 重置联系人聊天上下文，避免残留状态影响联系人创建
             applyContactListStyles();
             document.getElementById('contactListPage').classList.add('active');
+            _toggleClBackBtn(true);
             renderContactList();
             renderContactProfile();
         } catch(e) { console.error('openContactList error:', e); }
@@ -21009,6 +21019,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function closeContactList() {
         _activeContactId = null;
         document.getElementById('contactListPage').classList.remove('active');
+        _toggleClBackBtn(false);
         // 返回桌面，关闭聊天页
         document.getElementById('chatPage').style.display = 'none';
         // 显示底栏
@@ -21198,6 +21209,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         var _dockBar = document.querySelector('.dock-bar');
         if (_dockBar) _dockBar.style.display = '';
         document.getElementById('contactListPage').classList.add('active');
+        _toggleClBackBtn(true);
         renderContactList();
         // 修复 Android 右滑退出后底部输入框空白变形
         _fixAndroidChatFooter();
@@ -21657,7 +21669,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function enterChatFromContactList(type, id) {
         // 关闭联系人列表，打开聊天
         document.getElementById('contactListPage').classList.remove('active');
+        _toggleClBackBtn(false);
         document.getElementById('chatPage').style.display = 'flex';
+        // 进入聊天界面时收起站内消息通知横幅
+        _dismissChatNotification();
         // 隐藏底栏
         var _dockBar = document.querySelector('.dock-bar');
         if (_dockBar) _dockBar.style.display = 'none';
@@ -22412,6 +22427,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
     let _notifTimer = null;
     var _notifContactId = null; // 存储通知对应的联系人 ID，用于点击通知时恢复正确的聊天上下文
+    // 统一关闭站内消息通知横幅（供点击通知、进入聊天等场景调用）
+    function _dismissChatNotification() {
+        try {
+            if (_notifTimer) { clearTimeout(_notifTimer); _notifTimer = null; }
+            var notifEl = document.getElementById('chatNotification');
+            if (notifEl) {
+                notifEl.style.transform = 'translateY(-120%)';
+                notifEl.style.opacity = '0';
+                notifEl.style.pointerEvents = 'none';
+            }
+        } catch(e) {}
+    }
     function showChatNotification(msg) {
         // 仅在通知开关开启且不在聊天界面时显示
         if (!appData.globalSettings.notificationEnabled) return;
@@ -22489,20 +22516,19 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             });
         });
         
-        // 3秒后自动隐藏
+        // 通知横幅保持常驻显示，直到用户点击或进入聊天界面，避免在联系人列表/桌面看不到通知
         if (_notifTimer) clearTimeout(_notifTimer);
-        _notifTimer = setTimeout(() => {
-            notifEl.style.transform = 'translateY(-120%)';
-            notifEl.style.opacity = '0';
-            notifEl.style.pointerEvents = 'none';
+        _notifTimer = setTimeout(function() {
+            // 仅当用户已进入聊天界面时才自动收起；否则保持可见，确保在列表界面也能看到站内通知
+            if (document.getElementById('chatPage').style.display === 'flex') {
+                _dismissChatNotification();
+            }
         }, 3000);
     }
     function openChatFromNotification() {
-        if (_notifTimer) clearTimeout(_notifTimer);
+        _dismissChatNotification();
+        _toggleClBackBtn(false);
         const notifEl = document.getElementById('chatNotification');
-        notifEl.style.transform = 'translateY(-120%)';
-        notifEl.style.opacity = '0';
-        notifEl.style.pointerEvents = 'none';
         // 从通知直接进入聊天页（跳过联系人列表）
         try {
             refreshCustomIcons();
