@@ -7290,16 +7290,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 <div class="p3-avatar-section draggable-group" data-drag-key="p3MidRow">
   <div class="p3-input-col p3-input-left">
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="0" oninput="autoSizeInput(this);saveP3InputTexts()"/>
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="1" oninput="autoSizeInput(this);saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="0" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="1" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
   </div>
   <div class="p3-center-avatar" id="p3CenterAvatar" onclick="replaceP3Avatar(event)">
     <div class="p3-avatar-ph">点击<br>替换</div>
     <img alt="" style="display:none"/>
   </div>
   <div class="p3-input-col p3-input-right">
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="2" oninput="autoSizeInput(this);saveP3InputTexts()"/>
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="3" oninput="autoSizeInput(this);saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="2" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="3" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
   </div>
 </div>
 <div class="p3-app-grid draggable-group" data-drag-key="p3AppGrid" id="p3AppGrid">
@@ -36048,6 +36048,10 @@ window.saveP3InputTexts=function(){
   inputs.forEach(function(inp){ texts.push(inp.value||''); });
   try{ localStorage.setItem('p3_input_texts',JSON.stringify(texts)); }catch(e){}
 };
+/* 退出/切后台时额外保存一次，防止 oninput 未触发导致丢失 */
+window.addEventListener('pagehide',function(){ try{ window.saveP3InputTexts(); }catch(e){} });
+window.addEventListener('beforeunload',function(){ try{ window.saveP3InputTexts(); }catch(e){} });
+document.addEventListener('visibilitychange',function(){ if(document.hidden){ try{ window.saveP3InputTexts(); }catch(e){} } });
 /* 全局函数定义 - 确保在任何情况下都可调用 */
 window.replaceP3Avatar=function(e){
   if(e){ e.stopPropagation(); e.preventDefault(); }
@@ -36115,18 +36119,27 @@ window.replaceP3Avatar=function(e){
       try{ var v=localStorage.getItem(AV_KEY); if(v) applyAvatar(v); }catch(e){}
     }
     /* 初始化所有 p3-glass-input 的自动宽度，并恢复已保存的文字 */
+    restoreP3InputTexts();
+    /* 延迟再次恢复，防止 IndexedDB 异步加载覆盖后输入框被清空 */
+    setTimeout(restoreP3InputTexts,500);
+    setTimeout(restoreP3InputTexts,1500);
+  }
+  /* 恢复第三页四个输入框文字（可多次调用，仅填充空值，不覆盖用户已输入的内容） */
+  function restoreP3InputTexts(){
     document.querySelectorAll('.p3-glass-input').forEach(function(inp){
-      /* 恢复保存的文字 */
       try{
         var saved=JSON.parse(localStorage.getItem('p3_input_texts'));
         if(Array.isArray(saved)){
           var idx=parseInt(inp.dataset.p3Input,10);
           if(!isNaN(idx)&&saved[idx]!==undefined&&saved[idx]!==''){
-            inp.value=saved[idx];
+            /* 仅在输入框为空时恢复，避免覆盖用户当前正在输入的内容 */
+            if(!inp.value){
+              inp.value=saved[idx];
+            }
           }
         }
       }catch(e){}
-      window.autoSizeInput(inp);
+      if(window.autoSizeInput){ window.autoSizeInput(inp); }
     });
   }
   if(document.readyState==='loading'){
