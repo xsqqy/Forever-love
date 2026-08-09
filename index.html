@@ -1412,7 +1412,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             height: 0;
             border-top: 7px solid transparent;
             border-bottom: 7px solid transparent;
-            border-left: 1px solid var(--tail-border-color, var(--my-bubble-border, transparent));
+            border-left: 7px solid var(--tail-border-color, var(--my-bubble-border, transparent));
         }
         .msg-bubble.tail-right::after {
             content: '';
@@ -1958,11 +1958,41 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             transform: scale(0.9);
         }
         .blind-card-cb {
-            width: 20px;
-            height: 20px;
-            accent-color: #7BA7CC;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #7BA7CC;
+            border-radius: 6px;
+            background: #fff;
             cursor: pointer;
             flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            position: relative;
+            transition: all 0.15s;
+            outline: none;
+        }
+        .blind-card-cb:checked {
+            background: #7BA7CC;
+            border-color: #7BA7CC;
+        }
+        .blind-card-cb:checked::after {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 3px;
+            width: 6px;
+            height: 12px;
+            border: solid #fff;
+            border-width: 0 2.5px 2.5px 0;
+            transform: rotate(45deg);
+        }
+        html.dark-mode .blind-card-cb {
+            background: rgba(60,60,60,0.7);
+            border-color: #7BA7CC;
+        }
+        html.dark-mode .blind-card-cb:checked {
+            background: #7BA7CC;
         }
         .blind-card-add-btn {
             display: flex;
@@ -13799,7 +13829,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             html += blindCardOptionRowHtml(idx, text);
         });
         html += `<div onclick="addBlindCardOption()" style="display:flex;align-items:center;gap:6px;color:#7BA7CC;font-size:13px;cursor:pointer;margin:8px 0 12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>添加选项</div>`;
-        html += `<div style="font-size:12px;color:#999;margin-bottom:6px;">勾选正确答案；勾1个为单选，勾多个为多选，不勾为自由选择</div>`;
+        html += `<div class="bc-answer-hint" style="font-size:12px;color:#999;margin-bottom:6px;">勾选正确答案；勾1个为单选，勾多个为多选，不勾为自由选择</div>`;
         wrap.innerHTML = html;
     }
 
@@ -22612,12 +22642,19 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (_includeLT) {
                 var ltDataCollected = {};
                 var _idbKeys = exportObj.indexedDBImages || {};
+                // 先从 localStorage 收集所有 lt_ 开头的 key（不跳过 IndexedDB 中已有的，确保数据为最新）
                 for (var _li = 0; _li < localStorage.length; _li++) {
                     var _lk = localStorage.key(_li);
-                    if (_lk && _lk.indexOf('lt_') === 0 && !_idbKeys[_lk]) {
+                    if (_lk && _lk.indexOf('lt_') === 0) {
                         ltDataCollected[_lk] = localStorage.getItem(_lk);
                     }
                 }
+                // 再从 IndexedDB 补充 localStorage 中缺失的 lt_ key（saveImgDB 会将大数据从 localStorage 移至 IndexedDB）
+                Object.keys(_idbKeys).forEach(function(k) {
+                    if (k.indexOf('lt_') === 0 && !ltDataCollected[k]) {
+                        ltDataCollected[k] = _idbKeys[k];
+                    }
+                });
                 if (Object.keys(ltDataCollected).length > 0) {
                     exportObj.ltData = ltDataCollected;
                 }
@@ -32179,23 +32216,46 @@ function shopProcessPendingCards() {
                 msg.status = 'accepted';
                 /* 对方同意：此时创建订单并扣款 */
                 var _p = msg.product || {};
-                var _oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
                 var _orderType = msg.cardType === 'request' ? 'request' : (msg.cardType === 'helpPay' ? 'helpPay' : 'loveGift');
-                sd.orders.push({
-                    id: _oid, items: [{ productId: '', name: _p.name || '', price: _p.price || 0, qty: 1, image: _p.image || '' }],
-                    total: _p.price || 0, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
-                    address: sd.otherAddr || { name: '', phone: '', addr: '' },
-                    message: '', giftMessage: msg.giftMessage || '',
-                    orderType: _orderType, buyer: 'me', payer: 'other', payStage: 'agree',
-                    paid: true, debt: false, deliveryCardSent: false
-                });
-                msg.orderId = _oid;
+                /* loveGift 已有预创建订单，直接更新原订单而非创建重复订单 */
+                var _existingOrder = null;
+                if (msg.orderId) {
+                    for (var _oi = 0; _oi < sd.orders.length; _oi++) {
+                        if (sd.orders[_oi].id === msg.orderId) { _existingOrder = sd.orders[_oi]; break; }
+                    }
+                }
+                if (_existingOrder) {
+                    _existingOrder.paid = true;
+                    _existingOrder.payStage = 'agree';
+                    _existingOrder.orderType = _orderType;
+                } else {
+                    var _oid = 'o_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                    sd.orders.push({
+                        id: _oid, items: [{ productId: '', name: _p.name || '', price: _p.price || 0, qty: 1, image: _p.image || '' }],
+                        total: _p.price || 0, status: 'pending', createTime: Date.now(), shipTime: 0, signTime: 0, deliverTime: 0,
+                        address: sd.otherAddr || { name: '', phone: '', addr: '' },
+                        message: '', giftMessage: msg.giftMessage || '',
+                        orderType: _orderType, buyer: 'me', payer: 'other', payStage: 'agree',
+                        paid: true, debt: false, deliveryCardSent: false
+                    });
+                    msg.orderId = _oid;
+                }
                 shopEnsureBalance();
                 addBalanceRecord('other', -(_p.price || 0), '次元购物城代付/求购', msg.contactId || null);
-                sd.orders[sd.orders.length - 1].debt = getOtherBalance(msg.contactId || null) < 0;
+                if (_existingOrder) _existingOrder.debt = getOtherBalance(msg.contactId || null) < 0;
+                else sd.orders[sd.orders.length - 1].debt = getOtherBalance(msg.contactId || null) < 0;
                 addSystemMsg(_cardContactName + ' 已同意，¥' + (_p.price || 0) + ' 已从对方余额扣除');
             } else {
                 msg.status = 'rejected';
+                /* loveGift 预创建的订单需要在拒绝时取消，避免遗留未付款订单 */
+                if (msg.orderId) {
+                    for (var _ri = 0; _ri < sd.orders.length; _ri++) {
+                        if (sd.orders[_ri].id === msg.orderId && sd.orders[_ri].status === 'pending' && !sd.orders[_ri].paid) {
+                            sd.orders[_ri].status = 'cancelled';
+                            break;
+                        }
+                    }
+                }
                 /* 根据对方余额显示不同留言 */
                 shopEnsureBalance();
                 var _otherBal = getOtherBalance(msg.contactId || null);
@@ -36241,7 +36301,7 @@ window.replaceP3Avatar=function(e){
 <style>
 .randomfood_overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;display:none;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;}
 .randomfood_overlay.show{display:flex;}
-.randomfood_modal{position:relative;width:320px;max-width:92vw;background:rgba(255,255,255,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;border:1px solid rgba(255,255,255,0.6);}
+.randomfood_modal{position:relative;width:380px;max-width:92vw;background:rgba(255,255,255,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;border:1px solid rgba(255,255,255,0.6);}
 .randomfood_close{position:absolute;top:8px;right:12px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#888;cursor:pointer;line-height:1;user-select:none;}
 .randomfood_close:active{opacity:0.6;}
 .randomfood_title{font-size:18px;font-weight:700;color:#444;margin:0 0 14px;letter-spacing:1px;}
@@ -36257,7 +36317,7 @@ window.replaceP3Avatar=function(e){
 .randomfood_again_btn:active{transform:scale(0.96);}
 .randomfood_manage_btn{margin-top:4px;background:none;border:none;font-size:12px;color:#9a8fb0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
 .randomfood_manage_btn:active{opacity:0.6;}
-.randomfood_manage_panel{position:relative;width:320px;max-width:92vw;max-height:80vh;overflow-y:auto;background:rgba(255,255,255,0.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:22px 16px 16px;display:none;flex-direction:column;border:1px solid rgba(255,255,255,0.6);}
+.randomfood_manage_panel{position:relative;width:380px;max-width:92vw;max-height:80vh;overflow-y:auto;background:rgba(255,255,255,0.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:22px 20px 18px;display:none;flex-direction:column;border:1px solid rgba(255,255,255,0.6);}
 .randomfood_manage_panel.show{display:flex;}
 .randomfood_manage_title{font-size:16px;font-weight:700;color:#444;margin:0 0 12px;text-align:center;}
 .randomfood_manage_list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
@@ -36270,10 +36330,18 @@ window.replaceP3Avatar=function(e){
 .randomfood_input:focus{border-color:#ffb3d1;}
 .randomfood_add_btn{border:none;background:#b8e6c9;color:#3a8a5a;font-size:14px;font-weight:600;padding:0 18px;border-radius:12px;cursor:pointer;}
 .randomfood_add_btn:active{transform:scale(0.96);}
+.randomfood_batch_wrap{margin-top:10px;border-top:1px dashed rgba(0,0,0,0.1);padding-top:10px;}
+.randomfood_batch_label{font-size:12px;color:#9a8fb0;margin-bottom:6px;}
+.randomfood_batch_input{width:100%;border:1px solid rgba(0,0,0,0.1);border-radius:12px;padding:9px 12px;font-size:14px;outline:none;background:rgba(255,255,255,0.7);color:#444;resize:vertical;min-height:80px;font-family:inherit;line-height:1.5;box-sizing:border-box;}
+.randomfood_batch_input:focus{border-color:#ffb3d1;}
+.randomfood_batch_btn{margin-top:6px;border:none;background:#b8d8f0;color:#2a6a9a;font-size:14px;font-weight:600;padding:9px 0;border-radius:12px;cursor:pointer;width:100%;}
+.randomfood_batch_btn:active{transform:scale(0.96);}
 html.dark-mode .randomfood_modal,html.dark-mode .randomfood_manage_panel{background:rgba(40,40,40,0.7);border-color:rgba(80,80,80,0.4);}
 html.dark-mode .randomfood_title,html.dark-mode .randomfood_manage_title,html.dark-mode .randomfood_manage_text{color:#eee;}
 html.dark-mode .randomfood_input{background:rgba(60,60,60,0.7);color:#eee;border-color:rgba(120,120,120,0.3);}
 html.dark-mode .randomfood_manage_row{background:rgba(60,60,60,0.5);}
+html.dark-mode .randomfood_batch_input{background:rgba(60,60,60,0.7);color:#eee;border-color:rgba(120,120,120,0.3);}
+html.dark-mode .randomfood_batch_label{color:#aaa;}
 html.dark-mode .randomfood_result{background:rgba(60,60,60,0.5);color:#ff9ec4;}
 </style>
 
@@ -36300,6 +36368,11 @@ html.dark-mode .randomfood_result{background:rgba(60,60,60,0.5);color:#ff9ec4;}
       <input type="text" class="randomfood_input" id="randomFoodNewInput" placeholder="输入新选项">
       <button class="randomfood_add_btn" id="randomFoodAddBtn">添加</button>
     </div>
+    <div class="randomfood_batch_wrap">
+      <div class="randomfood_batch_label">批量添加（每行一个选项）</div>
+      <textarea class="randomfood_batch_input" id="randomFoodBatchInput" placeholder="每行输入一个选项，例如：&#10;火锅&#10;烧烤&#10;寿司&#10;麻辣香锅"></textarea>
+      <button class="randomfood_batch_btn" id="randomFoodBatchBtn">批量添加</button>
+    </div>
   </div>
 </div>
 
@@ -36325,6 +36398,8 @@ html.dark-mode .randomfood_result{background:rgba(60,60,60,0.5);color:#ff9ec4;}
   var newInput = document.getElementById('randomFoodNewInput');
   var addBtn = document.getElementById('randomFoodAddBtn');
   var plusBtn = document.getElementById('randomFoodPlusBtn');
+  var batchInput = document.getElementById('randomFoodBatchInput');
+  var batchBtn = document.getElementById('randomFoodBatchBtn');
 
   var items = loadData();
   var currentRotation = 0;
@@ -36489,6 +36564,25 @@ html.dark-mode .randomfood_result{background:rgba(60,60,60,0.5);color:#ff9ec4;}
     renderManage();
     drawWheel(-1);
   }
+  function addBatch(){
+    var raw = batchInput.value.trim();
+    if(!raw) return;
+    var lines = raw.split(/\r?\n/);
+    var added = 0;
+    lines.forEach(function(line){
+      var v = line.trim();
+      if(v){
+        items.push(v);
+        added++;
+      }
+    });
+    if(added > 0){
+      saveData();
+      batchInput.value = '';
+      renderManage();
+      drawWheel(-1);
+    }
+  }
 
   // 事件绑定（全部用 addEventListener，不污染全局）
   if(plusBtn) plusBtn.addEventListener('click', function(e){ e.stopPropagation(); openWheel(); });
@@ -36499,6 +36593,7 @@ html.dark-mode .randomfood_result{background:rgba(60,60,60,0.5);color:#ff9ec4;}
   closeBtn.addEventListener('click', closeWheel);
   addBtn.addEventListener('click', addItem);
   newInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ addItem(); } });
+  if(batchBtn) batchBtn.addEventListener('click', addBatch);
   // 点击遮罩空白处关闭（点弹窗内部不关）
   overlay.addEventListener('click', function(e){
     if(e.target === overlay) closeWheel();
