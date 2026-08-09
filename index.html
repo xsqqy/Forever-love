@@ -30020,6 +30020,8 @@ function mlsjIconClock() {
     (function initChatKeyboard() {
         const chatPage = document.getElementById('chatPage');
         if (!chatPage) return;
+        // 安卓使用独立的键盘适配逻辑（见下方 initAndroidKeyboardFix），跳过此处避免双重适配冲突
+        if (/Android/i.test(navigator.userAgent)) return;
         let inputFocused = false;
         let pollTimer = null;
         let lastAppliedKH = 0; // 上次应用的键盘高度，用于稳定性检测
@@ -30209,6 +30211,142 @@ function mlsjIconClock() {
                     stopPolling();
                     reset();
                 }
+            }
+        });
+    })();
+
+    // ===== 安卓键盘适配（独立于 iOS 逻辑，仅安卓生效）=====
+    // 说明：.chat-footer 是 .chat-page（flex column）的 flex 子项，非 position:fixed。
+    // 在此布局下给 footer 设负 margin-bottom 会将其推到视口下方（与预期相反），
+    // 因此采用在 .chat-page 上设 padding-bottom 的方式，将底部栏正确推到键盘上方。
+    (function initAndroidKeyboardFix() {
+        // 1. 仅安卓生效，非安卓直接返回
+        if (!/Android/i.test(navigator.userAgent)) return;
+
+        var chatPage = document.getElementById('chatPage');
+        if (!chatPage) return;
+        var chatInput = document.getElementById('chatInput');
+        var chatFooter = chatPage.querySelector('.chat-footer');
+
+        // ===== 状态变量 =====
+        var cachedH = 0;        // 缓存的键盘未弹出时的视口高度
+        var kbOpen = false;      // 键盘当前是否弹出
+        var lastKbH = -1;       // 上次应用的键盘高度（避免重复写 DOM）
+
+        // 获取当前可视高度（优先 visualViewport，兼容微信等 WebView）
+        function currentH() {
+            if (window.visualViewport) return window.visualViewport.height;
+            return window.innerHeight;
+        }
+
+        // 缓存完整视口高度：仅在键盘未弹出时更新（避免安卓键盘弹出时 innerHeight 缩小导致误判）
+        function cacheH() {
+            var h = currentH();
+            if (cachedH === 0 || h >= cachedH * 0.85) {
+                cachedH = Math.max(h, window.innerHeight, document.documentElement.clientHeight || 0);
+            }
+        }
+        cacheH();
+
+        // 计算键盘高度 = 缓存全屏高度 - 当前可视高度
+        function getKbH() {
+            var base = cachedH || window.innerHeight;
+            return Math.max(0, Math.round(base - currentH()));
+        }
+
+        // 4/5. 核心适配：键盘弹出时给 .chat-page 设 padding-bottom 把底部栏推到键盘上方；收起时恢复
+        function apply() {
+            if (chatPage.style.display === 'none') return;
+            var kbH = getKbH();
+            var open = kbH > 100; // 阈值 100px，过滤地址栏伸缩（通常 <80px）
+
+            if (open) {
+                // 键盘弹出：设 padding-bottom 将底部栏推到键盘上方
+                if (kbH !== lastKbH) {
+                    lastKbH = kbH;
+                    chatPage.style.paddingBottom = kbH + 'px';
+                }
+                if (!kbOpen) {
+                    kbOpen = true;
+                    chatPage.classList.add('keyboard-open');
+                    // 关闭表情/加号面板
+                    document.querySelectorAll('.emoji-panel.show, .plus-panel.show').forEach(function(p) {
+                        p.classList.remove('show');
+                    });
+                    // 滚动聊天区域到底部
+                    if (typeof scrollToBottom === 'function') scrollToBottom();
+                }
+            } else {
+                // 键盘收起：恢复 padding-bottom 为 0
+                if (kbOpen || lastKbH > 0) {
+                    kbOpen = false;
+                    lastKbH = -1;
+                    chatPage.style.paddingBottom = '0px';
+                    chatPage.classList.remove('keyboard-open');
+                }
+            }
+        }
+
+        // 7. 恢复底部栏位置（blur / 页面切换时调用）
+        function restore() {
+            chatPage.style.paddingBottom = '0px';
+            chatPage.classList.remove('keyboard-open');
+            if (chatFooter) chatFooter.style.marginBottom = '';
+            kbOpen = false;
+            lastKbH = -1;
+            cacheH();
+        }
+        // 暴露全局引用，供 initChatPage() 复位键盘状态
+        resetChatKeyboard = restore;
+
+        // 3a. 检测方式一：window.resize 事件
+        window.addEventListener('resize', function() {
+            cacheH();
+            apply();
+        });
+
+        // 3b. 检测方式二：visualViewport 事件（微信内置浏览器、WebView 需要）
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', function() {
+                cacheH();
+                apply();
+            });
+            window.visualViewport.addEventListener('scroll', apply);
+        }
+
+        // 3c. 检测方式三：setInterval 轮询兜底（所有浏览器最终保障）
+        // 持续轮询以捕捉键盘弹出/收起/高度变化（如切换输入法），apply 内部有 lastKbH 去重，仅在高度变化时写 DOM
+        setInterval(function() { apply(); }, 200);
+
+        // 6. 输入框 focus：滚动聊天区域到底部
+        if (chatInput) {
+            chatInput.addEventListener('focus', function() {
+                cacheH();
+                apply();
+                // 延迟滚动，等待键盘动画完成后定位到底部
+                setTimeout(function() {
+                    if (typeof scrollToBottom === 'function') scrollToBottom();
+                }, 150);
+            });
+            // 7. 输入框 blur：恢复底部栏位置
+            chatInput.addEventListener('blur', function() {
+                setTimeout(function() {
+                    cacheH();
+                    restore();
+                }, 200);
+            });
+        }
+
+        // 屏幕旋转时重置缓存
+        window.addEventListener('orientationchange', function() {
+            cachedH = 0;
+            setTimeout(function() { cacheH(); apply(); }, 300);
+        });
+
+        // 页面可见性变化时重置（后台切回时键盘状态可能已变）
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                setTimeout(function() { cacheH(); apply(); }, 100);
             }
         });
     })();
