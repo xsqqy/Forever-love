@@ -7324,16 +7324,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 <div class="p3-avatar-section draggable-group" data-drag-key="p3MidRow">
   <div class="p3-input-col p3-input-left">
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="0" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="1" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="0" oninput="_debouncedSaveP3Inputs();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="1" oninput="_debouncedSaveP3Inputs();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
   </div>
   <div class="p3-center-avatar" id="p3CenterAvatar" onclick="replaceP3Avatar(event)">
     <div class="p3-avatar-ph">点击<br>替换</div>
     <img alt="" style="display:none"/>
   </div>
   <div class="p3-input-col p3-input-right">
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="2" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
-    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="3" oninput="saveP3InputTexts();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="2" oninput="_debouncedSaveP3Inputs();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
+    <input class="p3-glass-input" type="text" placeholder="输入" maxlength="20" data-p3-input="3" oninput="_debouncedSaveP3Inputs();autoSizeInput(this)" onblur="saveP3InputTexts()"/>
   </div>
 </div>
 <div class="p3-app-grid draggable-group" data-drag-key="p3AppGrid" id="p3AppGrid">
@@ -9549,7 +9549,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     window.addEventListener('unhandledrejection', function(e) {
         console.error('未处理的 Promise 错误:', e.reason);
     });
-    window.addEventListener('beforeunload', function() { try { if (_idbReady) saveDataSync(); } catch(e) {} });
+    window.addEventListener('beforeunload', function() { try { if (_idbReady) flushPendingSave(); } catch(e) {} });
     window.addEventListener('pageshow', function() {
         setTimeout(function() {
             try { processPendingMomentActions(); } catch(e) {}
@@ -9925,6 +9925,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     const CURRENT_DATA_VERSION = 7;
     const defaultData = {
         dataVersion: 1,
+        lastSavedAt: 0, // 数据最后保存时间戳，用于 loadDataFromIDB 新旧数据比对，防止旧 IndexedDB 覆盖更新的内存数据
         periodData: {},
         wordCardText: '☆*:.｡. o(≧▽≦)o .｡.:*☆等待对方更新中……',
         timeOffset: -9,
@@ -10885,18 +10886,35 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 }
                 // 执行数据迁移（在复制到 appData 之前，此时 merged 是普通对象）
                 migrateData(merged);
-                // 将 merged 的属性逐一复制到 appData（而非替换引用），
-                // 以保留 chatHistory 上的 getter/setter（联系人独立聊天记录）
-                for (var _k in merged) {
-                    appData[_k] = merged[_k];
+                // ===== 新旧数据比对：防止 IndexedDB 中的旧数据覆盖内存/localStorage 中的新数据 =====
+                // 场景：应用被切后台时最后一次 IndexedDB 写入未提交（fire-and-forget），
+                //       导致 IndexedDB 停留在旧状态；而 localStorage 同步写入已成功且较新。
+                // 此时若直接加载 IndexedDB 数据会覆盖更新的内存数据 → 数据回档。
+                // 解决：用 lastSavedAt 时间戳判断谁更新，保留较新的一方。
+                var _idbTime = merged.lastSavedAt || 0;
+                var _memTime = appData.lastSavedAt || 0;
+                if (_memTime >= _idbTime) {
+                    // 内存/localStorage 数据更新或同等：保留内存数据，并将 IndexedDB 同步到最新（自愈）
+                    console.log('[数据加载] 内存/localStorage 数据较新(lastSavedAt=' + _memTime + ')，保留内存数据，同步 IndexedDB');
+                    _idbReady = true;
+                    saveDataSync(); // 用最新内存数据覆盖 IndexedDB 中的旧数据
+                    if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
+                } else {
+                    // IndexedDB 数据更新：全量加载到 appData
+                    console.log('[数据加载] IndexedDB 数据较新(lastSavedAt=' + _idbTime + ')，全量加载');
+                    // 将 merged 的属性逐一复制到 appData（而非替换引用），
+                    // 以保留 chatHistory 上的 getter/setter（联系人独立聊天记录）
+                    for (var _k in merged) {
+                        appData[_k] = merged[_k];
+                    }
+                    // 同步 appData.dataVersion
+                    appData.dataVersion = merged.dataVersion || CURRENT_DATA_VERSION;
+                    _idbReady = true; // 数据加载完毕，允许 saveData 写入 IndexedDB
+                    // 确保数据写入主键和备份键（迁移旧数据库时尤为重要）
+                    saveDataSync();
+                    // 重新初始化界面以应用IndexedDB数据
+                    if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
                 }
-                // 同步 appData.dataVersion
-                appData.dataVersion = merged.dataVersion || CURRENT_DATA_VERSION;
-                _idbReady = true; // 数据加载完毕，允许 saveData 写入 IndexedDB
-                // 确保数据写入主键和备份键（迁移旧数据库时尤为重要）
-                saveDataSync();
-                // 重新初始化界面以应用IndexedDB数据
-                if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
             } else {
                 // IndexedDB 没有数据，从 localStorage 一次性迁移到 IndexedDB
                 // loadData() 已经执行过迁移，确保版本号正确
@@ -10931,6 +10949,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // saveData 防抖：避免频繁序列化大对象导致卡顿
     let _saveDataTimer = null;
     let _lastGoodJson = null; // 缓存上次成功序列化的 JSON，用于回滚
+    // 跟踪最近一次进行中的异步保存（IndexedDB 写入），供生命周期事件等待落盘
+    let _pendingSavePromise = Promise.resolve(true);
+    let _saveActive = false; // 是否有保存正在进行（防止重入）
+    let _saveDirty = false;  // 保存期间又有新写入，需在当前保存结束后再保存一次
     // 同步立即保存：用于删除等不可逆操作，避免防抖导致的数据丢失/白屏
     // 新版：直接存储完整 appData（含图片）到 IndexedDB，不写 localStorage
     /* ===== 安全 toast 提示（主作用域内可用，存储失败等场景反馈用户） ===== */
@@ -10950,34 +10972,43 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
     /* 主作用域内未定义 toast 时补一个，修复既有 toast() 调用静默失败 */
     function toast(msg){ _showUserToast(msg); }
-    function saveDataSync() {
-        if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; }
+    // ===== 异步保存核心：等待 IndexedDB 写入完成后再返回，保证数据真正落盘 =====
+    // 修复根本问题：原 saveDataSync 中 idbSet 是 fire-and-forget（未 await），
+    // 应用被切后台/杀死时 IndexedDB 事务可能未提交，导致丢消息、数据回档、语音字卡丢失。
+    async function saveDataAsync() {
         var _savedActiveId = _activeContactId;
         _activeContactId = null; // 序列化时使用主聊天记录，避免联系人记录被误存为主记录
         try {
+            // 序列化前打上保存时间戳，用于加载时的新旧数据比对，防止旧数据覆盖新数据
+            appData.lastSavedAt = Date.now();
             var fullJson = JSON.stringify(appData);
             _lastGoodJson = fullJson;
-            // 同步写入 localStorage（规则4/10），配额不足时仅警告不阻塞 IndexedDB
+            // 1. 同步写入 localStorage（快速缓存，几乎不受后台挂起影响，是数据恢复的最后防线）
             try {
                 localStorage.setItem(STORAGE_KEY, fullJson);
             } catch(_lsErr) {
-                console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
+                console.warn('localStorage 写入失败（可能配额不足），数据仍将保存到 IndexedDB:', _lsErr);
             }
+            // 2. 等待 IndexedDB 写入完成（主存储），确保数据落盘后再返回
             if (_idbReady) {
-                idbSet('appData', fullJson);
-                idbSet('appData_backup', fullJson);
+                await Promise.all([
+                    idbSet('appData', fullJson),
+                    idbSet('appData_backup', fullJson)
+                ]);
             }
             return true;
         } catch (e) {
-            console.error('数据序列化失败(同步保存):', e);
+            console.error('数据序列化失败(异步保存):', e);
             // 存储异常必须反馈用户（规则6）
             try { _showUserToast('⚠️ 保存失败，请检查存储空间或重试'); } catch(_t){}
             // 序列化失败时尝试回滚到上次成功的状态，避免损坏数据被写入
             if (_lastGoodJson) {
                 try {
                     if (_idbReady) {
-                        idbSet('appData', _lastGoodJson);
-                        idbSet('appData_backup', _lastGoodJson);
+                        await Promise.all([
+                            idbSet('appData', _lastGoodJson),
+                            idbSet('appData_backup', _lastGoodJson)
+                        ]);
                     }
                     console.warn('已回滚到上次成功保存的数据');
                 } catch (e2) {
@@ -10989,43 +11020,41 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             _activeContactId = _savedActiveId; // 恢复
         }
     }
+    // 等待最近一次保存完成（供 beforeunload/pagehide/visibilitychange 使用，尽力保证落盘）
+    async function flushPendingSave() {
+        try {
+            // 若有防抖待执行的保存，立即触发
+            if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; saveDataSync(); }
+            await _pendingSavePromise;
+        } catch(e) { console.warn('flushPendingSave 失败:', e); }
+    }
+    // 同步立即保存：返回值仍为同步布尔（向后兼容），内部启动 saveDataAsync 并跟踪 Promise。
+    // 采用「合并写」策略：保存进行中再有新写入只标记脏位，结束后补存一次，避免重复序列化大对象。
+    function saveDataSync() {
+        if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; }
+        if (_saveActive) {
+            _saveDirty = true; // 已有保存在进行中，标记稍后补存
+            return true;
+        }
+        _saveActive = true;
+        _saveDirty = false;
+        _pendingSavePromise = (async function _drain(){
+            var ok = true;
+            do {
+                _saveDirty = false;
+                ok = await saveDataAsync();
+            } while (_saveDirty); // 保存期间又有新写入则继续，直到无新写入
+            _saveActive = false;
+            return ok;
+        })();
+        return true;
+    }
+    // 防抖保存：合并 300ms 内的频繁写入（如拖动设置项）为一次落盘，避免卡顿
     function saveData() {
         if (_saveDataTimer) clearTimeout(_saveDataTimer);
         _saveDataTimer = setTimeout(() => {
             _saveDataTimer = null;
-            var _savedActiveId = _activeContactId;
-            _activeContactId = null; // 序列化时使用主聊天记录
-            try {
-                var fullJson = JSON.stringify(appData);
-                _lastGoodJson = fullJson;
-                // 同步写入 localStorage（规则4/10），配额不足时仅警告不阻塞 IndexedDB
-                try {
-                    localStorage.setItem(STORAGE_KEY, fullJson);
-                } catch(_lsErr) {
-                    console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
-                }
-                // 主存储：IndexedDB（直接存储完整 appData，含图片）
-                if (_idbReady) {
-                    idbSet('appData', fullJson);
-                    idbSet('appData_backup', fullJson);
-                }
-            } catch (e) {
-                console.error('数据序列化失败:', e);
-                // 序列化失败时回滚到上次成功的状态
-                if (_lastGoodJson) {
-                    try {
-                        if (_idbReady) {
-                            idbSet('appData', _lastGoodJson);
-                            idbSet('appData_backup', _lastGoodJson);
-                        }
-                        console.warn('已回滚到上次成功保存的数据');
-                    } catch (e2) {
-                        console.error('回滚失败:', e2);
-                    }
-                }
-            } finally {
-                _activeContactId = _savedActiveId; // 恢复
-            }
+            saveDataSync(); // 内部走 saveDataAsync，等待 IndexedDB 落盘
         }, 300);
     }
 
@@ -11980,7 +12009,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 }
             }
         }
-        return all;
+        // Bug6修复：去重，避免共用字卡与联系人专属字卡文本重复导致对方回复重复内容
+        var _seen = new Set();
+        var _unique = [];
+        all.forEach(function(item) {
+            var text = typeof item === 'string' ? item : (item.text || item);
+            if (text && !_seen.has(text)) {
+                _seen.add(text);
+                _unique.push(text);
+            }
+        });
+        return _unique;
     }
 
     // ===== 第二页：时间组件 =====
@@ -17153,18 +17192,22 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const total = files.length;
         Array.from(files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = function(ev) {
+            reader.onload = async function(ev) {
                 var audioDataUrl = ev.target.result;
                 var audioKey = 'audio_card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-                // 存储到 IndexedDB（复用 saveImgDB 管道）
+                // 先等待音频文件写入 IndexedDB 落盘，再更新内存和 UI，
+                // 避免 appData 引用了尚未落盘的音频导致刷新后语音字卡丢失
                 if (window.saveImgDB) {
-                    window.saveImgDB(audioKey, audioDataUrl);
+                    var _audioOk = await window.saveImgDB(audioKey, audioDataUrl);
+                    if (!_audioOk) {
+                        console.warn('语音字卡存储到 IndexedDB 失败:', audioKey);
+                        try { _showUserToast('⚠️ 语音存储失败，空间可能不足'); } catch(_t){}
+                    }
                 }
                 // 读取时长
                 var tempAudio = new Audio();
                 tempAudio.src = audioDataUrl;
-                tempAudio.addEventListener('loadedmetadata', function() {
-                    var duration = Math.ceil(tempAudio.duration) || 0;
+                var _finish = function(duration) {
                     appData.specialCards.audio.push({
                         text: file.name || '语音消息',
                         hidden: false,
@@ -17173,23 +17216,15 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     });
                     processed++;
                     if (processed === total) {
-                        saveDataSync();
+                        saveDataSync(); // 内部走 saveDataAsync，等待落盘
                         renderAudioCardList();
                     }
+                };
+                tempAudio.addEventListener('loadedmetadata', function() {
+                    _finish(Math.ceil(tempAudio.duration) || 0);
                 });
                 tempAudio.addEventListener('error', function() {
-                    // 无法读取时长时仍然保存
-                    appData.specialCards.audio.push({
-                        text: file.name || '语音消息',
-                        hidden: false,
-                        audioUrl: audioKey,
-                        duration: 0
-                    });
-                    processed++;
-                    if (processed === total) {
-                        saveDataSync();
-                        renderAudioCardList();
-                    }
+                    _finish(0); // 无法读取时长时仍然保存
                 });
             };
             reader.onerror = function() { processed++; };
@@ -18572,7 +18607,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         let entry = appData.diary.doubleList.find(e => e.date === today);
         if (!entry) {
             const ts = Date.now();
-            entry = { id: ts, date: today, time: ts, otherData: null, myData: null, dateStr: getDiaryDateStr(ts), dayStr: getDiaryDayStr(ts) };
+            // Bug4修复：id 加随机后缀，避免同毫秒创建多个条目时 id 冲突
+            entry = { id: ts + '_' + Math.random().toString(36).slice(2, 6), date: today, time: ts, otherData: null, myData: null, dateStr: getDiaryDateStr(ts), dayStr: getDiaryDayStr(ts) };
             appData.diary.doubleList.unshift(entry);
             saveData();
         }
@@ -21087,6 +21123,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function initLockScreen() {
         try {
             var ls = appData.lockScreen || {};
+            // Bug2修复：若 firstLaunchDone 为 false 但 password 已存在且非空，
+            // 说明密码已设置过（可能因防抖未持久化 firstLaunchDone），自动修正避免重复提示/绕过
+            if (!ls.firstLaunchDone && ls.password) {
+                ls.firstLaunchDone = true;
+                if (typeof saveDataSync === 'function') saveDataSync();
+            }
             // 首次启动强制锁屏并要求输入密码（无论 enabled 设置）
             if (!ls.firstLaunchDone) {
                 // 首次打开：强制锁屏 + 强制密码
@@ -22152,6 +22194,19 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     list.splice(i, 1);
                     break;
                 }
+            }
+            /* Bug3修复：删除联系人后同步清理关联数据，避免残留引用导致异常 */
+            // 清理该联系人的专属字卡数据
+            if (appData.contactWordCards) {
+                delete appData.contactWordCards[id];
+            }
+            // 清理余额选择器：若指向被删联系人则重置
+            if (appData.balanceData && appData.balanceData._balanceContactId === id) {
+                appData.balanceData._balanceContactId = '';
+            }
+            // 清理拉黑倒计时定时器，避免定时器引用已删除的联系人
+            if (typeof stopBlockTimers === 'function') {
+                try { stopBlockTimers(id); } catch(e) {}
             }
             /* Bug5修复：删除联系人后清空聊天顶栏残留的旧名字和头像 */
             if (_wasActive) {
@@ -25083,16 +25138,21 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             window._swVisHandler=true;
             document.addEventListener('visibilitychange',function(){
                 if(!document.hidden){
-                    /* 页面重新可见：尝试恢复现有 context（不置空 audioCtx，避免播放器节点脱节）。
-                       注意：visibilitychange 不是用户手势，resume 可能失败，失败后由监测器弹修复浮层 */
-                    setTimeout(function(){
-                        swResumeAudio();
-                        /* 检查状态，如果仍非 running 则显示修复浮层 */
+                    /* Bug8修复：页面重新可见时，检测 AudioContext 是否被挂起；
+                       尝试 resume（visibilitychange 非用户手势，resume 可能失败），
+                       500ms 后仍未 running 则显示修复浮层让用户点击恢复。
+                       注意：不在此处调用 swForceResumeAudio，因为它需要用户手势上下文，
+                       非手势调用会在 iOS 上创建 suspended 状态的新 context，适得其反。 */
+                    var c=swState.audioCtx;
+                    if(c && c.state==='suspended'){
                         setTimeout(function(){
-                            var c=swState.audioCtx;
-                            if(c && c.state!=='running'){ swShowAudioFix(); }
-                        }, 600);
-                    }, 100);
+                            swResumeAudio();
+                            setTimeout(function(){
+                                var c2=swState.audioCtx;
+                                if(c2 && c2.state!=='running'){ swShowAudioFix(); }
+                            }, 500);
+                        }, 100);
+                    }
                 }
             });
         }
@@ -29780,7 +29840,7 @@ function mlsjIconClock() {
         var _needTrack = appData.globalSettings && (appData.globalSettings.keepAliveEnabled || appData.globalSettings.notificationEnabled || (appData.chatSettings && appData.chatSettings.proactiveEnable));
         if (document.hidden) {
             // 页面被隐藏（切后台、最小化、锁屏）—— 立即保存数据，防止后台被系统杀死导致数据丢失
-            try { if (_idbReady) saveDataSync(); } catch(e) {}
+            try { if (_idbReady) flushPendingSave(); } catch(e) {}
             if (_needTrack) {
                 _lastLeaveTime = Date.now();
                 // 记录离开前最后看到的消息时间戳
@@ -29816,7 +29876,7 @@ function mlsjIconClock() {
     // 备选：pagehide 事件作为 visibilitychange 的补充（部分移动浏览器 visibilitychange 不可靠）
     window.addEventListener('pagehide', function() {
         // 立即保存数据，防止移动端浏览器回收页面导致数据丢失
-        try { if (_idbReady) saveDataSync(); } catch(e) {}
+        try { if (_idbReady) flushPendingSave(); } catch(e) {}
         var _needTrack = appData.globalSettings && (appData.globalSettings.keepAliveEnabled || appData.globalSettings.notificationEnabled || (appData.chatSettings && appData.chatSettings.proactiveEnable));
         if (_needTrack && !_lastLeaveTime) {
             _lastLeaveTime = Date.now();
@@ -33979,9 +34039,18 @@ function bindSwipeRightToExit(pageEl, exitFn) {
             r.onload=function(ev){
               compressP3Image(ev.target.result, 800, 800, 0.82, function(compressed){
                 if(window.saveImgDB){
-                  window.saveImgDB(POLAROIDKEYS[idx],compressed).then(function(ok){
-                    if(!ok) p3Toast('图片存储失败，空间可能不足');
-                  });
+                  /* Bug5修复：saveImgDB 返回 false 时降级到 localStorage，确保图片不丢失 */
+                  try {
+                    window.saveImgDB(POLAROIDKEYS[idx],compressed).then(function(ok){
+                      if(!ok){
+                        p3Toast('图片存储失败，空间可能不足');
+                        try{ localStorage.setItem(POLAROIDKEYS[idx],compressed); }catch(_e2){}
+                      }
+                    });
+                  } catch(_saveErr){
+                    /* saveImgDB 同步异常时降级到 localStorage */
+                    try{ localStorage.setItem(POLAROIDKEYS[idx],compressed); }catch(_e2){ p3Toast('存储空间不足'); }
+                  }
                 }
                 else {
                   try{localStorage.setItem(POLAROIDKEYS[idx],compressed);}
@@ -36825,6 +36894,16 @@ window.saveP3InputTexts=function(){
   var texts=[];
   inputs.forEach(function(inp){ texts.push(inp.value||''); });
   try{ localStorage.setItem('p3_input_texts',JSON.stringify(texts)); }catch(e){}
+};
+/* Bug1修复：防抖自动保存，避免每次按键都同步写 localStorage 造成卡顿；
+   生命周期事件（切后台/关闭页面）仍直接调用 saveP3InputTexts 确保立即落盘 */
+var _p3SaveTimer=null;
+window._debouncedSaveP3Inputs=function(){
+  if(_p3SaveTimer) clearTimeout(_p3SaveTimer);
+  _p3SaveTimer=setTimeout(function(){
+    window.saveP3InputTexts();
+    _p3SaveTimer=null;
+  },300);
 };
 /* 退出/切后台时额外保存一次，防止 oninput 未触发导致丢失 */
 window.addEventListener('pagehide',function(){ try{ window.saveP3InputTexts(); }catch(e){} });
