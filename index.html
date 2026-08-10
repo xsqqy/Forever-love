@@ -14083,7 +14083,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.getElementById('nudgeModal').classList.remove('show');
         document.getElementById('overlay').classList.remove('show');
     }
-    function saveNudgeCards() {
+    async function saveNudgeCards() {
         const text = document.getElementById('nudgeTextInput').value;
         const lines = text.split('\n').map(l => l.trim()).filter(l => l);
         const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
@@ -14091,7 +14091,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             const key = line.trim();
             if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); }
         });
-        saveData();
+        await saveDataAsync();
         renderNudgeCardList();
         closeNudgeModal();
     }
@@ -16361,7 +16361,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.getElementById('batchUploadModal').classList.remove('show');
         document.getElementById('overlay').classList.remove('show');
     }
-    function confirmBatchUpload() {
+    async function confirmBatchUpload() {
         const text = document.getElementById('batchUploadTextarea').value;
         const type = appData.batchUploadType;
         // 字卡(word)导入支持 JSON 格式，仅提取纯字卡内容；其余类型保持"一句一行"
@@ -16464,7 +16464,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 var key = line.trim();
                 if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); newItems.push(line); }
             });
-            saveDataSync();
+            await saveDataAsync();
             _appendSpecialCardItems('nudgeCardList', appData.specialCards.nudge, newItems, 'editNudgeCard', 'toggleNudgeHide', 'deleteNudgeCard');
         } else if (type === 'myNudge') {
             if (!appData.specialCards.myNudge) appData.specialCards.myNudge = [];
@@ -16474,7 +16474,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 var key = line.trim();
                 if (!seen.has(key)) { seen.add(key); appData.specialCards.myNudge.push({text: line, hidden: false}); newItems.push(line); }
             });
-            saveDataSync();
+            await saveDataAsync();
             _appendSpecialCardItems('myNudgeCardList', appData.specialCards.myNudge, newItems, 'editMyNudgeCard', 'toggleMyNudgeHide', 'deleteMyNudgeCard');
         } else if (type === 'shopping') {
             if (!appData.specialCards.shopping) appData.specialCards.shopping = [];
@@ -16671,7 +16671,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
+            reader.onload = async (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                 const seen = new Set(appData.specialCards.nudge.map(c => (c.text || '').trim()));
                 var newItems = [];
@@ -16679,7 +16679,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     const key = line.trim();
                     if (!seen.has(key)) { seen.add(key); appData.specialCards.nudge.push({text: line, hidden: false}); newItems.push(line); }
                 });
-                saveDataSync();
+                await saveDataAsync();
                 _appendSpecialCardItems('nudgeCardList', appData.specialCards.nudge, newItems, 'editNudgeCard', 'toggleNudgeHide', 'deleteNudgeCard');
             };
             reader.readAsText(file);
@@ -16688,7 +16688,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
+            reader.onload = async (ev) => {
                 const lines = ev.target.result.split(/\r?\n/).map(l => l.trim()).filter(l => l);
                 if (!appData.specialCards.myNudge) appData.specialCards.myNudge = [];
                 const seen = new Set(appData.specialCards.myNudge.map(c => (c.text || '').trim()));
@@ -16697,7 +16697,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     const key = line.trim();
                     if (!seen.has(key)) { seen.add(key); appData.specialCards.myNudge.push({text: line, hidden: false}); newItems.push(line); }
                 });
-                saveDataSync();
+                await saveDataAsync();
                 _appendSpecialCardItems('myNudgeCardList', appData.specialCards.myNudge, newItems, 'editMyNudgeCard', 'toggleMyNudgeHide', 'deleteMyNudgeCard');
             };
             reader.readAsText(file);
@@ -17362,13 +17362,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             container.appendChild(item);
         });
     }
-    function toggleAudioHide(index) {
+    async function toggleAudioHide(index) {
         if (!appData.specialCards.audio || index < 0 || index >= appData.specialCards.audio.length) return;
         appData.specialCards.audio[index].hidden = !appData.specialCards.audio[index].hidden;
-        saveDataSync();
+        await saveDataAsync();
         renderAudioCardList();
     }
-    function deleteAudioCard(index) {
+    async function deleteAudioCard(index) {
         if (!appData.specialCards.audio || index < 0 || index >= appData.specialCards.audio.length) return;
         var card = appData.specialCards.audio[index];
         // 清理 IndexedDB 中的语音文件
@@ -17376,7 +17376,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             window.removeImgDB(card.audioUrl);
         }
         appData.specialCards.audio.splice(index, 1);
-        saveDataSync();
+        await saveDataAsync();
         renderAudioCardList();
     }
     var _previewAudioEl = null;
