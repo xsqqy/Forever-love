@@ -10966,7 +10966,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     //   注意：contactList 已在步骤2中合并处理，不在此列表中避免覆盖合并结果
                     //   注意：specialCards 已在步骤3a中合并处理（取并集），不在此列表中避免覆盖合并结果
                     var _preferCurrentKeys = ['chatSettings', 'globalSettings',
-                        'beautifyPresets', 'beautifyLiveCss', 'wordCards', 'wordGroups',
+                        'beautifyLiveCss', 'wordCards', 'wordGroups',
                         'contactWordCards', 'currentGroup', 'dockBottom', 'iconSize',
                         'videoBg', 'appIconImages', 'widgetImages', 'colors', 'appNames',
                         'widgetOffsets', 'balanceData', 'nudgeCards', 'diary', 'letter',
@@ -10976,6 +10976,30 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                             merged[key] = appData[key];
                         }
                     });
+                    // --- 3b. beautifyPresets 合并：取并集（按 name 去重），避免任一来源数据丢失 ---
+                    //   saveData() 使用 300ms 防抖，刷新时 localStorage 可能未及时写入新预设，
+                    //   导致 _preferCurrentKeys 用空数据覆盖 IndexedDB 中已保存的预设。
+                    //   改为合并取并集，确保两边的预设都保留。
+                    if (merged.beautifyPresets && appData.beautifyPresets) {
+                        ['chatGlobal', 'bubble', 'moments'].forEach(function(bpType) {
+                            var _idbBpArr = merged.beautifyPresets[bpType] || [];
+                            var _curBpArr = appData.beautifyPresets[bpType] || [];
+                            if (_curBpArr.length === 0 && _idbBpArr.length === 0) return;
+                            var _bpSeen = {};
+                            var _bpMerged = [];
+                            _idbBpArr.forEach(function(p) {
+                                var k = (p.name || '') + '|' + (p.css || '').substring(0, 100);
+                                if (k && !_bpSeen[k]) { _bpSeen[k] = true; _bpMerged.push(p); }
+                            });
+                            _curBpArr.forEach(function(p) {
+                                var k = (p.name || '') + '|' + (p.css || '').substring(0, 100);
+                                if (k && !_bpSeen[k]) { _bpSeen[k] = true; _bpMerged.push(p); }
+                            });
+                            merged.beautifyPresets[bpType] = _bpMerged;
+                        });
+                    } else if (appData.beautifyPresets) {
+                        merged.beautifyPresets = appData.beautifyPresets;
+                    }
                     // --- 3a. specialCards 合并：取并集（按 text/audioUrl 去重） ---
                     //   localStorage 可能因配额不足而保存旧数据，
                     //   简单覆盖会用 localStorage 旧数据丢掉 IndexedDB 中的新字卡；
@@ -23831,7 +23855,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function initBeautifyApp() {
         switchBeautifyTab('chat');
     }
-    function saveBeautifyPreset(type) {
+    async function saveBeautifyPreset(type) {
         let cssText;
         let name;
         if (type === 'chatGlobal') {
@@ -23847,7 +23871,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (!name || !cssText) return;
         if (!appData.beautifyPresets[type]) appData.beautifyPresets[type] = [];
         appData.beautifyPresets[type].push({ name: name, css: cssText });
-        saveData();
+        await saveDataAsync();
         loadBeautifyPresets(type);
     }
     function loadBeautifyPresets(type) {
@@ -23880,7 +23904,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             container.appendChild(item);
         });
     }
-    function applyBeautifyPreset(type, css, index) {
+    async function applyBeautifyPreset(type, css, index) {
         let styleEl = document.getElementById('beautifyCustomStyle_' + type);
         if (!styleEl) {
             styleEl = document.createElement('style');
@@ -23898,16 +23922,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         if (typeof index === 'number' && appData.beautifyPresets && appData.beautifyPresets[type]) {
             appData.beautifyPresets[type].forEach(function(p, i){ p.active = i === index; });
-            saveData();
+            await saveDataAsync();
         }
     }
-    function deleteBeautifyPreset(type, index) {
+    async function deleteBeautifyPreset(type, index) {
         if (!appData.beautifyPresets[type]) return;
         appData.beautifyPresets[type].splice(index, 1);
-        saveData();
+        await saveDataAsync();
         loadBeautifyPresets(type);
     }
-    function editBeautifyPreset(type, index) {
+    async function editBeautifyPreset(type, index) {
         const list = appData.beautifyPresets[type] || [];
         const preset = list[index];
         if (!preset) return;
@@ -23917,7 +23941,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (newCss === null) return;
         preset.name = newName.trim() || preset.name;
         preset.css = newCss;
-        saveData();
+        await saveDataAsync();
         loadBeautifyPresets(type);
     }
     function applyBeautifyLiveCss(type) {
