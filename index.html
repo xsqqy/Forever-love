@@ -10964,7 +10964,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     // --- 3. 设置类字段：保留当前 appData 值（来自 localStorage，始终最新） ---
                     //   IndexedDB 可能因异步写入未完成而保存了旧设置，直接覆盖会导致设置丢失
                     //   注意：contactList 已在步骤2中合并处理，不在此列表中避免覆盖合并结果
-                    var _preferCurrentKeys = ['specialCards', 'chatSettings', 'globalSettings',
+                    //   注意：specialCards 已在步骤3a中合并处理（取并集），不在此列表中避免覆盖合并结果
+                    var _preferCurrentKeys = ['chatSettings', 'globalSettings',
                         'beautifyPresets', 'beautifyLiveCss', 'wordCards', 'wordGroups',
                         'contactWordCards', 'currentGroup', 'dockBottom', 'iconSize',
                         'videoBg', 'appIconImages', 'widgetImages', 'colors', 'appNames',
@@ -10975,6 +10976,31 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                             merged[key] = appData[key];
                         }
                     });
+                    // --- 3a. specialCards 合并：取并集（按 text/audioUrl 去重） ---
+                    //   localStorage 可能因配额不足而保存旧数据，
+                    //   简单覆盖会用 localStorage 旧数据丢掉 IndexedDB 中的新字卡；
+                    //   改为合并取并集，确保两边的数据都保留。
+                    if (appData.specialCards && merged.specialCards) {
+                        var _scKeys = ['nudge', 'myNudge', 'audio', 'emoji', 'kaomoji', 'image', 'video', 'shopping'];
+                        _scKeys.forEach(function(sk) {
+                            var _curArr = (appData.specialCards[sk] || []);
+                            var _idbArr = (merged.specialCards[sk] || []);
+                            if (_curArr.length === 0 && _idbArr.length === 0) return;
+                            var _seen = {};
+                            var _mergedArr = [];
+                            // 优先取 IndexedDB 的（可能比 localStorage 更新，因为 localStorage 可能配额不足）
+                            _idbArr.forEach(function(c) {
+                                var k = (c.audioUrl || c.text || '') + '|' + (c.hidden ? '1' : '0');
+                                if (k && !_seen[k]) { _seen[k] = true; _mergedArr.push(c); }
+                            });
+                            // 再补充 localStorage 中有但 IndexedDB 中没有的
+                            _curArr.forEach(function(c) {
+                                var k = (c.audioUrl || c.text || '') + '|' + (c.hidden ? '1' : '0');
+                                if (k && !_seen[k]) { _seen[k] = true; _mergedArr.push(c); }
+                            });
+                            merged.specialCards[sk] = _mergedArr;
+                        });
+                    }
                     // ===== 图片引用链路修复 =====
                     // 合并逻辑可能从 localStorage 引入了未解析的 __BLOB__:key 引用
                     // （loadData() 不解析 __BLOB__，原设计靠 IndexedDB 已解析数据覆盖）。
