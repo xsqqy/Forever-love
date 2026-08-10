@@ -10975,6 +10975,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                             merged[key] = appData[key];
                         }
                     });
+                    // ===== 图片引用链路修复 =====
+                    // 合并逻辑可能从 localStorage 引入了未解析的 __BLOB__:key 引用
+                    // （loadData() 不解析 __BLOB__，原设计靠 IndexedDB 已解析数据覆盖）。
+                    // 此处对 merged 做一次 __BLOB__ 令牌解析，将引用还原为真实图片数据。
+                    // 仅解析令牌，不删除、不修改 appData 结构。
+                    var _lateBlobKeys = new Set();
+                    collectTokenKeys(merged, _lateBlobKeys);
+                    if (_lateBlobKeys.size > 0) {
+                        var _lateBlobMap = await blobGetMany(Array.from(_lateBlobKeys));
+                        resolveTokensInObj(merged, _lateBlobMap);
+                    }
                 }
                 // 将 merged 的属性逐一复制到 appData（而非替换引用），
                 // 以保留 chatHistory 上的 getter/setter（联系人独立聊天记录）
