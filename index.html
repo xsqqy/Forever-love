@@ -10312,6 +10312,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             groups: []
         }
     };
+    let _loadedFromLS = false; // 标记 loadData() 是否从 localStorage 读取到了数据（用于 loadDataFromIDB 合并判断）
     let appData = loadData();
     let currentQuoteMsg = null;
     let currentOpsMsgId = null;
@@ -10738,6 +10739,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (!raw) raw = localStorage.getItem('qianyi_data');
             if (!raw) raw = localStorage.getItem('qianyi_data_backup');
             if (raw) {
+                _loadedFromLS = true; // 标记 localStorage 有数据，loadDataFromIDB 时需合并而非覆盖
                 const parsed = JSON.parse(raw);
                 // 新版：localStorage 仅用于一次性迁移，数据可能包含旧版 __BLOB__ 引用，
                 // loadDataFromIDB() 会从 IndexedDB 读取完整数据覆盖，无需在此处理引用。
@@ -10885,6 +10887,95 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 }
                 // 执行数据迁移（在复制到 appData 之前，此时 merged 是普通对象）
                 migrateData(merged);
+                // ===== 修复：合并数据而非覆盖 =====
+                // 原因：saveDataSync() 中 idbSet() 是异步且不等待完成的（fire-and-forget），
+                //   如果上一次会话的 IndexedDB 写入未完成就被关闭，IndexedDB 中会是旧数据。
+                //   而 localStorage 是同步写入的，始终保存最新数据。
+                //   原代码直接用 IndexedDB 旧数据覆盖 appData（来自 localStorage 的最新数据），
+                //   导致消息和设置丢失。
+                // 修复：如果 localStorage 有数据（_loadedFromLS=true），则合并聊天记录（取并集），
+                //   并保留当前 appData 的设置值（来自 localStorage，始终最新）；
+                //   仅当 localStorage 无数据时（首次迁移），才使用 IndexedDB 数据。
+                if (_loadedFromLS) {
+                    // --- 1. 合并主聊天记录（取并集，按 ID 去重） ---
+                    var _curMainHist = _actualChatHistory || [];
+                    var _idbMainHist = merged.chatHistory || [];
+                    if (_curMainHist.length > 0) {
+                        if (_idbMainHist.length > 0) {
+                            var _seenIds = {};
+                            var _mergedHist = [];
+                            _curMainHist.forEach(function(m) {
+                                var k = String(m.id || '');
+                                if (k && !_seenIds[k]) { _seenIds[k] = true; _mergedHist.push(m); }
+                            });
+                            _idbMainHist.forEach(function(m) {
+                                var k = String(m.id || '');
+                                if (k && !_seenIds[k]) { _seenIds[k] = true; _mergedHist.push(m); }
+                            });
+                            _mergedHist.sort(function(a, b) { return (a.id || 0) - (b.id || 0); });
+                            if (_mergedHist.length > 500) _mergedHist = _mergedHist.slice(-500);
+                            merged.chatHistory = _mergedHist;
+                        } else {
+                            merged.chatHistory = _curMainHist;
+                        }
+                    }
+                    // --- 2. 合并联系人聊天记录 ---
+                    if (merged.contactList && Array.isArray(merged.contactList.contacts)) {
+                        var _curContacts = (appData.contactList && appData.contactList.contacts) || [];
+                        var _curContactMap = {};
+                        _curContacts.forEach(function(c) { if (c && c.id) _curContactMap[c.id] = c; });
+                        merged.contactList.contacts.forEach(function(idbC) {
+                            if (idbC.id && _curContactMap[idbC.id]) {
+                                var _curC = _curContactMap[idbC.id];
+                                var _curH = _curC.chatHistory || [];
+                                var _idbH = idbC.chatHistory || [];
+                                if (_curH.length > 0) {
+                                    if (_idbH.length > 0) {
+                                        var _sc = {};
+                                        var _mc = [];
+                                        _curH.forEach(function(m) {
+                                            var k = String(m.id || '');
+                                            if (k && !_sc[k]) { _sc[k] = true; _mc.push(m); }
+                                        });
+                                        _idbH.forEach(function(m) {
+                                            var k = String(m.id || '');
+                                            if (k && !_sc[k]) { _sc[k] = true; _mc.push(m); }
+                                        });
+                                        _mc.sort(function(a, b) { return (a.id || 0) - (b.id || 0); });
+                                        if (_mc.length > 500) _mc = _mc.slice(-500);
+                                        idbC.chatHistory = _mc;
+                                    } else {
+                                        idbC.chatHistory = _curH;
+                                    }
+                                }
+                                // 保留当前联系人的设置字段（如 doNotDisturb 等），优先用 localStorage 的
+                                var _settingsFields = ['doNotDisturb', 'name', 'avatar', 'bgImage', 'bgColor'];
+                                _settingsFields.forEach(function(f) {
+                                    if (_curC[f] !== undefined) idbC[f] = _curC[f];
+                                });
+                                delete _curContactMap[idbC.id];
+                            }
+                        });
+                        // 添加 IndexedDB 中没有但 localStorage 中有的联系人
+                        Object.keys(_curContactMap).forEach(function(cid) {
+                            merged.contactList.contacts.push(_curContactMap[cid]);
+                        });
+                    }
+                    // --- 3. 设置类字段：保留当前 appData 值（来自 localStorage，始终最新） ---
+                    //   IndexedDB 可能因异步写入未完成而保存了旧设置，直接覆盖会导致设置丢失
+                    //   注意：contactList 已在步骤2中合并处理，不在此列表中避免覆盖合并结果
+                    var _preferCurrentKeys = ['specialCards', 'chatSettings', 'globalSettings',
+                        'beautifyPresets', 'beautifyLiveCss', 'wordCards', 'wordGroups',
+                        'contactWordCards', 'currentGroup', 'dockBottom', 'iconSize',
+                        'videoBg', 'appIconImages', 'widgetImages', 'colors', 'appNames',
+                        'widgetOffsets', 'balanceData', 'nudgeCards', 'diary', 'letter',
+                        'moments', 'albumData', 'lifeDeathData'];
+                    _preferCurrentKeys.forEach(function(key) {
+                        if (appData[key] !== undefined && appData[key] !== null) {
+                            merged[key] = appData[key];
+                        }
+                    });
+                }
                 // 将 merged 的属性逐一复制到 appData（而非替换引用），
                 // 以保留 chatHistory 上的 getter/setter（联系人独立聊天记录）
                 for (var _k in merged) {
@@ -10988,6 +11079,42 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         } finally {
             _activeContactId = _savedActiveId; // 恢复
         }
+    }
+    // ===== 异步保存：等待 IndexedDB 写入完成后再返回 =====
+    // 用于消息、字卡等需要确保数据落盘的场景
+    async function saveDataAsync() {
+        if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; }
+        var _savedActiveId = _activeContactId;
+        _activeContactId = null; // 序列化时使用主聊天记录
+        var fullJson;
+        try {
+            fullJson = JSON.stringify(appData); // 同步序列化（_activeContactId 为 null 期间）
+            _lastGoodJson = fullJson;
+        } catch (e) {
+            console.error('数据序列化失败(异步保存):', e);
+            try { _showUserToast('⚠️ 保存失败，请检查存储空间或重试'); } catch(_t){}
+            _activeContactId = _savedActiveId; // 恢复
+            if (_lastGoodJson) {
+                try {
+                    if (_idbReady) { await idbSet('appData', _lastGoodJson); await idbSet('appData_backup', _lastGoodJson); }
+                } catch (e2) { console.error('回滚失败:', e2); }
+            }
+            return false;
+        }
+        // 恢复 _activeContactId（在异步写入之前，避免 await 期间上下文错误）
+        _activeContactId = _savedActiveId;
+        // 同步写入 localStorage
+        try {
+            localStorage.setItem(STORAGE_KEY, fullJson);
+        } catch(_lsErr) {
+            console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
+        }
+        // 异步写入 IndexedDB（等待完成）
+        if (_idbReady) {
+            await idbSet('appData', fullJson);
+            await idbSet('appData_backup', fullJson);
+        }
+        return true;
     }
     function saveData() {
         if (_saveDataTimer) clearTimeout(_saveDataTimer);
@@ -13368,7 +13495,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
       } catch (e) { console.error('sendTextMessage失败:', e); }
     }
     var _batchRendering = false;
-    function addMessage(msg) {
+    async function addMessage(msg) {
       try {
         // 记录消息所属的联系人 ID，用于通知恢复时定位正确的聊天记录
         if (!msg.contactId) msg.contactId = _activeContactId || _lastChatContactId || null;
@@ -13390,12 +13517,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         // 批量模式下不立即渲染，由调用方统一触发
         if (_batchRendering) return;
-        saveDataSync();
-        renderMessages(true);
+        // ===== 修复：先等待数据完全写入 IndexedDB，再更新界面和通知 =====
+        // 确保数据落盘后再渲染/通知，避免通知弹了但数据未持久化导致消息丢失
+        await saveDataAsync();           // 1. 先保存，等待 IndexedDB 写入完成
+        renderMessages(true);            // 2. 再渲染界面
         scrollToBottom();
         // 触发站内消息通知（仅对方发来的消息）
         if (msg.sender === 'other') {
-            showChatNotification(msg);
+            showChatNotification(msg);   // 3. 最后通知
         }
       } catch (e) { console.error('addMessage失败:', e); }
     }
@@ -13972,11 +14101,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             container.appendChild(item);
         });
     }
-    function editNudgeCard(index) {
+    async function editNudgeCard(index) {
         const newText = prompt('修改拍一拍内容', appData.specialCards.nudge[index].text);
         if (newText && newText.trim()) {
             appData.specialCards.nudge[index].text = newText.trim();
-            saveDataSync();
+            await saveDataAsync();
             var container = document.getElementById('nudgeCardList');
             var item = container && container.children[index];
             if (item) {
@@ -13985,9 +14114,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             } else { renderNudgeCardList(); }
         }
     }
-    function toggleNudgeHide(index) {
+    async function toggleNudgeHide(index) {
         appData.specialCards.nudge[index].hidden = !appData.specialCards.nudge[index].hidden;
-        saveDataSync();
+        await saveDataAsync();
         var container = document.getElementById('nudgeCardList');
         var item = container && container.children[index];
         if (item) {
@@ -13996,10 +14125,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (ops) ops.children[1].textContent = appData.specialCards.nudge[index].hidden ? '显示' : '隐藏';
         } else { renderNudgeCardList(); }
     }
-    function deleteNudgeCard(index) {
+    async function deleteNudgeCard(index) {
         if (confirm('确定删除这条拍一拍吗？')) {
             appData.specialCards.nudge.splice(index, 1);
-            saveDataSync();
+            await saveDataAsync();
             var container = document.getElementById('nudgeCardList');
             if (container && container.children[index]) {
                 container.removeChild(container.children[index]);
@@ -14046,11 +14175,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             container.appendChild(item);
         });
     }
-    function editMyNudgeCard(index) {
+    async function editMyNudgeCard(index) {
         const newText = prompt('修改拍一拍内容', appData.specialCards.myNudge[index].text);
         if (newText && newText.trim()) {
             appData.specialCards.myNudge[index].text = newText.trim();
-            saveDataSync();
+            await saveDataAsync();
             var container = document.getElementById('myNudgeCardList');
             var item = container && container.children[index];
             if (item) {
@@ -14059,9 +14188,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             } else { renderMyNudgeCardList(); }
         }
     }
-    function toggleMyNudgeHide(index) {
+    async function toggleMyNudgeHide(index) {
         appData.specialCards.myNudge[index].hidden = !appData.specialCards.myNudge[index].hidden;
-        saveDataSync();
+        await saveDataAsync();
         var container = document.getElementById('myNudgeCardList');
         var item = container && container.children[index];
         if (item) {
@@ -14070,10 +14199,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             if (ops) ops.children[1].textContent = appData.specialCards.myNudge[index].hidden ? '显示' : '隐藏';
         } else { renderMyNudgeCardList(); }
     }
-    function deleteMyNudgeCard(index) {
+    async function deleteMyNudgeCard(index) {
         if (confirm('确定删除这条拍一拍吗？')) {
             appData.specialCards.myNudge.splice(index, 1);
-            saveDataSync();
+            await saveDataAsync();
             var container = document.getElementById('myNudgeCardList');
             if (container && container.children[index]) {
                 container.removeChild(container.children[index]);
@@ -17153,17 +17282,17 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const total = files.length;
         Array.from(files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = function(ev) {
+            reader.onload = async function(ev) {
                 var audioDataUrl = ev.target.result;
                 var audioKey = 'audio_card_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-                // 存储到 IndexedDB（复用 saveImgDB 管道）
+                // ===== 修复：先等待语音数据写入 IndexedDB，再更新内存和界面 =====
                 if (window.saveImgDB) {
-                    window.saveImgDB(audioKey, audioDataUrl);
+                    await window.saveImgDB(audioKey, audioDataUrl);
                 }
                 // 读取时长
                 var tempAudio = new Audio();
                 tempAudio.src = audioDataUrl;
-                tempAudio.addEventListener('loadedmetadata', function() {
+                tempAudio.addEventListener('loadedmetadata', async function() {
                     var duration = Math.ceil(tempAudio.duration) || 0;
                     appData.specialCards.audio.push({
                         text: file.name || '语音消息',
@@ -17173,11 +17302,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     });
                     processed++;
                     if (processed === total) {
-                        saveDataSync();
+                        await saveDataAsync();
                         renderAudioCardList();
                     }
                 });
-                tempAudio.addEventListener('error', function() {
+                tempAudio.addEventListener('error', async function() {
                     // 无法读取时长时仍然保存
                     appData.specialCards.audio.push({
                         text: file.name || '语音消息',
@@ -17187,7 +17316,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     });
                     processed++;
                     if (processed === total) {
-                        saveDataSync();
+                        await saveDataAsync();
                         renderAudioCardList();
                     }
                 });
