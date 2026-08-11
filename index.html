@@ -6355,6 +6355,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         width: 100%;
         height: 100%;
         object-fit: cover;
+        pointer-events: none;
     }
     .cl-profile-nickname {
         font-size: 17px;
@@ -22121,15 +22122,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         var input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
+        input.style.display = 'none';
+        document.body.appendChild(input);
         input.onchange = function(e) {
             var file = e.target.files[0];
-            if (!file) return;
+            if (!file) { document.body.removeChild(input); return; }
             var reader = new FileReader();
             reader.onload = function(ev) {
                 var p = ensureContactListProfile();
                 p.avatar = ev.target.result;
                 saveData();
                 renderContactProfile();
+                document.body.removeChild(input);
             };
             reader.readAsDataURL(file);
         };
@@ -22157,15 +22161,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         var input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
+        input.style.display = 'none';
+        document.body.appendChild(input);
         input.onchange = function(e) {
             var file = e.target.files[0];
-            if (!file) return;
+            if (!file) { document.body.removeChild(input); return; }
             var reader = new FileReader();
             reader.onload = function(ev) {
                 var p = ensureContactListProfile();
                 p.headerImage = ev.target.result;
                 saveData();
                 renderContactProfile();
+                document.body.removeChild(input);
             };
             reader.readAsDataURL(file);
         };
