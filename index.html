@@ -9552,6 +9552,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         console.error('未处理的 Promise 错误:', e.reason);
     });
     window.addEventListener('beforeunload', function() { try { if (_idbReady) saveDataSync(); } catch(e) {} });
+    // iOS Safari 的 beforeunload 不可靠，pagehide 更可靠——补充监听确保数据落盘
+    window.addEventListener('pagehide', function() {
+        try {
+            if (_idbReady) {
+                saveDataSync(); // 先触发一次同步保存（fire-and-forget）
+                // 尽力等待 IndexedDB 写入完成（pagehide 有一小段执行窗口）
+                if (_pendingIDBSave) {
+                    _pendingIDBSave.then(function(){ /* 写入完成 */ });
+                }
+            }
+        } catch(e) {}
+    });
     window.addEventListener('pageshow', function() {
         setTimeout(function() {
             try { processPendingMomentActions(); } catch(e) {}
@@ -9803,16 +9815,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // 全局图片存储：saveImgDB(key, dataUrl) / loadImgDB(key, callback) / removeImgDB(key)
     window.saveImgDB = async function(key, dataUrl) {
         try {
-            if (!dataUrl || dataUrl.length < 100) { // 小数据直接存 localStorage
-                try { localStorage.setItem(key, dataUrl || ''); } catch(e) {}
-                return true;
-            }
+            if (!dataUrl) return true;
             const db = await imgDBOpen();
-            if (!db) { try { localStorage.setItem(key, dataUrl); } catch(e) { return false; } return true; }
+            if (!db) { console.error('saveImgDB: IndexedDB 不可用，无法保存图片'); return false; }
             return new Promise((resolve) => {
                 const tx = db.transaction(IDB_IMG_STORE, 'readwrite');
                 tx.objectStore(IDB_IMG_STORE).put(dataUrl, key);
-                tx.oncomplete = () => { try { localStorage.removeItem(key); } catch(e) {} resolve(true); };
+                tx.oncomplete = () => resolve(true);
                 tx.onerror = () => resolve(false);
             });
         } catch(e) { console.error('saveImgDB error:', e); return false; }
@@ -9906,10 +9915,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         try {
             const db = await imgDBOpen();
             if (!db) {
-                // 降级到 localStorage
-                Object.keys(imgData).forEach(function(key) {
-                    try { localStorage.setItem(key, imgData[key]); } catch(e) {}
-                });
+                // IndexedDB 不可用，无法导入图片
+                console.error('importImgDB: IndexedDB 不可用');
+                return;
                 return;
             }
             for (const key of Object.keys(imgData)) {
@@ -11070,16 +11078,75 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         resolveTokensInObj(merged, _lateBlobMap);
                     }
                 }
+                // ===== 保留用户在 IndexedDB 加载期间可能做出的图片修改（竞态修复） =====
+                // 场景：app 刚启动时 _idbReady=false，用户此时上传图片，saveDataSync 被跳过；
+                //   随后 loadDataFromIDB 完成并覆盖 appData，用户上传的图片丢失。
+                // 修复：覆盖前保存图片字段，覆盖后合并回来（仅当 IndexedDB 没有对应数据时）。
+                var _preLoadImgs = {};
+                try {
+                    if (appData.chatSettings) {
+                        var _csImgs = ['otherAvatar', 'myAvatar', 'chatWallpaper', 'topBgImage', 'bottomBgImage'];
+                        _preLoadImgs.chatSettings = {};
+                        _csImgs.forEach(function(f) {
+                            if (appData.chatSettings[f]) _preLoadImgs.chatSettings[f] = appData.chatSettings[f];
+                        });
+                    }
+                    var _directImgs = ['videoBg'];
+                    _directImgs.forEach(function(f) {
+                        if (appData[f]) _preLoadImgs[f] = appData[f];
+                    });
+                    var _objImgs = ['appIconImages', 'widgetImages', 'colors', 'albumData'];
+                    _objImgs.forEach(function(f) {
+                        if (appData[f] && typeof appData[f] === 'object') {
+                            _preLoadImgs[f] = JSON.parse(JSON.stringify(appData[f]));
+                        }
+                    });
+                } catch(e) { _preLoadImgs = {}; }
                 // 将 merged 的属性逐一复制到 appData（而非替换引用），
                 // 以保留 chatHistory 上的 getter/setter（联系人独立聊天记录）
                 for (var _k in merged) {
                     appData[_k] = merged[_k];
                 }
+                // 恢复用户在加载期间设置的图片（仅当 IndexedDB 没有对应数据时）
+                try {
+                    if (_preLoadImgs.chatSettings && appData.chatSettings) {
+                        var _csImgs2 = ['otherAvatar', 'myAvatar', 'chatWallpaper', 'topBgImage', 'bottomBgImage'];
+                        _csImgs2.forEach(function(f) {
+                            if (_preLoadImgs.chatSettings[f] && (!appData.chatSettings[f] || appData.chatSettings[f] === '')) {
+                                appData.chatSettings[f] = _preLoadImgs.chatSettings[f];
+                            }
+                        });
+                    }
+                    if (_preLoadImgs.videoBg && (!appData.videoBg || appData.videoBg === '')) {
+                        appData.videoBg = _preLoadImgs.videoBg;
+                    }
+                    var _objImgs2 = ['appIconImages', 'widgetImages', 'colors', 'albumData'];
+                    _objImgs2.forEach(function(f) {
+                        if (_preLoadImgs[f] && appData[f] && typeof appData[f] === 'object') {
+                            for (var _sub in _preLoadImgs[f]) {
+                                if (_preLoadImgs[f][_sub] && (!appData[f][_sub] || appData[f][_sub] === '')) {
+                                    appData[f][_sub] = _preLoadImgs[f][_sub];
+                                }
+                            }
+                        }
+                    });
+                } catch(e) { console.warn('恢复用户图片修改失败:', e); }
                 // 同步 appData.dataVersion
                 appData.dataVersion = merged.dataVersion || CURRENT_DATA_VERSION;
                 _idbReady = true; // 数据加载完毕，允许 saveData 写入 IndexedDB
                 // 确保数据写入主键和备份键（迁移旧数据库时尤为重要）
                 saveDataSync();
+                // 清理 localStorage 中的旧 appData 数据（可能 >5MB，会触发 iOS Safari 清空）
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(STORAGE_KEY + '_backup');
+                    var _oldLSKeys = ['qianyi_data_v7', 'qianyi_data_v7_backup',
+                                    'qianyi_data_v6', 'qianyi_data_v6_backup',
+                                    'qianyi_data_v5', 'qianyi_data_v5_backup',
+                                    'qianyi_data', 'qianyi_data_backup'];
+                    _oldLSKeys.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });
+                    console.log('[存储] localStorage appData 已清理，数据仅存储在 IndexedDB');
+                } catch(e) { console.warn('清理 localStorage 失败:', e); }
                 // 重新初始化界面以应用IndexedDB数据
                 if (typeof reinitAfterIDBLoad === 'function') reinitAfterIDBLoad();
             } else {
@@ -11116,6 +11183,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // saveData 防抖：避免频繁序列化大对象导致卡顿
     let _saveDataTimer = null;
     let _lastGoodJson = null; // 缓存上次成功序列化的 JSON，用于回滚
+    var _pendingIDBSave = null; // 跟踪最近的 IndexedDB 写入 promise（用于 pagehide 确保落盘）
     // 同步立即保存：用于删除等不可逆操作，避免防抖导致的数据丢失/白屏
     // 新版：直接存储完整 appData（含图片）到 IndexedDB，不写 localStorage
     /* ===== 安全 toast 提示（主作用域内可用，存储失败等场景反馈用户） ===== */
@@ -11141,10 +11209,15 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (typeof confirm === 'function' && !confirm('将放弃当前内存中的数据，从本地存储(IndexedDB)重新加载全部数据（含图片）。\n\n适用于图片/数据异常丢失后的恢复，不会清空你的数据。\n\n继续？')) return;
         try {
             _showUserToast('正在从本地存储恢复…');
+            // 先清理 localStorage 中可能残留/被截断的旧数据，防止干扰恢复
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(STORAGE_KEY + '_backup');
+            } catch(e) {}
             _idbLoaded = false;      // 允许 loadDataFromIDB 重新加载
-            _loadedFromLS = false;   // 强制忽略 localStorage，走 IndexedDB 直接覆盖路径，避免残留空数据覆盖完整图片
+            _loadedFromLS = false;   // 强制忽略 localStorage，走 IndexedDB 直接覆盖路径
             await loadDataFromIDB();
-            _showUserToast('恢复完成');
+            _showUserToast('恢复完成，图片应已恢复');
         } catch(e) {
             console.error('强制恢复失败:', e);
             _showUserToast('恢复失败，请重试或导入备份文件');
@@ -11157,15 +11230,10 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         try {
             var fullJson = JSON.stringify(appData);
             _lastGoodJson = fullJson;
-            // 同步写入 localStorage（规则4/10），配额不足时仅警告不阻塞 IndexedDB
-            try {
-                localStorage.setItem(STORAGE_KEY, fullJson);
-            } catch(_lsErr) {
-                console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
-            }
+            // 不再写入 localStorage：当 appData 含图片超过 5MB 时，setItem 会触发
+            // iOS Safari 清空整个 origin 的 localStorage 导致数据丢失。IndexedDB 为唯一主存储。
             if (_idbReady) {
-                idbSet('appData', fullJson);
-                idbSet('appData_backup', fullJson);
+                _pendingIDBSave = Promise.all([idbSet('appData', fullJson), idbSet('appData_backup', fullJson)]);
             }
             return true;
         } catch (e) {
@@ -11212,16 +11280,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         // 恢复 _activeContactId（在异步写入之前，避免 await 期间上下文错误）
         _activeContactId = _savedActiveId;
-        // 同步写入 localStorage
-        try {
-            localStorage.setItem(STORAGE_KEY, fullJson);
-        } catch(_lsErr) {
-            console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
-        }
-        // 异步写入 IndexedDB（等待完成）
+        // 不再写入 localStorage（避免 >5MB 触发 iOS Safari 清空），仅写 IndexedDB
         if (_idbReady) {
             await idbSet('appData', fullJson);
             await idbSet('appData_backup', fullJson);
+            _pendingIDBSave = null;
         }
         return true;
     }
@@ -11234,16 +11297,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             try {
                 var fullJson = JSON.stringify(appData);
                 _lastGoodJson = fullJson;
-                // 同步写入 localStorage（规则4/10），配额不足时仅警告不阻塞 IndexedDB
-                try {
-                    localStorage.setItem(STORAGE_KEY, fullJson);
-                } catch(_lsErr) {
-                    console.warn('localStorage 写入失败（可能配额不足），数据仍已保存到 IndexedDB:', _lsErr);
-                }
-                // 主存储：IndexedDB（直接存储完整 appData，含图片）
+                // 不再写入 localStorage（避免 >5MB 触发 iOS Safari 清空），仅写 IndexedDB
                 if (_idbReady) {
-                    idbSet('appData', fullJson);
-                    idbSet('appData_backup', fullJson);
+                    _pendingIDBSave = Promise.all([idbSet('appData', fullJson), idbSet('appData_backup', fullJson)]);
                 }
             } catch (e) {
                 console.error('数据序列化失败:', e);
@@ -33611,10 +33667,8 @@ function swUploadCustomBack() {
         var reader = new FileReader();
         reader.onload = function(ev) {
             _swCustomBackImg = ev.target.result;
-            if(window.saveImgDB){ window.saveImgDB('_swCustomBackImg', _swCustomBackImg); }
-            else { try { localStorage.setItem('_swCustomBackImg', _swCustomBackImg); } catch(e) {} }
+            if(window.saveImgDB){ window.saveImgDB('_swCustomBackImg', _swCustomBackImg).then(function(ok){ if(!ok) alert('图片保存失败，请重试'); }); }
             swApplyCustomButtons();
-            alert('返回键图片已更新');
         };
         reader.readAsDataURL(file);
     };
@@ -33636,10 +33690,8 @@ function swUploadCustomMenu() {
         var reader = new FileReader();
         reader.onload = function(ev) {
             _swCustomMenuImg = ev.target.result;
-            if(window.saveImgDB){ window.saveImgDB('_swCustomMenuImg', _swCustomMenuImg); }
-            else { try { localStorage.setItem('_swCustomMenuImg', _swCustomMenuImg); } catch(e) {} }
+            if(window.saveImgDB){ window.saveImgDB('_swCustomMenuImg', _swCustomMenuImg).then(function(ok){ if(!ok) alert('图片保存失败，请重试'); }); }
             swApplyCustomButtons();
-            alert('菜单键图片已更新');
         };
         reader.readAsDataURL(file);
     };
@@ -34221,19 +34273,6 @@ function bindSwipeRightToExit(pageEl, exitFn) {
                     if(!ok) p3Toast('图片存储失败，空间可能不足');
                   });
                 }
-                else {
-                  try{localStorage.setItem(POLAROIDKEYS[idx],compressed);}
-                  catch(err){
-                    /* Bug6修复：localStorage 超限时降级到 IndexedDB，避免刷新后图片丢失 */
-                    if(window.indexedDB){
-                      try {
-                        var _req=indexedDB.open('p3_img_db',1);
-                        _req.onupgradeneeded=function(e){ e.target.result.createObjectStore('images'); };
-                        _req.onsuccess=function(e){ var _db=e.target.result; var _tx=_db.transaction('images','readwrite'); _tx.objectStore('images').put(compressed,POLAROIDKEYS[idx]); };
-                      } catch(e2){ p3Toast('存储空间不足'); return; }
-                    } else { p3Toast('存储空间不足'); return; }
-                  }
-                }
                 setPolaroidItemImg(idx, compressed);
               });
             };
@@ -34407,9 +34446,9 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     r.onload=function(ev){
       compressP3Image(ev.target.result, 800, 800, 0.82, function(compressed){
         try{
-          if(mwFileTarget==='bg'){ if(window.saveImgDB){ window.saveImgDB(MWBG_KEY,compressed); } else { localStorage.setItem(MWBG_KEY,compressed); } applyMwBg(); }
-          else if(mwFileTarget==='a1'){ if(window.saveImgDB){ window.saveImgDB(MWA1_KEY,compressed); } else { localStorage.setItem(MWA1_KEY,compressed); } applyMwAvatars(); }
-          else if(mwFileTarget==='a2'){ if(window.saveImgDB){ window.saveImgDB(MWA2_KEY,compressed); } else { localStorage.setItem(MWA2_KEY,compressed); } applyMwAvatars(); }
+          if(mwFileTarget==='bg'){ if(window.saveImgDB){ window.saveImgDB(MWBG_KEY,compressed); } applyMwBg(); }
+          else if(mwFileTarget==='a1'){ if(window.saveImgDB){ window.saveImgDB(MWA1_KEY,compressed); } applyMwAvatars(); }
+          else if(mwFileTarget==='a2'){ if(window.saveImgDB){ window.saveImgDB(MWA2_KEY,compressed); } applyMwAvatars(); }
         }catch(err){ if(window.saveImgDB && mwFileTarget){ var _k=mwFileTarget==='bg'?MWBG_KEY:mwFileTarget==='a1'?MWA1_KEY:MWA2_KEY; window.saveImgDB(_k,compressed); } }
         mwFileInput.value='';
       });
@@ -34507,9 +34546,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   }
   function saveSidData(data){
     var json=JSON.stringify(data);
-    try{ localStorage.setItem(SID_KEY,json); }catch(e){
-      if(window.saveImgDB){ window.saveImgDB(SID_KEY,json); }
-    }
+    if(window.saveImgDB){ window.saveImgDB(SID_KEY,json); }
   }
   var sidData=loadSidData();
   /* 异步从 IndexedDB 恢复学生证数据 */
@@ -34914,12 +34951,9 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     _ltCache[key]=val;
     var json;
     try{ json=JSON.stringify(val); }catch(e){ return; }
-    try{
-      localStorage.setItem(key,json);
-    }catch(e){
-      /* localStorage 空间不足，存入 IndexedDB（30GB配额） */
-      if(window.saveImgDB){ window.saveImgDB(key, json); }
-      return;
+    /* 直接存入 IndexedDB，避免 localStorage 5MB 限制 */
+    if(window.saveImgDB){ window.saveImgDB(key, json); }
+    return;
     }
     /* 大数据同步备份到 IndexedDB，确保刷新后可恢复 */
     if(json.length > 5000 && window.saveImgDB){ window.saveImgDB(key, json); }
@@ -37091,7 +37125,7 @@ window.replaceP3Avatar=function(e){
         if(phE) phE.style.display='none';
         avEl.classList.add('has-img');
       }
-      try{ if(window.saveImgDB){ window.saveImgDB('p3_center_avatar',data); } else { localStorage.setItem('p3_center_avatar',data); } }catch(err){}
+      try{ if(window.saveImgDB){ window.saveImgDB('p3_center_avatar',data); } }catch(err){}
     };
     r.readAsDataURL(f);
     setTimeout(function(){ if(input.parentNode) input.parentNode.removeChild(input); }, 500);
@@ -37207,7 +37241,6 @@ window.replaceP3Avatar=function(e){
   function saveImage(dataUrl){
     try {
       if(window.saveImgDB){ window.saveImgDB(RECT_KEY, dataUrl); }
-      else { try { localStorage.setItem(RECT_KEY, dataUrl); } catch(e){} }
     } catch(e){
       if(window.saveImgDB){ try { window.saveImgDB(RECT_KEY, dataUrl); } catch(_){} }
     }
