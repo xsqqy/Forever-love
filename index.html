@@ -5247,16 +5247,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     .contact-list-page.active { display: flex; }
-    .contact-list-page.has-bg-image .cl-contact-section,
-    .contact-list-page.has-bg-image .cl-contact-list,
-    .contact-list-page.has-bg-image .cl-bottom-bar,
-    .contact-list-page.has-bg-image .cl-contact-label,
-    .contact-list-page.has-bg-image .cl-contact-section .contact-list-search { background: transparent !important; }
-    .contact-list-page.has-bg-image .contact-item-wrapper { background: transparent !important; }
     /* 联系人条目保持毛玻璃背景以遮住操作按钮（左滑才显示置顶/删除）；其余容器透明以透出壁纸 */
     /* 下半部分统一透明：换壁纸显示完整壁纸，不换壁纸透出页面纯色底（上半部分头像区域不动） */
-    .contact-list-page .cl-contact-section,
-    .contact-list-page .cl-contact-list,
+    /* cl-contact-section 和 cl-contact-list 由 applyContactListStyles() 内联样式控制，不在此强制透明 */
     .contact-list-page .contact-item-wrapper,
     .contact-list-page .contact-list-search,
     .contact-list-page .contact-list-section-title,
@@ -8448,6 +8441,20 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="btn-group">
 <input id="contactListFontColor" oninput="updateContactListFontColor(this.value)" type="color" value="#1a1a1a" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
 <button onclick="resetContactListFontColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>修改列表联系人背景图</label>
+<div class="btn-group">
+<button onclick="uploadContactSectionBgImage()">上传</button>
+<button onclick="resetContactSectionBgImage()">恢复默认</button>
+</div>
+</div>
+<div class="settings-row">
+<label>调节列表联系人背景颜色</label>
+<div class="btn-group">
+<input id="contactSectionBgColor" oninput="updateContactSectionBgColor(this.value)" type="color" value="#ffffff" style="width:40px;height:30px;border:none;border-radius:6px;cursor:pointer;"/>
+<button onclick="resetContactSectionBgColor()" style="padding:4px 8px;background:#f5f5f5;border:none;border-radius:4px;font-size:12px;cursor:pointer;">恢复默认</button>
 </div>
 </div>
 </div></div>
@@ -22066,6 +22073,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     bottomBar.style.background = 'url(' + bb.bgImage + ') center/cover no-repeat';
                 } else if (bb.bgColor) {
                     bottomBar.style.background = bb.bgColor;
+                } else if (cl.bgImage) {
+                    bottomBar.style.background = 'transparent';
                 } else {
                     bottomBar.style.background = '#ffffff';
                 }
@@ -22240,11 +22249,37 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
             // 有背景图时，让内部容器透明以透出页面背景；无背景图时恢复默认颜色
             var section = document.querySelector('.cl-contact-section');
-            if (section) { section.style.background = cl.bgImage ? 'transparent' : ''; }
+            if (section) {
+                section.style.background = cl.bgImage ? 'transparent' : '';
+            }
             var listBody = document.querySelector('.cl-contact-list');
-            if (listBody) { listBody.style.background = cl.bgImage ? 'transparent' : ''; }
+            if (listBody) {
+                listBody.style.background = cl.bgImage ? 'transparent' : '';
+            }
+            // 列表联系人条目背景（即每个联系人那一行的半透明背景块）
+            var contactItems = document.querySelectorAll('.contact-list-page .contact-item');
+            contactItems.forEach(function(el) {
+                if (cl.contactBgImage) {
+                    el.style.background = 'url(' + cl.contactBgImage + ') center/cover no-repeat';
+                } else if (cl.contactBgColor) {
+                    el.style.background = cl.contactBgColor;
+                } else {
+                    el.style.background = '';
+                }
+            });
             var bottomBar = document.querySelector('.cl-bottom-bar');
-            if (bottomBar) { bottomBar.style.background = cl.bgImage ? 'transparent' : ''; }
+            if (bottomBar) {
+                var bb = cl.bottomBar || {};
+                if (bb.bgImage) {
+                    bottomBar.style.background = 'url(' + bb.bgImage + ') center/cover no-repeat';
+                } else if (bb.bgColor) {
+                    bottomBar.style.background = bb.bgColor;
+                } else if (cl.bgImage) {
+                    bottomBar.style.background = 'transparent';
+                } else {
+                    bottomBar.style.background = '';
+                }
+            }
             var search = document.querySelector('.cl-contact-section .contact-list-search');
             if (search) { search.style.background = cl.bgImage ? 'transparent' : ''; }
             var labels = document.querySelectorAll('.cl-contact-label');
@@ -22326,6 +22361,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 empty.textContent = '暂无联系人，点击右上角添加';
                 container.appendChild(empty);
             }
+            // 渲染完成后，应用联系人条目背景（在 renderContactList 重建 DOM 后重新设置内联样式）
+            try {
+                var cl2 = appData.contactList || {};
+                var contactItemEls = document.querySelectorAll('.contact-list-page .contact-item');
+                contactItemEls.forEach(function(el) {
+                    if (cl2.contactBgImage) {
+                        el.style.background = 'url(' + cl2.contactBgImage + ') center/cover no-repeat';
+                    } else if (cl2.contactBgColor) {
+                        el.style.background = cl2.contactBgColor;
+                    }
+                });
+            } catch(e2) {}
         } catch(e) { console.error('renderContactList error:', e); }
     }
     function createContactItemEl(item) {
@@ -23035,6 +23082,61 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             renderContactList();
         } catch(e) { console.error('resetContactListFontColor error:', e); }
     }
+    function uploadContactSectionBgImage() {
+        try {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.style.display = 'none';
+            document.body.appendChild(input);
+            input.onchange = function(e) {
+                try {
+                    var file = e.target.files[0];
+                    if (!file) { document.body.removeChild(input); return; }
+                    var reader = new FileReader();
+                    reader.onload = function(ev) {
+                        if (!appData.contactList) appData.contactList = {};
+                        appData.contactList.contactBgImage = ev.target.result;
+                        saveData();
+                        applyContactListStyles();
+                        renderContactList();
+                        document.body.removeChild(input);
+                    };
+                    reader.readAsDataURL(file);
+                } catch(err) { console.error('uploadContactSectionBgImage onchange error:', err); }
+            };
+            input.click();
+        } catch(e) { console.error('uploadContactSectionBgImage error:', e); }
+    }
+    function resetContactSectionBgImage() {
+        try {
+            if (!appData.contactList) appData.contactList = {};
+            appData.contactList.contactBgImage = '';
+            saveData();
+            applyContactListStyles();
+            renderContactList();
+        } catch(e) { console.error('resetContactSectionBgImage error:', e); }
+    }
+    function updateContactSectionBgColor(color) {
+        try {
+            if (!appData.contactList) appData.contactList = {};
+            appData.contactList.contactBgColor = color;
+            saveData();
+            applyContactListStyles();
+            renderContactList();
+        } catch(e) { console.error('updateContactSectionBgColor error:', e); }
+    }
+    function resetContactSectionBgColor() {
+        try {
+            if (!appData.contactList) appData.contactList = {};
+            appData.contactList.contactBgColor = '';
+            saveData();
+            var el = document.getElementById('contactSectionBgColor');
+            if (el) el.value = '#ffffff';
+            applyContactListStyles();
+            renderContactList();
+        } catch(e) { console.error('resetContactSectionBgColor error:', e); }
+    }
     function openChatSettingsFromGlobal() {
         document.getElementById('settingsPage').style.display = 'flex';
         applyChatDisplaySettings();
@@ -23105,6 +23207,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         var cl = appData.contactList || {};
         document.getElementById('contactListBgColor').value = cl.background || '#ededed';
         document.getElementById('contactListFontColor').value = cl.fontColor || '#1a1a1a';
+        var csBgColorEl = document.getElementById('contactSectionBgColor');
+        if (csBgColorEl && cl.contactBgColor) csBgColorEl.value = cl.contactBgColor;
     }
     function toggleDarkMode() {
         appData.globalSettings.darkMode = document.getElementById('darkModeToggle').checked;
