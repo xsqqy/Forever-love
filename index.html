@@ -2575,8 +2575,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             min-width: 60px;
         }
         .wordcard-list {
-            flex: 1;
-            overflow-y: auto;
+            flex-shrink: 0;
             padding: 12px 16px;
         }
         .wordcard-item {
@@ -2625,9 +2624,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         .special-section {
             border-top: 8px solid #f0f0f0;
             padding: 16px;
-            overflow-y: auto;
             flex-shrink: 0;
-            max-height: 50%;
         }
         .special-item {
             background: var(--color-white);
@@ -6299,7 +6296,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     
         .wordcard-back { display: none !important; }
         .wordcard-header { background: transparent !important; border-bottom: none !important; }
-        .wordcard-page { background: #ffffff !important; }
+        .wordcard-page { background: #ffffff !important; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .wordcard-list { background: transparent; }
         .special-section { background: #ffffff; border: none; }
         .special-item { border: none; }
@@ -8669,6 +8666,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <button onclick="compressStoredImages()" style="padding:8px 12px;background:#f5f5f5;border:none;border-radius:6px;font-size:13px;cursor:pointer;">压缩当前图片</button>
 <button onclick="resetPageLayout()" style="padding:8px 12px;background:#ff3b30;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">重置页面布局</button>
 </div>
+<div class="subsection-title" style="margin-top:16px;">数据修复（图片/数据异常丢失时使用）</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+<button onclick="forceRecoverFromIDB()" style="padding:8px 12px;background:#34c759;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">从 IndexedDB 强制恢复</button>
+</div>
+<div style="font-size:11px;color:#999;margin-top:6px;line-height:1.5;">若头像、壁纸、相册等图片异常显示为空白，可点击上方按钮从本地存储重新加载完整数据（不会清空数据，仅重新读取）。</div>
 </div>
 </div>
 
@@ -10968,12 +10970,43 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                     var _preferCurrentKeys = ['chatSettings', 'globalSettings',
                         'beautifyLiveCss', 'wordCards', 'wordGroups',
                         'contactWordCards', 'currentGroup', 'dockBottom', 'iconSize',
-                        'videoBg', 'appIconImages', 'widgetImages', 'colors', 'appNames',
+                        'appNames',
                         'widgetOffsets', 'balanceData', 'nudgeCards', 'diary', 'letter',
-                        'moments', 'albumData', 'lifeDeathData'];
+                        'moments', 'lifeDeathData'];
                     _preferCurrentKeys.forEach(function(key) {
                         if (appData[key] !== undefined && appData[key] !== null) {
                             merged[key] = appData[key];
+                        }
+                    });
+                    // --- 3c. 图片/富媒体字段：IndexedDB 优先（localStorage 可能因配额不足被截断为空） ---
+                    //   仅当 IndexedDB 无内容时才用 localStorage 补充；IndexedDB 有内容时保留其完整数据，
+                    //   并把 localStorage 中 IndexedDB 缺失的子项合并进来。
+                    //   修复 iOS Safari 清理 localStorage 后残留空图片字段覆盖 IndexedDB 完整图片的丢失问题。
+                    var _imagePrefKeys = ['videoBg', 'appIconImages', 'widgetImages', 'colors', 'albumData'];
+                    function _hasMediaContent(v) {
+                        if (v === undefined || v === null) return false;
+                        if (typeof v === 'string') return v.length > 0;
+                        if (Array.isArray(v)) return v.length > 0;
+                        if (typeof v === 'object') return Object.keys(v).length > 0;
+                        return true;
+                    }
+                    _imagePrefKeys.forEach(function(key) {
+                        var _idbVal = merged[key];
+                        var _lsVal = appData[key];
+                        if (_hasMediaContent(_idbVal)) {
+                            // IndexedDB 有内容：保留 IndexedDB，并合并 localStorage 中 IndexedDB 缺失的子项
+                            if (_hasMediaContent(_lsVal) && typeof _idbVal === 'object' && _idbVal !== null &&
+                                typeof _lsVal === 'object' && _lsVal !== null &&
+                                !Array.isArray(_idbVal) && !Array.isArray(_lsVal)) {
+                                for (var _sub in _lsVal) {
+                                    if (_lsVal[_sub] && (!_idbVal[_sub] || _idbVal[_sub] === '')) {
+                                        _idbVal[_sub] = _lsVal[_sub];
+                                    }
+                                }
+                            }
+                            merged[key] = _idbVal;
+                        } else if (_hasMediaContent(_lsVal)) {
+                            merged[key] = _lsVal;
                         }
                     });
                     // --- 3b. beautifyPresets 合并：取并集（按 name 去重），避免任一来源数据丢失 ---
@@ -11102,6 +11135,21 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     }
     /* 主作用域内未定义 toast 时补一个，修复既有 toast() 调用静默失败 */
     function toast(msg){ _showUserToast(msg); }
+    // ===== 从 IndexedDB 强制恢复（用户自救：图片/数据异常丢失时使用） =====
+    // 重置加载标记，忽略 localStorage 中可能被截断的残留数据，直接从 IndexedDB 重新加载完整数据。
+    async function forceRecoverFromIDB() {
+        if (typeof confirm === 'function' && !confirm('将放弃当前内存中的数据，从本地存储(IndexedDB)重新加载全部数据（含图片）。\n\n适用于图片/数据异常丢失后的恢复，不会清空你的数据。\n\n继续？')) return;
+        try {
+            _showUserToast('正在从本地存储恢复…');
+            _idbLoaded = false;      // 允许 loadDataFromIDB 重新加载
+            _loadedFromLS = false;   // 强制忽略 localStorage，走 IndexedDB 直接覆盖路径，避免残留空数据覆盖完整图片
+            await loadDataFromIDB();
+            _showUserToast('恢复完成');
+        } catch(e) {
+            console.error('强制恢复失败:', e);
+            _showUserToast('恢复失败，请重试或导入备份文件');
+        }
+    }
     function saveDataSync() {
         if (_saveDataTimer) { clearTimeout(_saveDataTimer); _saveDataTimer = null; }
         var _savedActiveId = _activeContactId;
