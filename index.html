@@ -16034,6 +16034,13 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         document.querySelectorAll('.page-menu').forEach(btn => {
             if(icons.menu) btn.innerHTML = '<img src="'+icons.menu+'" style="width:20px;height:20px;object-fit:contain;">';
         });
+        // 更新聊天顶部返回键和菜单键
+        document.querySelectorAll('.chat-back').forEach(btn => {
+            if(icons.back) btn.innerHTML = '<img src="'+icons.back+'" style="width:24px;height:24px;object-fit:contain;">';
+        });
+        document.querySelectorAll('.chat-menu').forEach(btn => {
+            if(icons.menu) btn.innerHTML = '<img src="'+icons.menu+'" style="width:20px;height:20px;object-fit:contain;">';
+        });
         // 更新收纳区域(plus-panel)图标
         document.querySelectorAll('.plus-item').forEach(item => {
             const iconKey = item.dataset.icon;
@@ -16105,9 +16112,9 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 item.innerHTML = svgHtml + '<span>'+spanText+'</span>';
             }
         });
-        // 聊天界面的返回键和菜单键也受图标颜色影响
-        document.querySelectorAll('.chat-back').forEach(el => { if(!icons.back) el.style.color = color; });
-        document.querySelectorAll('.chat-menu').forEach(el => { if(!icons.menu) el.style.color = color; });
+        // 聊天界面的返回键和菜单键：恢复默认内容并设置颜色
+        document.querySelectorAll('.chat-back').forEach(el => { if(!icons.back) { el.innerHTML = '\u2039'; el.style.color = color; } });
+        document.querySelectorAll('.chat-menu').forEach(el => { if(!icons.menu) { el.innerHTML = '\u22ef'; el.style.color = color; } });
     }
     function updateCustomIconColor(color) {
         appData.chatSettings.customIconColor = color;
@@ -34953,10 +34960,6 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     try{ json=JSON.stringify(val); }catch(e){ return; }
     /* 直接存入 IndexedDB，避免 localStorage 5MB 限制 */
     if(window.saveImgDB){ window.saveImgDB(key, json); }
-    return;
-    }
-    /* 大数据同步备份到 IndexedDB，确保刷新后可恢复 */
-    if(json.length > 5000 && window.saveImgDB){ window.saveImgDB(key, json); }
   }
   var _ltCache={};
   /* 异步从 IndexedDB 恢复数据到内存缓存 */
