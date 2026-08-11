@@ -8848,7 +8848,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 <div class="settings-back" onclick="closeBalanceApp()">‹</div>
 <div class="settings-title" onclick="closeBalanceApp()" style="cursor:pointer;">余额</div>
 </div>
-<div style="padding:0 16px 8px;">
+<div style="padding:0 16px 8px;display:none;">
 <select id="balanceContactSelector" onchange="switchBalanceContact()" style="width:100%;padding:10px 14px;border:none;border-radius:8px;font-size:14px;background:#f5f5f5;color:#333;outline:none;-webkit-appearance:none;appearance:none;font-family:var(--font-family);"></select>
 </div>
 <div class="settings-content" id="balanceAppContent" style="padding:16px;background:#ffffff;"></div>
@@ -9224,7 +9224,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 </div>
 <div class="diary-detail-footer">
 <span class="danger" onclick="deleteCurrentDiary()">删除</span>
-<span onclick="editCurrentDiary()">编辑</span>
+<span id="diaryEditBtn" onclick="editCurrentDiary()">编辑</span>
+<span id="diaryDetailSummonBtn" onclick="summonCurrentDiary()" style="display:none;">dd对方</span>
 <span onclick="sendDiaryToChat()">发送</span>
 <span id="diaryNextSentenceBtn" onclick="showNextDiarySentence()" style="display:none;">下一句</span>
 <span onclick="closeDiaryDetail()">关闭</span>
@@ -9932,7 +9933,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
         } catch(e) {}
     };
-    const CURRENT_DATA_VERSION = 7;
+    const CURRENT_DATA_VERSION = 8;
     const defaultData = {
         dataVersion: 1,
         periodData: {},
@@ -10344,6 +10345,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     var _actualChatHistory = appData.chatHistory || (appData.chatHistory = []);
     var _activeContactId = null; // 当前聊天对应的联系人 ID，null 表示主聊天
     var _lastChatContactId = null; // 记录最后一次聊天的联系人 ID，用于从通知恢复时还原上下文
+    var _defaultContactIdCache = null; // 默认联系人 ID 缓存
     function _findContactById(id) {
         try {
             var contacts = (appData.contactList && appData.contactList.contacts) || [];
@@ -10352,6 +10354,21 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             }
         } catch(e) {}
         return null;
+    }
+    // 获取默认联系人 ID（单联系人模式下，所有消息都发到这里）
+    function _getDefaultContactId() {
+        if (_defaultContactIdCache && _findContactById(_defaultContactIdCache)) return _defaultContactIdCache;
+        try {
+            var contacts = (appData.contactList && appData.contactList.contacts) || [];
+            if (contacts.length === 0) return null;
+            // 优先找标记为默认的联系人
+            for (var i = 0; i < contacts.length; i++) {
+                if (contacts[i].isDefault) { _defaultContactIdCache = contacts[i].id; return contacts[i].id; }
+            }
+            // 没有标记的，取第一个
+            _defaultContactIdCache = contacts[0].id;
+            return contacts[0].id;
+        } catch(e) { return null; }
     }
     Object.defineProperty(appData, 'chatHistory', {
         get: function() {
@@ -10715,6 +10732,106 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 console.log('[迁移 v6→v7] 余额记录已同步到联系人');
             } catch(e) { console.error('[迁移 v6→v7] 失败:', e); }
             version = 7;
+        }
+
+        /* ---- v7 → v8: 单联系人模式 ----
+           合并主聊天记录到默认联系人，确保所有消息在同一个窗口可见。
+           1. 已有联系人的老用户：第一个联系人标记为默认，主聊天记录合并进去
+           2. 没有联系人的新用户：创建默认联系人（使用聊天设置中的对方昵称和头像）
+           合并后清空主聊天记录，杜绝隐藏窗口问题。 */
+        if (version < 8) {
+            try {
+                if (!data.contactList) data.contactList = { background:'#ededed', fontColor:'#1a1a1a', contacts: [], groups: [] };
+                if (!Array.isArray(data.contactList.contacts)) data.contactList.contacts = [];
+                if (!data.contactList.groups) data.contactList.groups = [];
+
+                var _cs = data.chatSettings || {};
+                var _mainHistory = Array.isArray(data.chatHistory) ? data.chatHistory : [];
+
+                if (data.contactList.contacts.length === 0) {
+                    // 没有联系人：创建默认联系人
+                    var _newCid = 'contact_default_' + Date.now();
+                    data.contactList.contacts.push({
+                        id: _newCid,
+                        name: _cs.otherNickname || '对方',
+                        remark: '',
+                        avatar: _cs.otherAvatar || '',
+                        pinned: false,
+                        lastTime: '',
+                        chatHistory: _mainHistory.slice(),
+                        isDefault: true,
+                        createdAt: Date.now()
+                    });
+                    // 清空主聊天记录
+                    data.chatHistory = [];
+                    upgraded = true;
+                    console.log('[迁移 v7→v8] 创建默认联系人:', _newCid, '消息数:', _mainHistory.length);
+                } else {
+                    // 已有联系人：第一个标记为默认
+                    var _firstContact = data.contactList.contacts[0];
+                    _firstContact.isDefault = true;
+
+                    // 合并主聊天记录到默认联系人
+                    if (_mainHistory.length > 0) {
+                        if (!_firstContact.chatHistory) _firstContact.chatHistory = [];
+                        // 收集已有消息的 ID 用于去重
+                        var _existingIds = {};
+                        _firstContact.chatHistory.forEach(function(m) {
+                            if (m && m.id) _existingIds[m.id] = true;
+                        });
+                        // 只合并不重复的消息
+                        var _merged = 0;
+                        _mainHistory.forEach(function(m) {
+                            if (m && m.id && !_existingIds[m.id]) {
+                                // 如果消息没有 contactId，设为默认联系人
+                                if (!m.contactId) m.contactId = _firstContact.id;
+                                _firstContact.chatHistory.push(m);
+                                _merged++;
+                            }
+                        });
+                        // 按时间排序
+                        _firstContact.chatHistory.sort(function(a, b) {
+                            return (a.time || a.id || 0) - (b.time || b.id || 0);
+                        });
+                        // 限制消息数量
+                        if (_firstContact.chatHistory.length > 500) {
+                            _firstContact.chatHistory = _firstContact.chatHistory.slice(-500);
+                        }
+                        // 清空主聊天记录
+                        data.chatHistory = [];
+                        upgraded = true;
+                        console.log('[迁移 v7→v8] 合并主聊天记录到默认联系人:', _firstContact.id, '合并消息数:', _merged);
+                    }
+
+                    // 其他联系人的消息也合并到默认联系人（保留数据不丢失）
+                    if (data.contactList.contacts.length > 1) {
+                        var _defaultContact = data.contactList.contacts[0];
+                        var _existingIds2 = {};
+                        _defaultContact.chatHistory.forEach(function(m) {
+                            if (m && m.id) _existingIds2[m.id] = true;
+                        });
+                        for (var _ci = 1; _ci < data.contactList.contacts.length; _ci++) {
+                            var _otherContact = data.contactList.contacts[_ci];
+                            if (_otherContact.chatHistory && _otherContact.chatHistory.length > 0) {
+                                _otherContact.chatHistory.forEach(function(m) {
+                                    if (m && m.id && !_existingIds2[m.id]) {
+                                        if (!m.contactId) m.contactId = _defaultContact.id;
+                                        _defaultContact.chatHistory.push(m);
+                                        _existingIds2[m.id] = true;
+                                    }
+                                });
+                            }
+                        }
+                        _defaultContact.chatHistory.sort(function(a, b) {
+                            return (a.time || a.id || 0) - (b.time || b.id || 0);
+                        });
+                        if (_defaultContact.chatHistory.length > 500) {
+                            _defaultContact.chatHistory = _defaultContact.chatHistory.slice(-500);
+                        }
+                    }
+                }
+            } catch(e) { console.error('[迁移 v7→v8] 失败:', e); }
+            version = 8;
         }
 
         data.dataVersion = version;
@@ -13672,7 +13789,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     async function addMessage(msg) {
       try {
         // 记录消息所属的联系人 ID，用于通知恢复时定位正确的聊天记录
-        if (!msg.contactId) msg.contactId = _activeContactId || _lastChatContactId || null;
+        // 单联系人模式：优先使用默认联系人 ID，确保所有消息写入同一个窗口
+        if (!msg.contactId) msg.contactId = _getDefaultContactId() || _activeContactId || _lastChatContactId || null;
         // 如果当前不在该联系人聊天上下文中，临时切换以确保消息写入正确的聊天记录
         var _msgContactId = msg.contactId;
         var _needRestoreContext = _msgContactId && _activeContactId !== _msgContactId;
@@ -13723,7 +13841,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const delay = Math.floor(Math.random() * (s.replyTimeMax - s.replyTimeMin + 1) + s.replyTimeMin) * 1000;
 
         // 捕获当前的联系人上下文，确保退出聊天后定时器触发时消息仍写入正确的聊天记录
-        var _replyContactId = _activeContactId;
+        var _replyContactId = _getDefaultContactId() || _activeContactId;
 
         replyTimer = setTimeout(() => {
             isTyping = false;
@@ -13971,8 +14089,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // _activeContactId || _lastChatContactId，若用户刚从联系人聊天进入日记页，
     // 系统消息会被写入该联系人的独立记录，导致主聊天界面看不到提醒。
     function addSystemMsgToMain(text, subtype) {
-        // 日记/信封等全局提醒：优先发送到最近聊天的联系人窗口，确保用户可见
-        var targetId = _activeContactId || _lastChatContactId || null;
+        // 单联系人模式：日记/信封等全局提醒直接发到默认联系人，确保用户可见
+        var targetId = _getDefaultContactId() || _activeContactId || _lastChatContactId || null;
         var _savedActive = _activeContactId;
         _activeContactId = targetId;
         try {
@@ -14550,7 +14668,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             options: data.options,
             correctIndexes: data.correctIndexes,
             countdown: data.countdown,
-            result: null
+            result: null,
+            contactId: _getDefaultContactId() || _activeContactId || null
         });
         saveData();
         // 直接打开抽牌界面（图二）
@@ -19232,6 +19351,16 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 s.tags.push(newTag.trim());
                 saveData();
                 writeDiarySelectedTag = newTag.trim();
+                // 立即在标签栏中插入新标签按钮（不用退出重进即可看到）
+                const newPill = document.createElement('div');
+                newPill.className = 'diary-write-tag-pill';
+                newPill.textContent = newTag.trim();
+                newPill.onclick = () => {
+                    writeDiarySelectedTag = (writeDiarySelectedTag === newTag.trim()) ? '' : newTag.trim();
+                    renderWriteDiaryTags();
+                };
+                // 插入到"+ 添加标签"按钮之前
+                tagRow.insertBefore(newPill, addPill);
                 renderWriteDiaryTags();
             }
         };
@@ -19425,6 +19554,24 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             /* Bug22修复：开启"一句一显示"且有多句时显示"下一句"按钮 */
             nextBtn.style.display = (s.sentenceMode && splitSentences(diary.content).length > 1) ? 'inline' : 'none';
         }
+        // DD按钮：仅单人日记、我发的、尚无回复且未dd过时显示
+        const summonBtn = document.getElementById('diaryDetailSummonBtn');
+        if (summonBtn) {
+            if (tab === 'single' && diary.sender === 'mine' && !diary.reply && !diary.summoned) {
+                summonBtn.style.display = 'inline';
+                summonBtn.classList.remove('summoned');
+                summonBtn.textContent = 'dd' + (appData.chatSettings.otherNickname || '对方');
+            } else if (tab === 'single' && diary.sender === 'mine' && !diary.reply && diary.summoned) {
+                summonBtn.style.display = 'inline';
+                summonBtn.classList.add('summoned');
+                summonBtn.textContent = '已dd';
+            } else {
+                summonBtn.style.display = 'none';
+            }
+        }
+        // 重置编辑按钮文字为"编辑"（防止上次编辑后残留"完成"）
+        const editBtnReset = document.getElementById('diaryEditBtn');
+        if (editBtnReset) editBtnReset.textContent = '编辑';
       } catch (e) { console.error('openDiaryDetail失败:', e); }
     }
     function showNextDiarySentence() {
@@ -19499,22 +19646,44 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if(!diary)return;
         const textEl=document.getElementById('diaryDetailText');
         if(!textEl)return;
+        const editBtn=document.getElementById('diaryEditBtn');
         if(textEl.contentEditable==='true'){
+            // 当前是编辑状态，点击=完成保存
             diary.content=textEl.innerText.trim();
             textEl.contentEditable='false';
             textEl.style.border='none';
             textEl.style.outline='none';
+            if(editBtn) editBtn.textContent='编辑';
             saveDataSync();
             renderDiaryList();
             // Bug6：编辑完只更新弹窗内容（重新渲染为格式化文本），不关弹窗，让用户立即看到更新
             openDiaryDetail(info.index);
         }else{
+            // 当前是查看状态，点击=进入编辑
             textEl.contentEditable='true';
             textEl.style.border='1px solid #e0e0e0';
             textEl.style.outline='none';
             textEl.style.borderRadius='4px';
             textEl.style.padding='4px';
             textEl.focus();
+            if(editBtn) editBtn.textContent='完成';
+        }
+    }
+    // 日记详情页DD对方回复（调用已有的summonSingleDiaryReply）
+    function summonCurrentDiary(){
+        const info=appData.currentViewingDiary;
+        if(!info)return;
+        if(info.tab!=='single')return;
+        const diary=appData.diary.singleList[info.index];
+        if(!diary)return;
+        if(diary.reply)return; // 已有回复
+        if(diary.summoned)return; // 已dd过
+        summonSingleDiaryReply(diary.id, null);
+        // 更新按钮状态
+        const btn=document.getElementById('diaryDetailSummonBtn');
+        if(btn){
+            btn.classList.add('summoned');
+            btn.textContent='已dd';
         }
     }
     function sendDiaryToChat() {
@@ -22589,14 +22758,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
     }
     function showContactAddOptions() {
-        document.getElementById('contactAddOverlay').classList.add('active');
-        document.getElementById('contactAddModal').classList.add('active');
-        document.getElementById('contactAddOptionsView').style.display = 'block';
-        document.getElementById('contactAddFormView').style.display = 'none';
-        document.getElementById('contactCreateGroupView').style.display = 'none';
-        // 群聊功能已移除
-        var _groupOpt = document.querySelector('[onclick="showCreateGroupForm()"]');
-        if (_groupOpt) _groupOpt.style.display = 'none';
+        // 单联系人模式：添加联系人功能已停用，仅保留按钮装饰
+        if (typeof toast === 'function') {
+            toast('当前版本仅支持一位联系人');
+        } else {
+            alert('当前版本仅支持一位联系人');
+        }
     }
     function showAddContactForm() {
         document.getElementById('contactAddOptionsView').style.display = 'none';
@@ -23272,8 +23439,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         // 仅在通知开关开启且不在聊天界面时显示
         if (!appData.globalSettings.notificationEnabled) return;
         if (document.getElementById('chatPage').style.display === 'flex') return;
-        // 优先使用消息上记录的联系人 ID，其次使用当前活跃联系人 ID，最后使用最后聊天的联系人 ID
-        _notifContactId = (msg && msg.contactId) || _activeContactId || _lastChatContactId || null;
+        // 优先使用默认联系人 ID，确保通知点击后进入正确的聊天窗口
+        _notifContactId = (msg && msg.contactId) || _getDefaultContactId() || _activeContactId || _lastChatContactId || null;
         
         const notifEl = document.getElementById('chatNotification');
         /* Bug7修复：将 contactId 存储到通知元素上，避免后续消息覆盖全局变量导致点错聊天 */
@@ -23364,16 +23531,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         try {
             refreshCustomIcons();
             // Bug7修复：优先使用通知元素上存储的 contactId，避免全局变量被后续消息覆盖
-            var targetContactId = (notifEl.dataset && notifEl.dataset.contactId) || _notifContactId || _lastChatContactId;
+            // 单联系人模式：兜底使用默认联系人，确保永远进入可见的聊天窗口
+            var targetContactId = (notifEl.dataset && notifEl.dataset.contactId) || _notifContactId || _getDefaultContactId() || _lastChatContactId;
             if (targetContactId && _findContactById(targetContactId)) {
                 _activeContactId = targetContactId;
+                _lastChatContactId = targetContactId;
                 var c = _findContactById(targetContactId);
                 if (c) {
                     appData.chatSettings.otherAvatar = c.avatar || '';
                     appData.chatSettings.otherNickname = c.name || '对方';
                 }
             } else {
-                _activeContactId = null;
+                _activeContactId = _getDefaultContactId() || null;
             }
             _notifContactId = null; // 清除通知联系人 ID
             document.getElementById('chatPage').style.display = 'flex';
@@ -23541,13 +23710,21 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (btn) { btn.textContent = origText; btn.disabled = false; }
     }
     function exportChatOnly() {
-        const blob = new Blob([JSON.stringify(appData.chatHistory, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '聊天记录_' + new Date().toISOString().slice(0,10) + '.json';
-        a.click();
-        URL.revokeObjectURL(url);
+        // 单联系人模式：导出默认联系人的聊天记录
+        var _savedActive = _activeContactId;
+        var _defaultCid = _getDefaultContactId();
+        if (_defaultCid) _activeContactId = _defaultCid;
+        try {
+            const blob = new Blob([JSON.stringify(appData.chatHistory, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '聊天记录_' + new Date().toISOString().slice(0,10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            _activeContactId = _savedActive;
+        }
     }
     function exportWordCardsOnly() {
         const blob = new Blob([JSON.stringify({wordCards: appData.wordCards, specialCards: appData.specialCards, wordGroups: appData.wordGroups, currentGroup: appData.currentGroup, contactWordCards: appData.contactWordCards || {}}, null, 2)], { type: 'application/json' });
@@ -24567,7 +24744,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const maxMs = Math.max(minMs, (s.proactiveMaxMin || 5) * 60 * 1000);
         const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
         // 捕获当前联系人上下文，确保退出聊天后定时器触发时消息仍写入正确的聊天记录
-        var _proactiveContactId = _activeContactId || _lastChatContactId;
+        var _proactiveContactId = _getDefaultContactId() || _activeContactId || _lastChatContactId;
         _proactiveTimer = setTimeout(() => {
             // 恢复触发时的联系人上下文，使主动消息写入正确的聊天记录
             var _savedContactId = _activeContactId;
@@ -26562,26 +26739,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // ========== 余额应用 ==========
     function openBalanceApp() {
         document.getElementById('balanceAppPage').style.display = 'flex';
-        // 恢复上次选择的联系人（持久化在 balanceData 中）
-        if (!_balanceContactId && appData.balanceData && appData.balanceData._balanceContactId) {
-            var _saved = appData.balanceData._balanceContactId;
-            var _contacts = (appData.contactList && appData.contactList.contacts) || [];
-            var _found = false;
-            for (var i = 0; i < _contacts.length; i++) {
-                if (_contacts[i].id === _saved) { _found = true; break; }
-            }
-            if (_found) _balanceContactId = _saved;
-        }
-        // Initialize _balanceContactId to first contact if still empty
-        if (!_balanceContactId) {
-            var contacts = (appData.contactList && appData.contactList.contacts) || [];
-            if (contacts.length > 0) _balanceContactId = contacts[0].id || '';
-        }
-        /* 持久化当前选择 */
-        if (appData.balanceData) {
-            appData.balanceData._balanceContactId = _balanceContactId;
-            if (typeof saveData === 'function') saveData();
-        }
+        // 单联系人模式：始终使用默认联系人
+        _balanceContactId = _getDefaultContactId() || '';
         renderBalanceApp();
     }
 
@@ -29452,13 +29611,8 @@ function mlsjIconClock() {
     var _balanceContactId = '';
     var _balanceRendering = false;
     function switchBalanceContact() {
-        if (_balanceRendering) return;
-        var sel = document.getElementById('balanceContactSelector');
-        _balanceContactId = sel ? sel.value : '';
-        /* 持久化当前选择的联系人，刷新后可恢复 */
-        if (appData.balanceData) appData.balanceData._balanceContactId = _balanceContactId;
-        if (typeof saveData === 'function') saveData();
-        renderBalanceApp();
+        // 单联系人模式：切换功能已停用
+        return;
     }
     // 余额模型：我方余额全局共享，对方余额按联系人独立
     function getBalanceData() {
@@ -29512,43 +29666,11 @@ function mlsjIconClock() {
     function renderBalanceApp() {
         _balanceRendering = true;
         try {
+        // 单联系人模式：始终使用默认联系人
+        _balanceContactId = _getDefaultContactId() || '';
         const bd = getBalanceData();
         const container = document.getElementById('balanceAppContent');
         let html = '';
-        // Populate header selector — only rebuild if contacts changed
-        var sel = document.getElementById('balanceContactSelector');
-        if (sel) {
-            var contacts = (appData.contactList && appData.contactList.contacts) || [];
-            var currentVal = sel.value;
-            var needsRebuild = false;
-            if (sel.options.length !== contacts.length || sel.options.length === 0) {
-                needsRebuild = true;
-            } else {
-                for (var i = 0; i < contacts.length; i++) {
-                    if (sel.options[i] && sel.options[i].value !== (contacts[i].id || '')) {
-                        needsRebuild = true; break;
-                    }
-                }
-            }
-            if (needsRebuild) {
-                var selHtml = '';
-                contacts.forEach(function(c) {
-                    selHtml += '<option value="' + (c.id || '') + '"' + (_balanceContactId === (c.id||'') ? ' selected' : '') + '>' + escapeHtml(c.name || c.nickname || '联系人') + '</option>';
-                });
-                if (contacts.length === 0) {
-                    selHtml = '<option value="">暂无联系人</option>';
-                    sel.disabled = true;
-                } else {
-                    sel.disabled = false;
-                }
-                sel.innerHTML = selHtml;
-            } else {
-                // Just update the selected option without rebuilding
-                for (var j = 0; j < sel.options.length; j++) {
-                    sel.options[j].selected = (_balanceContactId === sel.options[j].value);
-                }
-            }
-        }
         // Balance box
         /* Bug20修复：parseFloat(bd.other) || 0 对负数无效（-5 是 truthy），改用 isNaN 显式检查 */
         var _otherVal = parseFloat(bd.other);
@@ -30035,7 +30157,7 @@ function mlsjIconClock() {
             // 同一构建内复用同一时间戳（避免每次刷新都注册新 SW 导致 iOS 无限刷新）。
             // 发布新版本时修改 _SW_BUILD 即可触发所有用户重新拉取最新 SW，
             // 解决苹果用户因 sw.js 被缓存而必须开梯子才能访问的问题。
-            var _SW_BUILD = '20260808a';
+            var _SW_BUILD = '20260811a';
             var _SW_TS_KEY = 'swRegTs_' + _SW_BUILD;
             var _SW_TS = '';
             try { _SW_TS = localStorage.getItem(_SW_TS_KEY) || ''; } catch(e) {}
@@ -30096,7 +30218,7 @@ function mlsjIconClock() {
             body: body,
             tag: tag || 'qianyi-msg',
             icon: appData.chatSettings.otherAvatar || undefined,
-            data: { contactId: _notifContactId || _lastChatContactId }
+            data: { contactId: _notifContactId || _getDefaultContactId() || _lastChatContactId }
         });
     }
 
@@ -30172,9 +30294,10 @@ function mlsjIconClock() {
         // ===== 第一步：检查离开期间是否有已生成的未读消息（主动消息定时器可能在后台已触发） =====
         // 这一步不依赖 proactiveEnable，只要有通知开启就检查
         if (appData.globalSettings.notificationEnabled) {
-            // 临时切换到最后聊天的联系人上下文，检查该联系人的未读消息
+            // 单联系人模式：切换到默认联系人上下文检查未读消息
             var _savedCatchUpId = _activeContactId;
-            if (_lastChatContactId) _activeContactId = _lastChatContactId;
+            var _catchUpTargetId = _getDefaultContactId() || _lastChatContactId;
+            if (_catchUpTargetId) _activeContactId = _catchUpTargetId;
             var hist = appData.chatHistory;
             if (hist && hist.length > 0) {
                 // 找出离开期间收到的对方消息
@@ -30216,9 +30339,9 @@ function mlsjIconClock() {
                                         var _sn = new Notification(_name, {
                                             body: _body, tag: 'qianyi-msg-' + m.id,
                                             icon: (appData.chatSettings && appData.chatSettings.otherAvatar) || undefined,
-                                            data: { contactId: (m && m.contactId) || _notifContactId || _lastChatContactId }
+                                            data: { contactId: (m && m.contactId) || _notifContactId || _getDefaultContactId() || _lastChatContactId }
                                         });
-                                        _sn.onclick = function() { window.focus(); _notifContactId = (m && m.contactId) || _notifContactId || _lastChatContactId; openChatFromNotification(); _sn.close(); };
+                                        _sn.onclick = function() { window.focus(); _notifContactId = (m && m.contactId) || _notifContactId || _getDefaultContactId() || _lastChatContactId; openChatFromNotification(); _sn.close(); };
                                     } catch(e) {}
                                 }
                             }
@@ -30250,8 +30373,8 @@ function mlsjIconClock() {
         if (allCards.length === 0) return;
 
         var otherName = s.otherNickname || '对方';
-        // 捕获联系人上下文，确保补发消息写入正确的聊天记录
-        var _catchUpContactId = _activeContactId || _lastChatContactId;
+        // 单联系人模式：使用默认联系人上下文，确保补发消息写入正确的聊天记录
+        var _catchUpContactId = _getDefaultContactId() || _activeContactId || _lastChatContactId;
         // 免打扰模式下不补发主动消息
         if (_catchUpContactId) {
             var _catchUpContact = _findContactById(_catchUpContactId);
@@ -30316,8 +30439,8 @@ function mlsjIconClock() {
     function _ensureNotifMsgInHistory(msg) {
         if (!msg || !msg.id) return;
         try {
-            // 确定消息应写入的联系人上下文（与 showChatNotification 的 _notifContactId 逻辑一致）
-            var _targetCid = msg.contactId || _activeContactId || _lastChatContactId || null;
+            // 确定消息应写入的联系人上下文（单联系人模式：优先使用默认联系人）
+            var _targetCid = msg.contactId || _getDefaultContactId() || _activeContactId || _lastChatContactId || null;
             if (!msg.contactId) msg.contactId = _targetCid; // 确保消息携带正确的 contactId
             var _savedEnsureId = _activeContactId;
             if (_targetCid) _activeContactId = _targetCid;
@@ -30349,8 +30472,8 @@ function mlsjIconClock() {
         if (msg && msg.id && isMsgNotified(msg.id)) return;
         // 标记已通知（在调用逻辑前标记，避免并发时重复）
         if (msg && msg.id) markMsgNotified(msg.id);
-        // 记录通知对应的联系人 ID，便于点击系统通知时恢复正确的聊天上下文
-        _notifContactId = (msg && msg.contactId) || _activeContactId || _lastChatContactId || _notifContactId || null;
+        // 记录通知对应的联系人 ID（单联系人模式：优先使用默认联系人）
+        _notifContactId = (msg && msg.contactId) || _getDefaultContactId() || _activeContactId || _lastChatContactId || _notifContactId || null;
         var _hidden = document.hidden;
         var _onChatPage = document.getElementById('chatPage') && document.getElementById('chatPage').style.display === 'flex';
         if (_hidden) {
