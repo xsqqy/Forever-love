@@ -12779,13 +12779,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 if (history[i].sender === 'other') otherMsgCount++;
                 else if (history[i].sender === 'mine') myMsgCount++;
             }
-            let prevTime = prevMsg ? prevMsg.time : 0;
+            let prevTime = prevMsg ? (prevMsg.time || prevMsg.id || 0) : 0;
             for (let i = startIdx; i < history.length; i++) {
                 const msg = history[i];
-                if (prevTime && msg.time - prevTime > GAP_MS) {
-                    container.appendChild(buildTimeSeparator(msg.time));
+                const msgTime = msg.time || msg.id || 0;
+                if (prevTime && msgTime - prevTime > GAP_MS) {
+                    container.appendChild(buildTimeSeparator(msgTime));
                 }
-                prevTime = msg.time;
+                prevTime = msgTime;
                 const isFirst = msg.sender !== lastSender;
                 lastSender = msg.sender;
                 if (msg.sender === 'other') otherMsgCount++;
@@ -12827,10 +12828,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 
         for (let i = startIdx; i < history.length; i++) {
             const msg = history[i];
-            if (prevTime && msg.time - prevTime > GAP_MS) {
-                fragment.appendChild(buildTimeSeparator(msg.time));
+            const msgTime = msg.time || msg.id || 0;
+            if (prevTime && msgTime - prevTime > GAP_MS) {
+                fragment.appendChild(buildTimeSeparator(msgTime));
             }
-            prevTime = msg.time;
+            prevTime = msgTime;
             const isFirst = msg.sender !== lastSender;
             const isLast = i === history.length - 1 || (history[i + 1] && history[i + 1].sender !== msg.sender);
             lastSender = msg.sender;
@@ -12851,7 +12853,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const month = date.getMonth() + 1;
         const day = date.getDate();
-        row.innerHTML = `<span>${month}月${day}日 ${hours}:${minutes}</span>`;
+        // 跨天时显示日期，同一天只显示时间
+        const now = new Date();
+        const isSameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+        if (isSameDay) {
+            row.innerHTML = `<span>${hours}:${minutes}</span>`;
+        } else {
+            row.innerHTML = `<span>${month}月${day}日 ${hours}:${minutes}</span>`;
+        }
         return row;
     }
 
@@ -13682,11 +13691,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         // 批量模式下不立即渲染，由调用方统一触发
         if (_batchRendering) return;
-        // ===== 修复：先等待数据完全写入 IndexedDB，再更新界面和通知 =====
-        // 确保数据落盘后再渲染/通知，避免通知弹了但数据未持久化导致消息丢失
-        await saveDataAsync();           // 1. 先保存，等待 IndexedDB 写入完成
-        renderMessages(true);            // 2. 再渲染界面
+        // 确保消息有 time 字段（用于5分钟间隔时间分隔符）
+        if (!msg.time) msg.time = msg.id || Date.now();
+        // ===== 修复：先渲染界面，再异步保存 =====
+        // 原 await saveDataAsync() 会阻塞渲染，导致发送消息后界面延迟显示
+        renderMessages(true);            // 1. 先渲染界面（用户立即看到消息）
         scrollToBottom();
+        // 2. 异步保存（不阻塞界面）
+        saveData();
         // 触发站内消息通知（仅对方发来的消息）
         if (msg.sender === 'other') {
             showChatNotification(msg);   // 3. 最后通知
@@ -23459,6 +23471,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                 };
                 Object.keys(keyMap).forEach(function(key) {
                     if (!selectedKeys[key]) {
+                        // 聊天记录需要联系人列表（联系人聊天记录存储在联系人对象中）
+                        if (key === 'contactList' && selectedKeys.chatHistory) { return; }
                         var appKey = keyMap[key] || key;
                         if (fullData[appKey] !== undefined) {
                             delete fullData[appKey];
@@ -23630,7 +23644,18 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         }
 
                         if (Object.keys(filteredData).length > 0) {
-                            importMergeDeep(appData, filteredData);
+                            // chatHistory 是通过 getter/setter 定义的，importMergeDeep 的深度合并
+                            // 可能不正确触发 setter。先单独处理 chatHistory，再合并其余字段。
+                            if (filteredData.chatHistory !== undefined) {
+                                var _savedImportId = _activeContactId;
+                                _activeContactId = null; // 确保写入主聊天记录
+                                appData.chatHistory = filteredData.chatHistory;
+                                _activeContactId = _savedImportId;
+                                delete filteredData.chatHistory;
+                            }
+                            if (Object.keys(filteredData).length > 0) {
+                                importMergeDeep(appData, filteredData);
+                            }
                         }
                         saveDataSync(); // 立即同步保存到 IndexedDB，确保刷新前数据已写入
                         // 恢复 IndexedDB 图片数据
