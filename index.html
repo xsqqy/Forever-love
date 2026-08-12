@@ -11099,8 +11099,11 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                             merged.contactList.contacts.push(_curContactMap[cid]);
                         });
                     }
-                    // --- 3. 设置类字段：保留当前 appData 值（来自 localStorage，始终最新） ---
-                    //   IndexedDB 可能因异步写入未完成而保存了旧设置，直接覆盖会导致设置丢失
+                    // --- 3. 设置类字段：IndexedDB 优先，localStorage 仅补充缺失的键 ---
+                    //   修复：index17 起 localStorage 不再写入，旧 localStorage 数据会覆盖
+                    //   IndexedDB 中的最新设置（如 momentSplice、spliceMin/Max 等），导致
+                    //   拼接字卡等功能在刷新后失效。改为深度合并：IndexedDB 为权威源，
+                    //   仅当 IndexedDB 缺少某子键时才从 localStorage 补充。
                     //   注意：contactList 已在步骤2中合并处理，不在此列表中避免覆盖合并结果
                     //   注意：specialCards 已在步骤3a中合并处理（取并集），不在此列表中避免覆盖合并结果
                     var _preferCurrentKeys = ['chatSettings', 'globalSettings',
@@ -11109,10 +11112,38 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
                         'appNames',
                         'widgetOffsets', 'balanceData', 'nudgeCards', 'diary', 'letter',
                         'moments', 'lifeDeathData'];
-                    _preferCurrentKeys.forEach(function(key) {
-                        if (appData[key] !== undefined && appData[key] !== null) {
-                            merged[key] = appData[key];
+                    function _deepMergePreferIDB(idbVal, lsVal) {
+                        if (lsVal === undefined || lsVal === null) return idbVal;
+                        if (idbVal === undefined || idbVal === null) return lsVal;
+                        if (typeof idbVal !== 'object' || typeof lsVal !== 'object' ||
+                            Array.isArray(idbVal) || Array.isArray(lsVal)) {
+                            return idbVal;  // 非普通对象：IndexedDB 优先
                         }
+                        // 两个都是普通对象：以 IndexedDB 为基础，补充 localStorage 中独有的键
+                        for (var subkey in lsVal) {
+                            if (!(subkey in idbVal)) {
+                                idbVal[subkey] = lsVal[subkey];
+                            } else if (typeof idbVal[subkey] === 'object' && idbVal[subkey] !== null &&
+                                       !Array.isArray(idbVal[subkey]) &&
+                                       typeof lsVal[subkey] === 'object' && lsVal[subkey] !== null &&
+                                       !Array.isArray(lsVal[subkey])) {
+                                // 递归合并嵌套对象
+                                _deepMergePreferIDB(idbVal[subkey], lsVal[subkey]);
+                            }
+                        }
+                        return idbVal;
+                    }
+                    _preferCurrentKeys.forEach(function(key) {
+                        var _idbVal = merged[key];
+                        var _curVal = appData[key];
+                        if (_curVal === undefined || _curVal === null) return;
+                        if (_idbVal === undefined || _idbVal === null) {
+                            merged[key] = _curVal;
+                        } else if (typeof _idbVal === 'object' && _idbVal !== null && !Array.isArray(_idbVal) &&
+                                   typeof _curVal === 'object' && _curVal !== null && !Array.isArray(_curVal)) {
+                            _deepMergePreferIDB(_idbVal, _curVal);
+                        }
+                        // 非对象类型：保留 IndexedDB 值（不覆盖）
                     });
                     // --- 3c. 图片/富媒体字段：IndexedDB 优先（localStorage 可能因配额不足被截断为空） ---
                     //   仅当 IndexedDB 无内容时才用 localStorage 补充；IndexedDB 有内容时保留其完整数据，
@@ -36607,30 +36638,72 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     if(!s.url){toast('该歌曲没有链接，无法下载');return;}
     if(s.localAudio){toast('该歌曲已保存到本地');return;}
 
+    /* data: 或 blob: URL 直接转 blob */
+    if(s.url.indexOf('data:')===0||s.url.indexOf('blob:')===0){
+      _downloadingSongs.add(id);
+      toast('正在保存「'+s.name+'」…');
+      fetch(s.url).then(function(r){return r.blob();}).then(function(blob){
+        _saveDownloadedAudio(id,s,blob);
+      }).catch(function(){
+        _downloadingSongs.delete(id);
+        toast('保存失败，请重试');
+      });
+      return;
+    }
+
     _downloadingSongs.add(id);
     toast('正在下载「'+s.name+'」…');
 
-    fetch(s.url).then(function(response){
-      if(!response.ok)throw new Error('HTTP '+response.status);
-      return response.blob();
-    }).then(function(blob){
-      if(blob.size<1024)throw new Error('文件太小，可能不是有效音频');
-      var audioKey='lt_audio_'+s.id;
-      window.saveImgDB(audioKey,blob).then(function(ok){
+    /* 下载策略：先直连，失败后依次尝试 CORS 代理 */
+    var _dlTargets=[
+      s.url,
+      'https://corsproxy.io/?url='+encodeURIComponent(s.url),
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(s.url),
+      'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(s.url)
+    ];
+    var _dlIdx=0;
+
+    function _tryNext(){
+      if(_dlIdx>=_dlTargets.length){
         _downloadingSongs.delete(id);
-        if(ok){
-          s.localAudio=true;
-          save(K.songs,songs);
-          toast('「'+s.name+'」已保存到本地，链接失效也不怕了');
-          renderList();
-          if(playstate.currentSongId===id)renderPlayer();
-        }else{
-          toast('保存失败，请重试');
-        }
+        toast('下载失败：链接可能已失效，或所有下载方式均被拒绝');
+        return;
+      }
+      var _curUrl=_dlTargets[_dlIdx];
+      var _isProxy=_dlIdx>0;
+      fetch(_curUrl).then(function(response){
+        if(!response.ok)throw new Error('HTTP '+response.status);
+        return response.blob();
+      }).then(function(blob){
+        if(blob.size<1024)throw new Error('文件太小');
+        /* 代理可能返回错误页面（HTML），检查 content-type */
+        if(_isProxy&&blob.type&&blob.type.indexOf('text/html')>=0)throw new Error('代理返回错误页面');
+        _saveDownloadedAudio(id,s,blob);
+      }).catch(function(){
+        _dlIdx++;
+        _tryNext();
       });
+    }
+    _tryNext();
+  }
+
+  /* 保存下载的音频到 IndexedDB */
+  function _saveDownloadedAudio(id,s,blob){
+    var audioKey='lt_audio_'+s.id;
+    window.saveImgDB(audioKey,blob).then(function(ok){
+      _downloadingSongs.delete(id);
+      if(ok){
+        s.localAudio=true;
+        save(K.songs,songs);
+        toast('「'+s.name+'」已保存到本地，链接失效也不怕了');
+        renderList();
+        if(playstate.currentSongId===id)renderPlayer();
+      }else{
+        toast('保存失败，请重试');
+      }
     }).catch(function(){
       _downloadingSongs.delete(id);
-      toast('下载失败：链接可能已失效，或该网站不支持跨域下载');
+      toast('保存失败，请重试');
     });
   }
 
