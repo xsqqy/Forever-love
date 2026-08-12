@@ -35684,6 +35684,8 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   }
 
   /* ============ 播放逻辑 ============ */
+  /* _audioReloadKey：防止 error 事件导致的无限重载循环 */
+  var _audioReloadKey=null;
   function setupAudioListeners(){
     audio.addEventListener('timeupdate',function(){
       var s=currentSong();
@@ -35697,30 +35699,32 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       if(playstate.currentTime){try{audio.currentTime=playstate.currentTime;}catch(e){}}
       updateProgress();
     });
+    audio.addEventListener('durationchange',function(){
+      updateProgress();
+    });
     audio.addEventListener('ended',handleEnded);
     audio.addEventListener('play',function(){playstate.isPlaying=true;updatePlayUI();});
     audio.addEventListener('pause',function(){playstate.isPlaying=false;updatePlayUI();save(K.play,playstate);});
     audio.addEventListener('error',function(){
-      /* 播放失败时，如果正在用本地缓存，自动清除坏缓存并回退到原始链接 */
-      if(_audioFallbackState.usingCache&&_audioFallbackState.songId&&_audioFallbackState.origUrl&&!_audioFallbackState.fellBack){
+      /* 缓存播放失败时，临时回退到原始链接——但不删除缓存
+         （缓存可能本身有效，错误可能来自切歌竞态等其他原因）。
+         仅当回退到原始 URL 后仍然失败，才判定缓存确实损坏。 */
+      if(_audioFallbackState.usingCache&&!_audioFallbackState.fellBack&&
+         _audioFallbackState.songId&&_audioFallbackState.origUrl){
         _audioFallbackState.fellBack=true;
-        var badId=_audioFallbackState.songId;
         var origUrl=_audioFallbackState.origUrl;
-        /* 清除损坏的本地缓存 */
-        var badSong=songs.find(function(x){return x.id===badId;});
-        if(badSong&&badSong.localAudio){
-          badSong.localAudio=false;
-          window.removeImgDB('lt_audio_'+badId);
-          save(K.songs,songs);
-          renderList();
-          if(playstate.currentSongId===badId)renderPlayer();
-          toast('本地缓存已损坏，已自动切换到原始链接');
-        }
+        var fbSongId=_audioFallbackState.songId;
+        /* 标记本次回退，用于原始 URL 也失败时判定缓存损坏 */
+        _audioReloadKey=fbSongId+'_fallback';
         _revokeObjectURL();
         audio.src=origUrl;
         try{audio.load();}catch(e){}
         if(playstate.isPlaying){
-          try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;updatePlayUI();}
+          try{audio.play().catch(function(){
+            /* 原始链接也播放失败：说明链接可能已失效，不是缓存的问题 */
+            playstate.isPlaying=false;updatePlayUI();
+            toast('该歌曲链接可能已失效');
+          });}catch(e){playstate.isPlaying=false;updatePlayUI();}
         }
       }
     });
@@ -35740,9 +35744,41 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   function play(){
     var s=currentSong();if(!s)return;
     playstate.isPlaying=true;
-    if(s.url){try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;}}
-    else{startSim();}
+    if(s.url){
+      try{
+        audio.play().then(function(){
+          playstate.isPlaying=true;updatePlayUI();
+        }).catch(function(){
+          /* audio.play() 失败：audio 可能处于 error 状态或 src 未就绪。
+             重新加载音源后再试一次。 */
+          playstate.isPlaying=false;updatePlayUI();
+          _reloadAndPlay(s);
+        });
+      }catch(e){
+        playstate.isPlaying=false;updatePlayUI();
+        _reloadAndPlay(s);
+      }
+    }else{
+      startSim();
+    }
     save(K.play,playstate);updatePlayUI();
+  }
+  /* 重新加载音源并播放（用于 audio 处于 error 状态时恢复） */
+  function _reloadAndPlay(s){
+    if(!s||!s.url)return;
+    _getAudioSrc(s,function(src){
+      if(playstate.currentSongId!==s.id)return;
+      if(!src)return;
+      audio.src=src;
+      try{audio.load();}catch(e){}
+      try{
+        audio.play().then(function(){
+          playstate.isPlaying=true;updatePlayUI();
+        }).catch(function(){
+          playstate.isPlaying=false;updatePlayUI();
+        });
+      }catch(e){playstate.isPlaying=false;updatePlayUI();}
+    });
   }
   function pause(){
     playstate.isPlaying=false;
@@ -35760,21 +35796,32 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     if(!s.duration&&!s.url)s.duration=180+Math.floor(Math.random()*120);
     playedSongs.push(id);_ltPlayedModified=true;save(K.played,playedSongs);
     stopSim();
+    /* 切歌前先重置 audio 状态：移除旧 src 避免 error 状态残留 */
+    try{audio.pause();}catch(e){}
+    try{audio.removeAttribute('src');}catch(e){}
+    _revokeObjectURL();
+    /* 立即更新 UI，重置时间显示（不等 loadedmetadata 事件） */
     save(K.play,playstate);
     renderPlayer();renderProfileCard();renderMini();
+    updateProgress();
     if(s.url){
       /* 有本地缓存则用缓存，否则用原始链接 */
       _getAudioSrc(s,function(src){
         if(playstate.currentSongId!==id)return; /* 歌曲已切换，放弃本次加载 */
+        if(!src){
+          playstate.isPlaying=false;updatePlayUI();
+          return;
+        }
         audio.src=src;
         try{audio.load();}catch(e){}
         if(fromStart!==false){
-          try{audio.play().then(function(){playstate.isPlaying=true;updatePlayUI();}).catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;updatePlayUI();}
+          try{audio.play().then(function(){playstate.isPlaying=true;updatePlayUI();}).catch(function(){
+            playstate.isPlaying=false;updatePlayUI();
+          });}catch(e){playstate.isPlaying=false;updatePlayUI();}
           save(K.play,playstate);
         }
       });
     }else{
-      try{audio.pause();audio.removeAttribute('src');}catch(e){}
       if(fromStart!==false){
         playstate.isPlaying=true;startSim();updatePlayUI();
         save(K.play,playstate);
@@ -36644,22 +36691,31 @@ function bindSwipeRightToExit(pageEl, exitFn) {
 
   /* 获取音频播放地址：有本地缓存则用缓存，否则用原始链接 */
   function _getAudioSrc(song,callback){
-    _revokeObjectURL();
+    /* 不在此处 revoke 旧 URL：旧 URL 仍被 audio 元素引用，提前 revoke 会导致
+       audio 进入 error 状态。旧 URL 在新 Object URL 创建后由调用方清理。 */
     if(!song||!song.url){callback(null);return;}
     /* 重置回退状态 */
     _audioFallbackState={usingCache:false,songId:song.id,origUrl:song.url,fellBack:false};
     if(song.localAudio&&window.loadImgDB){
       var audioKey='lt_audio_'+song.id;
+      /* forceIDB=true：直接从 IndexedDB 读取 Blob，避免 localStorage 返回字符串
+         导致 URL.createObjectURL(string) 崩溃 */
       window.loadImgDB(audioKey,function(blob){
-        if(blob){
-          _currentObjectURL=URL.createObjectURL(blob);
-          _audioFallbackState.usingCache=true; /* 标记正在使用缓存 */
+        if(blob instanceof Blob){
+          /* 先创建新 URL，再清理旧 URL，避免中间态 audio.src 指向已销毁的 URL */
+          var newURL=URL.createObjectURL(blob);
+          _revokeObjectURL();
+          _currentObjectURL=newURL;
+          _audioFallbackState.usingCache=true;
           callback(_currentObjectURL);
+        }else if(typeof blob==='string'){
+          /* localStorage 残留的字符串数据，不是有效 Blob，回退到原始链接 */
+          callback(song.url);
         }else{
           /* 本地缓存丢失，回退到原始链接 */
           callback(song.url);
         }
-      });
+      },true);
     }else{
       callback(song.url);
     }
@@ -36739,35 +36795,32 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     if(blob.size<51200) return Promise.resolve(false);
     var ct=(blob.type||'').toLowerCase();
     /* 明确是音频类型 */
-    if(ct.indexOf('audio/')>=0||ct.indexOf('application/octet-stream')>=0||ct.indexOf('binary/')>=0) return Promise.resolve(true);
+    if(ct.indexOf('audio/')>=0) return Promise.resolve(true);
     /* 明确不是音频的错误类型 */
     if(ct.indexOf('text/html')>=0||ct.indexOf('text/plain')>=0||ct.indexOf('application/json')>=0||
        ct.indexOf('text/xml')>=0||ct.indexOf('application/xml')>=0) return Promise.resolve(false);
-    /* 代理返回的未知类型：检查前几个字节是否为音频文件头 */
-    if(isProxy){
-      return new Promise(function(resolve){
-        try{
-          var reader=new FileReader();
-          reader.onload=function(){
-            var arr=new Uint8Array(reader.result);
-            var header='';
-            for(var i=0;i<Math.min(4,arr.length);i++){header+=String.fromCharCode(arr[i]);}
-            /* MP3: ID3 或 FF FB, FLAC: fLaC, WAV: RIFF, OGG: OggS */
-            if(header.indexOf('ID3')===0||header.indexOf('fLaC')===0||
-               header.indexOf('RIFF')===0||header.indexOf('OggS')===0||
-               (arr[0]===0xFF&&(arr[1]===0xFB||arr[1]===0xF3||arr[1]===0xF2))){
-              resolve(true);
-            }else{
-              resolve(false);
-            }
-          };
-          reader.onerror=function(){resolve(false);};
-          reader.readAsArrayBuffer(blob.slice(0,4));
-        }catch(e){resolve(false);}
-      });
-    }
-    /* 直连返回的未知类型：假设可能是音频（某些 CDN 不返回正确 content-type） */
-    return Promise.resolve(true);
+    /* 所有不确定的类型（包括 application/octet-stream、空 content-type 等）
+       都通过文件头验证，不再盲目信任 content-type。
+       常见音频文件头：ID3/FF FB (MP3), fLaC (FLAC), RIFF (WAV), OggS (OGG) */
+    return new Promise(function(resolve){
+      try{
+        var reader=new FileReader();
+        reader.onload=function(){
+          var arr=new Uint8Array(reader.result);
+          var header='';
+          for(var i=0;i<Math.min(4,arr.length);i++){header+=String.fromCharCode(arr[i]);}
+          if(header.indexOf('ID3')===0||header.indexOf('fLaC')===0||
+             header.indexOf('RIFF')===0||header.indexOf('OggS')===0||
+             (arr[0]===0xFF&&(arr[1]===0xFB||arr[1]===0xF3||arr[1]===0xF2))){
+            resolve(true);
+          }else{
+            resolve(false);
+          }
+        };
+        reader.onerror=function(){resolve(false);};
+        reader.readAsArrayBuffer(blob.slice(0,4));
+      }catch(e){resolve(false);}
+    });
   }
 
   /* 保存下载的音频到 IndexedDB */
@@ -36797,14 +36850,21 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     window.removeImgDB('lt_audio_'+id);
     s.localAudio=false;
     save(K.songs,songs);
-    /* 如果正在播放这首歌，切换回原始链接 */
+    /* 如果正在播放这首歌，重新加载原始链接 */
     if(playstate.currentSongId===id&&s.url){
+      /* 重置回退状态，避免旧状态干扰 */
+      _audioFallbackState={usingCache:false,songId:id,origUrl:s.url,fellBack:false};
       _revokeObjectURL();
+      /* 先清除旧 src 再设置新 src，避免 error 状态残留 */
+      try{audio.pause();}catch(e){}
+      try{audio.removeAttribute('src');}catch(e){}
       audio.src=s.url;
       try{audio.load();}catch(e){}
       var wasPlaying=playstate.isPlaying;
       try{audio.currentTime=playstate.currentTime||0;}catch(e){}
-      if(wasPlaying){try{audio.play().catch(function(){});}catch(e){}}
+      if(wasPlaying){
+        try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;updatePlayUI();}
+      }
     }
     toast('已删除本地缓存');
     renderList();
@@ -36821,16 +36881,20 @@ function bindSwipeRightToExit(pageEl, exitFn) {
           /* 恢复时也优先使用本地缓存 */
           _getAudioSrc(s,function(src){
             if(playstate.currentSongId!==s.id)return;
+            if(!src){playstate.isPlaying=false;updatePlayUI();return;}
             audio.src=src;
             try{audio.load();}catch(e){}
             if(playstate.isPlaying){
-              try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;}
+              try{audio.play().catch(function(){
+                playstate.isPlaying=false;updatePlayUI();
+              });}catch(e){playstate.isPlaying=false;updatePlayUI();}
             }
           });
         }else{
           if(playstate.isPlaying){startSim();}
         }
         renderPlayer();renderProfileCard();renderMini();
+        updateProgress();
         maybeScheduleProb(s);
       }
     }
