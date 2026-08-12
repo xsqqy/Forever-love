@@ -35700,7 +35700,30 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     audio.addEventListener('ended',handleEnded);
     audio.addEventListener('play',function(){playstate.isPlaying=true;updatePlayUI();});
     audio.addEventListener('pause',function(){playstate.isPlaying=false;updatePlayUI();save(K.play,playstate);});
-    audio.addEventListener('error',function(){ /* 静默，模拟回退 */ });
+    audio.addEventListener('error',function(){
+      /* 播放失败时，如果正在用本地缓存，自动清除坏缓存并回退到原始链接 */
+      if(_audioFallbackState.usingCache&&_audioFallbackState.songId&&_audioFallbackState.origUrl&&!_audioFallbackState.fellBack){
+        _audioFallbackState.fellBack=true;
+        var badId=_audioFallbackState.songId;
+        var origUrl=_audioFallbackState.origUrl;
+        /* 清除损坏的本地缓存 */
+        var badSong=songs.find(function(x){return x.id===badId;});
+        if(badSong&&badSong.localAudio){
+          badSong.localAudio=false;
+          window.removeImgDB('lt_audio_'+badId);
+          save(K.songs,songs);
+          renderList();
+          if(playstate.currentSongId===badId)renderPlayer();
+          toast('本地缓存已损坏，已自动切换到原始链接');
+        }
+        _revokeObjectURL();
+        audio.src=origUrl;
+        try{audio.load();}catch(e){}
+        if(playstate.isPlaying){
+          try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;updatePlayUI();}
+        }
+      }
+    });
   }
   function startSim(){
     stopSim();
@@ -36390,6 +36413,13 @@ function bindSwipeRightToExit(pageEl, exitFn) {
         if(s.url){
           if(s.localAudio){
             menuItems.push({label:'删除本地缓存',onClick:function(){removeLocalAudio(id);}});
+            menuItems.push({label:'重新下载（修复缓存）',onClick:function(){
+              /* 先清除旧缓存再重新下载 */
+              window.removeImgDB('lt_audio_'+id);
+              s.localAudio=false;
+              save(K.songs,songs);
+              downloadSong(id);
+            }});
           }else{
             menuItems.push({label:'下载到本地',onClick:function(){downloadSong(id);}});
           }
@@ -36602,6 +36632,8 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   /* ============ 音频本地缓存（防止 MP3 链接失效） ============ */
   var _currentObjectURL=null;       /* 当前 Object URL，用于切换歌曲时释放内存 */
   var _downloadingSongs=new Set();  /* 正在下载中的歌曲 ID，防止重复下载 */
+  /* 音频回退状态：跟踪当前播放源，缓存播放失败时自动回退到原始链接 */
+  var _audioFallbackState={usingCache:false,songId:null,origUrl:null,fellBack:false};
 
   function _revokeObjectURL(){
     if(_currentObjectURL){
@@ -36614,11 +36646,14 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   function _getAudioSrc(song,callback){
     _revokeObjectURL();
     if(!song||!song.url){callback(null);return;}
+    /* 重置回退状态 */
+    _audioFallbackState={usingCache:false,songId:song.id,origUrl:song.url,fellBack:false};
     if(song.localAudio&&window.loadImgDB){
       var audioKey='lt_audio_'+song.id;
       window.loadImgDB(audioKey,function(blob){
         if(blob){
           _currentObjectURL=URL.createObjectURL(blob);
+          _audioFallbackState.usingCache=true; /* 标记正在使用缓存 */
           callback(_currentObjectURL);
         }else{
           /* 本地缓存丢失，回退到原始链接 */
@@ -36643,7 +36678,14 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       _downloadingSongs.add(id);
       toast('正在保存「'+s.name+'」…');
       fetch(s.url).then(function(r){return r.blob();}).then(function(blob){
-        _saveDownloadedAudio(id,s,blob);
+        _validateAudioBlob(blob,true).then(function(valid){
+          if(valid){
+            _saveDownloadedAudio(id,s,blob);
+          }else{
+            _downloadingSongs.delete(id);
+            toast('保存失败：数据不是有效音频');
+          }
+        });
       }).catch(function(){
         _downloadingSongs.delete(id);
         toast('保存失败，请重试');
@@ -36671,20 +36713,61 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       }
       var _curUrl=_dlTargets[_dlIdx];
       var _isProxy=_dlIdx>0;
+      var _validatedBlob=null;
       fetch(_curUrl).then(function(response){
         if(!response.ok)throw new Error('HTTP '+response.status);
         return response.blob();
       }).then(function(blob){
-        if(blob.size<1024)throw new Error('文件太小');
-        /* 代理可能返回错误页面（HTML），检查 content-type */
-        if(_isProxy&&blob.type&&blob.type.indexOf('text/html')>=0)throw new Error('代理返回错误页面');
-        _saveDownloadedAudio(id,s,blob);
+        _validatedBlob=blob;
+        /* 严格验证：确保是音频而非错误页面 */
+        return _validateAudioBlob(blob,_isProxy);
+      }).then(function(valid){
+        if(!valid)throw new Error('非有效音频');
+        _saveDownloadedAudio(id,s,_validatedBlob);
       }).catch(function(){
         _dlIdx++;
         _tryNext();
       });
     }
     _tryNext();
+  }
+
+  /* 验证 blob 是否为有效音频（始终返回 Promise<boolean>） */
+  function _validateAudioBlob(blob,isProxy){
+    if(!blob||blob.size<1024) return Promise.resolve(false);
+    /* 音频文件通常 > 50KB，错误页面通常 < 50KB */
+    if(blob.size<51200) return Promise.resolve(false);
+    var ct=(blob.type||'').toLowerCase();
+    /* 明确是音频类型 */
+    if(ct.indexOf('audio/')>=0||ct.indexOf('application/octet-stream')>=0||ct.indexOf('binary/')>=0) return Promise.resolve(true);
+    /* 明确不是音频的错误类型 */
+    if(ct.indexOf('text/html')>=0||ct.indexOf('text/plain')>=0||ct.indexOf('application/json')>=0||
+       ct.indexOf('text/xml')>=0||ct.indexOf('application/xml')>=0) return Promise.resolve(false);
+    /* 代理返回的未知类型：检查前几个字节是否为音频文件头 */
+    if(isProxy){
+      return new Promise(function(resolve){
+        try{
+          var reader=new FileReader();
+          reader.onload=function(){
+            var arr=new Uint8Array(reader.result);
+            var header='';
+            for(var i=0;i<Math.min(4,arr.length);i++){header+=String.fromCharCode(arr[i]);}
+            /* MP3: ID3 或 FF FB, FLAC: fLaC, WAV: RIFF, OGG: OggS */
+            if(header.indexOf('ID3')===0||header.indexOf('fLaC')===0||
+               header.indexOf('RIFF')===0||header.indexOf('OggS')===0||
+               (arr[0]===0xFF&&(arr[1]===0xFB||arr[1]===0xF3||arr[1]===0xF2))){
+              resolve(true);
+            }else{
+              resolve(false);
+            }
+          };
+          reader.onerror=function(){resolve(false);};
+          reader.readAsArrayBuffer(blob.slice(0,4));
+        }catch(e){resolve(false);}
+      });
+    }
+    /* 直连返回的未知类型：假设可能是音频（某些 CDN 不返回正确 content-type） */
+    return Promise.resolve(true);
   }
 
   /* 保存下载的音频到 IndexedDB */
