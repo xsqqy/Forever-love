@@ -6589,6 +6589,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
 .lt-act svg{width:24px;height:24px;display:block;}
 .lt-act-label{font-size:10px;color:var(--lt-sub);}
 .lt-act.active .lt-act-label{color:var(--lt-text);}
+#lt-act-dl.active svg,#lt-act-dl.active .lt-act-label{color:#34c759;}
 
 /* progress */
 .lt-progress{padding:6px 20px 2px;flex-shrink:0;}
@@ -9835,12 +9836,14 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
             });
         } catch(e) { console.error('saveImgDB error:', e); return false; }
     };
-    window.loadImgDB = async function(key, callback) {
+    window.loadImgDB = async function(key, callback, forceIDB) {
         try {
-            // 先查 localStorage（兼容旧数据）
-            var lsVal = null;
-            try { lsVal = localStorage.getItem(key); } catch(e) {}
-            if (lsVal) { callback(lsVal); return; }
+            // 先查 localStorage（兼容旧数据），除非强制从 IndexedDB 读取
+            if (!forceIDB) {
+                var lsVal = null;
+                try { lsVal = localStorage.getItem(key); } catch(e) {}
+                if (lsVal) { callback(lsVal); return; }
+            }
             // 再查 IndexedDB
             const db = await imgDBOpen();
             if (!db) { callback(null); return; }
@@ -18342,11 +18345,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     // 单人日记对方字卡回复触发器
     function triggerDiaryReply(diaryId) {
         const s = appData.diary.settings;
-        const allCards = getAllVisibleWordCards();
-        if (allCards.length === 0) return;
-        // 有概率回复（概率由设置中的replyProb决定，默认80%）
-        const replyProb = s.replyProb !== undefined ? s.replyProb : 80;
         // 按概率决定对方是否主动回复
+        const replyProb = s.replyProb !== undefined ? s.replyProb : 80;
         if (Math.random() * 100 >= replyProb) return;
         const replyTime = appData.chatSettings.diaryReplyTime || 30;
         // 持久化计划回复时间，防止页面刷新后丢失
@@ -18357,24 +18357,28 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         }
         scheduleDiaryReply(diaryId, replyTime * 60 * 1000);
     }
+    // 运行时标记，防止重复调度（不持久化，避免刷新后阻断恢复）
+    var _diaryReplyScheduledSet = new Set();
     function scheduleDiaryReply(diaryId, delay) {
         // 防止重复调度
-        var diary = appData.diary.singleList.find(d => d.id === diaryId);
-        if (diary && diary._replyScheduled) return;
-        if (diary) diary._replyScheduled = true;
+        if (_diaryReplyScheduledSet.has(diaryId)) return;
+        _diaryReplyScheduledSet.add(diaryId);
         setTimeout(() => {
             const s = appData.diary.settings;
             const allCards = getAllVisibleWordCards();
             if (allCards.length === 0) {
-                // 字卡为空：清除 pendingReplyAt，避免无限重试
+                // 字卡为空：保留 pendingReplyAt，5分钟后自动重试
+                _diaryReplyScheduledSet.delete(diaryId);
                 var d = appData.diary.singleList.find(d => d.id === diaryId);
-                if (d) { delete d.pendingReplyAt; delete d._replyScheduled; saveData(); }
+                if (d) { d.pendingReplyAt = Date.now() + 5 * 60 * 1000; saveData(); }
+                scheduleDiaryReply(diaryId, 5 * 60 * 1000);
                 return;
             }
             const spliceCount = Math.floor(Math.random() * (s.spliceMax - s.spliceMin + 1)) + s.spliceMin;
             const shuffled = [...allCards].sort(() => 0.5 - Math.random());
             const replyText = shuffled.slice(0, Math.min(spliceCount, allCards.length)).join('\n');
             const targetDiary = appData.diary.singleList.find(d => d.id === diaryId);
+            _diaryReplyScheduledSet.delete(diaryId);
             if (targetDiary) {
                 targetDiary.reply = replyText;
                 targetDiary.replyTime = Date.now();
@@ -18392,6 +18396,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function checkPendingDiaryReplies() {
         const now = Date.now();
         appData.diary.singleList.forEach(diary => {
+            // 清理旧版持久化的 _replyScheduled 标志
+            if (diary._replyScheduled) delete diary._replyScheduled;
             if (diary.pendingReplyAt && !diary.reply) {
                 const remaining = diary.pendingReplyAt - now;
                 if (remaining <= 0) {
@@ -18617,7 +18623,12 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         if (s.lastDoubleDiaryDate !== today) {
             const hasTodayOther = appData.diary.doubleList.some(e => e.date === today && hasDoubleDiaryData(e.otherData));
             if (!hasTodayOther) {
-                scheduleDoubleDiaryGeneration(today);
+                // 如果计划时间已过，立即生成（避免页面关闭导致永远不生成）
+                if (s.doubleDiaryScheduledTime && parseInt(s.doubleDiaryScheduledTime) <= Date.now()) {
+                    generateOtherDoubleDiary();
+                } else {
+                    scheduleDoubleDiaryGeneration(today);
+                }
             } else {
                 s.lastDoubleDiaryDate = today;
             }
@@ -21107,19 +21118,25 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         saveDataSync();
         scheduleLetterReply(pendingReply);
     }
+    // 运行时标记，防止重复调度（不持久化，避免刷新后阻断恢复）
+    var _letterReplyScheduledSet = new Set();
     function scheduleLetterReply(pending) {
-        // 防止重复调度
-        if (pending._scheduled) return;
-        pending._scheduled = true;
+        // 防止重复调度：用 pending 对象的引用地址作为唯一标识
+        var pKey = appData.letter.pendingReplies ? appData.letter.pendingReplies.indexOf(pending) : -1;
+        if (pKey < 0 && pending.scheduledAt > Date.now()) {
+            // pending 可能已被处理，跳过
+        }
+        if (_letterReplyScheduledSet.has(pending)) return;
+        _letterReplyScheduledSet.add(pending);
         var delay = Math.max(0, pending.scheduledAt - Date.now());
         setTimeout(() => {
+            _letterReplyScheduledSet.delete(pending);
             const allCards = getAllVisibleWordCards();
             if(allCards.length===0){
-                // 字卡为空：移除 pending 条目，避免无限重试
-                if (appData.letter.pendingReplies) {
-                    appData.letter.pendingReplies = appData.letter.pendingReplies.filter(function(p){ return p !== pending; });
-                }
+                // 字卡为空：保留 pending 条目，5分钟后自动重试
+                pending.scheduledAt = Date.now() + 5 * 60 * 1000;
                 saveDataSync();
+                scheduleLetterReply(pending);
                 return;
             }
             const replyContent=allCards.sort(()=>0.5-Math.random()).slice(0,Math.min(Math.floor(Math.random()*10)+5,allCards.length)).join(' ');
@@ -21192,6 +21209,8 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
     function checkPendingLetterReplies() {
         if (!appData.letter.pendingReplies) return;
         appData.letter.pendingReplies.forEach(function(pending) {
+            // 清理旧版持久化的 _scheduled 标志
+            if (pending._scheduled) delete pending._scheduled;
             scheduleLetterReply(pending);
         });
     }
@@ -24836,6 +24855,7 @@ html.dark-mode .msg-row.diary-share-row .diary-share-card .dsc-body{color:#ccc;}
         initDailyWord();
         checkDailyMoments();
         checkDailyAutoLetter();
+        checkDailyDiary();
         checkPendingDiaryReplies();
         checkPendingLetterReplies();
         checkPendingSummons();
@@ -30185,12 +30205,12 @@ function mlsjIconClock() {
             }
         }, 0);
 
-        // 模拟日记回复 + 定时检查朋友圈/信件
+        // 模拟日记回复 + 定时检查朋友圈/信件/相册寄语
         setInterval(() => {
-            if (document.getElementById('diaryPage').style.display === 'flex') return;
-            if (Math.random() < 0.01) checkDailyDiary();
+            if (Math.random() < 0.05) checkDailyDiary();
             checkDailyMoments();
             checkDailyAutoLetter();
+            try { if (typeof checkAutoMessages === 'function') checkAutoMessages(); } catch(e) {}
         }, 60000);
 
         // 定时自动保存数据（每2分钟），防止意外退出导致数据丢失
@@ -32478,22 +32498,21 @@ function shopCloseModal() {
 function shopGetShopMessage() {
     shopInitData();
     var msg = '';
-    if (Math.random() < 0.8) {
-        // 80% 从特殊字卡 shopping 区域调取
-        var pool = (appData.specialCards.shopping || []).filter(function (c) {
-            return c && c.text && !c.hidden;
-        });
-        if (pool.length > 0) {
-            msg = pool[Math.floor(Math.random() * pool.length)].text;
+    // 合并三个字卡来源：共用字卡 + 专属字卡 + 次元购物城字卡
+    var pool = [];
+    // 1. 次元购物城字卡
+    (appData.specialCards.shopping || []).forEach(function(c) {
+        if (c && c.text && !c.hidden) pool.push(c.text);
+    });
+    // 2. 共用字卡 + 专属字卡
+    if (typeof getAllVisibleWordCards === 'function') {
+        var all = getAllVisibleWordCards();
+        if (all && all.length > 0) {
+            all.forEach(function(text) { pool.push(text); });
         }
-    } else {
-        // 20% 从共用字卡调取
-        if (typeof getAllVisibleWordCards === 'function') {
-            var all = getAllVisibleWordCards();
-            if (all && all.length > 0) {
-                msg = all[Math.floor(Math.random() * all.length)];
-            }
-        }
+    }
+    if (pool.length > 0) {
+        msg = pool[Math.floor(Math.random() * pool.length)];
     }
     if (!msg) msg = '他默默下单了，没有留下话';
     return msg;
@@ -35069,6 +35088,11 @@ function bindSwipeRightToExit(pageEl, exitFn) {
           <label>MP3 链接（可选，留空则模拟播放）</label>
           <input class="lt-modal-input" id="lt-up-url" placeholder="https://.../song.mp3">
         </div>
+        <div class="lt-modal-field">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+            <input type="checkbox" id="lt-up-autodl" checked style="width:18px;height:18px;"> 添加后自动下载到本地（防止链接失效）
+          </label>
+        </div>
         <div class="lt-modal-actions">
           <button class="lt-modal-btn ghost" id="lt-up-cancel">取消</button>
           <button class="lt-modal-btn primary" id="lt-up-ok">添加</button>
@@ -35209,32 +35233,29 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     contactId:'lt_contactId'
   };
   function load(key,def){
-    /* 先查内存缓存，再查 localStorage */
+    /* 先查内存缓存，再查 localStorage（仅作为同步初始化的临时缓存） */
     if(_ltCache[key]!==undefined) return _ltCache[key];
     try{var v=localStorage.getItem(key);return v===null?def:JSON.parse(v);}catch(e){return def;}
   }
+  /* 恢复完成前禁止写 IndexedDB，防止旧 localStorage 数据覆盖 IndexedDB 里的正确数据 */
+  var _ltIDBWriteReady=false;
   function save(key,val){
     _ltCache[key]=val;
     var json;
     try{ json=JSON.stringify(val); }catch(e){ return; }
-    /* 直接存入 IndexedDB，避免 localStorage 5MB 限制 */
-    if(window.saveImgDB){ window.saveImgDB(key, json); }
+    /* 仅写 IndexedDB，不写 localStorage（避免配额不足导致数据不一致） */
+    /* 恢复完成前只更新内存缓存，不写 IndexedDB，防止初始化时的旧数据覆盖 */
+    if(_ltIDBWriteReady && window.saveImgDB){ window.saveImgDB(key, json); }
   }
   var _ltCache={};
   /* 异步从 IndexedDB 恢复数据到内存缓存 */
   function restoreLTFromIDB(){
     if(!window.loadImgDB) return;
-    /* 清理可能被 DEFAULT_SONGS 污染的 lt_songs，让 loadImgDB 能从 IDB 恢复真实数据（含MP3链接） */
-    try {
-      var lsSongs = localStorage.getItem(K.songs);
-      if (lsSongs) {
-        var parsed = JSON.parse(lsSongs);
-        if (Array.isArray(parsed) && parsed.length === 5 && parsed[0] && parsed[0].id === 's1' && !parsed[0].url) {
-          localStorage.removeItem(K.songs);
-        }
-      }
-    } catch(e) {}
-    Object.keys(K).forEach(function(k){
+    /* 清理 localStorage 中的旧歌曲数据（IndexedDB 是唯一数据源） */
+    try { localStorage.removeItem(K.songs); } catch(e) {}
+    var _ltKeys=Object.keys(K);
+    var _ltRestored=0;
+    _ltKeys.forEach(function(k){
       var key=K[k];
       window.loadImgDB(key, function(val){
         if(val){
@@ -35246,14 +35267,25 @@ function bindSwipeRightToExit(pageEl, exitFn) {
             try{ _applyIDBRestored(); }catch(e){}
           }catch(e){}
         }
-      });
+        _ltRestored++;
+        /* 所有键恢复完成后：启用 IndexedDB 写入 + 刷新内存缓存到 IndexedDB */
+        if(_ltRestored>=_ltKeys.length){
+          _ltIDBWriteReady=true;
+          /* 将恢复后的内存缓存数据写回 IndexedDB（防止恢复期间用户修改丢失） */
+          if(window.saveImgDB){
+            Object.keys(_ltCache).forEach(function(ck){
+              try{ window.saveImgDB(ck, JSON.stringify(_ltCache[ck])); }catch(e){}
+            });
+          }
+        }
+      }, true); /* forceIDB=true: 直接从 IndexedDB 读取，跳过 localStorage */
     });
   }
   var _ltIDBRestored=false;
   function _applyIDBRestored(){
     if(!_ltIDBRestored) return;
-    /* 更新关键变量 */
-    if(_ltCache[K.songs]){ songs=_ltCache[K.songs]; try{localStorage.setItem(K.songs,JSON.stringify(songs));}catch(e){} }
+    /* 更新关键变量（IndexedDB 是唯一数据源，不再回写 localStorage） */
+    if(_ltCache[K.songs]){ songs=_ltCache[K.songs]; }
     if(_ltCache[K.settings]){ settings=_ltCache[K.settings]; otherName=settings.otherName||'对方'; }
     if(_ltCache[K.contactId]!==undefined){ ltContactId=_ltCache[K.contactId]; }
     if(_ltCache[K.cumTime]!==undefined){ cumulativeTime=_ltCache[K.cumTime]; }
@@ -35395,7 +35427,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       row.innerHTML='<div class="lt-song-no">'+(i+1)+'</div>'+
         '<div class="lt-song-cover">'+coverInner+'</div>'+
         '<div class="lt-song-info"><div class="lt-song-name">'+favDot+escapeHTML(s.name)+'</div>'+
-        '<div class="lt-song-artist">'+escapeHTML(s.artist||'未知歌手')+(s.url?'':' · 模拟')+'</div></div>'+
+        '<div class="lt-song-artist">'+escapeHTML(s.artist||'未知歌手')+(s.url?(s.localAudio?' · 已缓存':''):' · 模拟')+'</div></div>'+
         '<button class="lt-song-more">'+icon('moreH')+'</button>';
       box.appendChild(row);
     });
@@ -35449,6 +35481,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     updateProgress();
     updateLoopIcon();
     updateLikeIcon();
+    updateDownloadIcon();
     renderProfileCard();
   }
   function updateCenter(){
@@ -35484,6 +35517,11 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     var on=s&&favorites.indexOf(s.id)>=0;
     $('lt-act-like-icon').innerHTML=on?icon('heartFill'):icon('heart');
     $('lt-act-like').classList.toggle('active',!!on);
+  }
+  function updateDownloadIcon(){
+    var s=currentSong();
+    var on=s&&s.url&&s.localAudio;
+    $('lt-act-dl').classList.toggle('active',!!on);
   }
   function updateProgress(){
     var s=currentSong();
@@ -35668,22 +35706,25 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     if(!s.duration&&!s.url)s.duration=180+Math.floor(Math.random()*120);
     playedSongs.push(id);_ltPlayedModified=true;save(K.played,playedSongs);
     stopSim();
-    if(s.url){
-      audio.src=s.url;
-      try{audio.load();}catch(e){}
-      if(playstate.isPlaying||fromStart===false){
-        // will play via play()
-      }
-    }else{
-      try{audio.pause();audio.removeAttribute('src');}catch(e){}
-    }
     save(K.play,playstate);
     renderPlayer();renderProfileCard();renderMini();
-    // 自动播放（用户手势触发可生效）
-    if(fromStart!==false){
-      if(s.url){try{audio.play().then(function(){playstate.isPlaying=true;updatePlayUI();}).catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){}}
-      else{playstate.isPlaying=true;startSim();updatePlayUI();}
-      save(K.play,playstate);
+    if(s.url){
+      /* 有本地缓存则用缓存，否则用原始链接 */
+      _getAudioSrc(s,function(src){
+        if(playstate.currentSongId!==id)return; /* 歌曲已切换，放弃本次加载 */
+        audio.src=src;
+        try{audio.load();}catch(e){}
+        if(fromStart!==false){
+          try{audio.play().then(function(){playstate.isPlaying=true;updatePlayUI();}).catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;updatePlayUI();}
+          save(K.play,playstate);
+        }
+      });
+    }else{
+      try{audio.pause();audio.removeAttribute('src');}catch(e){}
+      if(fromStart!==false){
+        playstate.isPlaying=true;startSim();updatePlayUI();
+        save(K.play,playstate);
+      }
     }
     maybeScheduleProb(s);
   }
@@ -36091,6 +36132,7 @@ function bindSwipeRightToExit(pageEl, exitFn) {
   /* ============ 模态：上传歌曲 ============ */
   function openUpload(){
     $('lt-up-name').value='';$('lt-up-artist').value='';$('lt-up-url').value='';
+    var adl=$('lt-up-autodl');if(adl)adl.checked=true;
     $('lt-upload-modal').style.display='flex';
     setTimeout(function(){$('lt-up-name').focus();},50);
   }
@@ -36099,11 +36141,16 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     if(!name){toast('请输入歌曲名');return;}
     var artist=$('lt-up-artist').value.trim();
     var url=$('lt-up-url').value.trim();
-    songs.push({id:randId(),name:name,artist:artist,url:url,cover:null,duration:0});
+    var autoDl=$('lt-up-autodl')&&$('lt-up-autodl').checked;
+    var newSong={id:randId(),name:name,artist:artist,url:url,cover:null,duration:0};
+    songs.push(newSong);
     save(K.songs,songs);
     $('lt-upload-modal').style.display='none';
     renderList();
     toast('已添加「'+name+'」');
+    if(url&&autoDl){
+      downloadSong(newSong.id);
+    }
   }
   /* ============ 模态：设置 ============ */
   function openSettings(){
@@ -36308,7 +36355,17 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       if(e.target.closest('.lt-song-more')){
         var s=songs.find(function(x){return x.id===id;});
         var isFav=favorites.indexOf(id)>=0;
-        showSheet(s.name,[{label:isFav?'取消收藏':'收藏',onClick:function(){toggleFav(id);renderList();}},{label:'删除歌曲',danger:true,onClick:function(){delSong(id);}}]);
+        var menuItems=[];
+        if(s.url){
+          if(s.localAudio){
+            menuItems.push({label:'删除本地缓存',onClick:function(){removeLocalAudio(id);}});
+          }else{
+            menuItems.push({label:'下载到本地',onClick:function(){downloadSong(id);}});
+          }
+        }
+        menuItems.push({label:isFav?'取消收藏':'收藏',onClick:function(){toggleFav(id);renderList();}});
+        menuItems.push({label:'删除歌曲',danger:true,onClick:function(){delSong(id);}});
+        showSheet(s.name,menuItems);
         return;
       }
       playSong(id,true);showScreen('player');
@@ -36405,7 +36462,16 @@ function bindSwipeRightToExit(pageEl, exitFn) {
       }
     };
     $('lt-act-like').onclick=function(){var s=currentSong();if(s)toggleFav(s.id);};
-    $('lt-act-dl').onclick=function(){toast('暂不支持下载');};
+    $('lt-act-dl').onclick=function(){
+      var s=currentSong();
+      if(!s){toast('请先选择歌曲');return;}
+      if(!s.url){toast('该歌曲没有链接');return;}
+      if(s.localAudio){
+        showSheet(s.name,[{label:'删除本地缓存',danger:true,onClick:function(){removeLocalAudio(s.id);}}]);
+      }else{
+        downloadSong(s.id);
+      }
+    };
     $('lt-act-cmt').onclick=function(){showScreen('comments');};
     $('lt-act-share').onclick=openInvite;
     $('lt-act-more').onclick=openSettings;
@@ -36489,6 +36555,9 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     save(K.fav,favorites);updateLikeIcon();renderList();
   }
   function delSong(id){
+    /* 清理本地音频缓存 */
+    var sd=songs.find(function(x){return x.id===id;});
+    if(sd&&sd.localAudio){window.removeImgDB('lt_audio_'+id);}
     songs=songs.filter(function(x){return x.id!==id;});save(K.songs,songs);
     if(playstate.currentSongId===id){
       stopSim();try{audio.pause();audio.removeAttribute('src');}catch(e){}
@@ -36499,19 +36568,113 @@ function bindSwipeRightToExit(pageEl, exitFn) {
     toast('已删除');
   }
 
+  /* ============ 音频本地缓存（防止 MP3 链接失效） ============ */
+  var _currentObjectURL=null;       /* 当前 Object URL，用于切换歌曲时释放内存 */
+  var _downloadingSongs=new Set();  /* 正在下载中的歌曲 ID，防止重复下载 */
+
+  function _revokeObjectURL(){
+    if(_currentObjectURL){
+      try{URL.revokeObjectURL(_currentObjectURL);}catch(e){}
+      _currentObjectURL=null;
+    }
+  }
+
+  /* 获取音频播放地址：有本地缓存则用缓存，否则用原始链接 */
+  function _getAudioSrc(song,callback){
+    _revokeObjectURL();
+    if(!song||!song.url){callback(null);return;}
+    if(song.localAudio&&window.loadImgDB){
+      var audioKey='lt_audio_'+song.id;
+      window.loadImgDB(audioKey,function(blob){
+        if(blob){
+          _currentObjectURL=URL.createObjectURL(blob);
+          callback(_currentObjectURL);
+        }else{
+          /* 本地缓存丢失，回退到原始链接 */
+          callback(song.url);
+        }
+      });
+    }else{
+      callback(song.url);
+    }
+  }
+
+  /* 下载歌曲到本地（IndexedDB），下载后链接失效也不影响播放 */
+  function downloadSong(id){
+    if(_downloadingSongs.has(id)){toast('正在下载中，请稍候');return;}
+    var s=songs.find(function(x){return x.id===id;});
+    if(!s){toast('歌曲不存在');return;}
+    if(!s.url){toast('该歌曲没有链接，无法下载');return;}
+    if(s.localAudio){toast('该歌曲已保存到本地');return;}
+
+    _downloadingSongs.add(id);
+    toast('正在下载「'+s.name+'」…');
+
+    fetch(s.url).then(function(response){
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      return response.blob();
+    }).then(function(blob){
+      if(blob.size<1024)throw new Error('文件太小，可能不是有效音频');
+      var audioKey='lt_audio_'+s.id;
+      window.saveImgDB(audioKey,blob).then(function(ok){
+        _downloadingSongs.delete(id);
+        if(ok){
+          s.localAudio=true;
+          save(K.songs,songs);
+          toast('「'+s.name+'」已保存到本地，链接失效也不怕了');
+          renderList();
+          if(playstate.currentSongId===id)renderPlayer();
+        }else{
+          toast('保存失败，请重试');
+        }
+      });
+    }).catch(function(){
+      _downloadingSongs.delete(id);
+      toast('下载失败：链接可能已失效，或该网站不支持跨域下载');
+    });
+  }
+
+  /* 删除本地缓存，恢复使用原始链接播放 */
+  function removeLocalAudio(id){
+    var s=songs.find(function(x){return x.id===id;});
+    if(!s||!s.localAudio)return;
+    window.removeImgDB('lt_audio_'+id);
+    s.localAudio=false;
+    save(K.songs,songs);
+    /* 如果正在播放这首歌，切换回原始链接 */
+    if(playstate.currentSongId===id&&s.url){
+      _revokeObjectURL();
+      audio.src=s.url;
+      try{audio.load();}catch(e){}
+      var wasPlaying=playstate.isPlaying;
+      try{audio.currentTime=playstate.currentTime||0;}catch(e){}
+      if(wasPlaying){try{audio.play().catch(function(){});}catch(e){}}
+    }
+    toast('已删除本地缓存');
+    renderList();
+    if(playstate.currentSongId===id)renderPlayer();
+  }
+
   /* ============ 初始化 / 恢复 ============ */
   function restore(){
     renderList();
     if(playstate.currentSongId){
       var s=currentSong();
       if(s){
-        if(s.url){audio.src=s.url;try{audio.load();}catch(e){}}
-        // currentTime 在 loadedmetadata 里恢复
-        renderPlayer();renderProfileCard();renderMini();
-        if(playstate.isPlaying){
-          if(s.url){try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;}}
-          else{startSim();}
+        if(s.url){
+          /* 恢复时也优先使用本地缓存 */
+          _getAudioSrc(s,function(src){
+            if(playstate.currentSongId!==s.id)return;
+            audio.src=src;
+            try{audio.load();}catch(e){}
+            if(playstate.isPlaying){
+              try{audio.play().catch(function(){playstate.isPlaying=false;updatePlayUI();});}catch(e){playstate.isPlaying=false;}
+            }
+          });
+        }else{
+          if(playstate.isPlaying){startSim();}
         }
+        renderPlayer();renderProfileCard();renderMini();
         maybeScheduleProb(s);
       }
     }
