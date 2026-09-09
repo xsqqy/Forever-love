@@ -67,7 +67,7 @@ function nfToast(msg) {
         if (!el) {
             el = document.createElement('div');
             el.id = 'nfToast';
-            el.style.cssText = 'position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(10px);background:rgba(64,59,52,0.88);color:#faf9f7;padding:9px 18px;border-radius:50px;box-shadow:0 8px 40px rgba(97,88,76,0.25);letter-spacing:0.3px;font-size:13px;z-index:2147483000;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:80vw;text-align:center;line-height:1.5;';
+            el.style.cssText = 'position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(10px);background:rgba(0,0,0,0.75);color:#fff;padding:9px 18px;border-radius:10px;font-size:13px;z-index:2147483000;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:80vw;text-align:center;line-height:1.5;';
             document.body.appendChild(el);
         }
         el.textContent = msg;
