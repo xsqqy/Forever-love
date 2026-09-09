@@ -2,32 +2,31 @@
  * new-features.css —— 新功能独立样式
  * 对应：new-features.js（第3~14项功能 + 更新通告弹窗）
  * 本轮更新：更新通告弹窗样式（强制阅读120秒的一次性弹窗）
- * 设计语言与主文件保持一致（奶油极简 / 暖炭主色 / 弥散阴影）
+ * 设计语言与主文件保持一致（圆角卡片 / 蓝色主色 #5f9ef0 / 毛玻璃）
  * ============================================================ */
 
 /* ==================== 0. 通用：弹窗 / 按钮 / 卡片 ==================== */
 .nf-modal-overlay {
     position: fixed;
     inset: 0;
-    background: var(--soft-overlay, rgba(64, 58, 51, .30));   /* 柔和暖调遮罩 */
-    backdrop-filter: blur(4px) saturate(110%);
-    -webkit-backdrop-filter: blur(4px) saturate(110%);
+    background: rgba(30, 40, 60, .38);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
     z-index: 10040;           /* 高于主文件 ia-modal(10020) */
     display: none;            /* JS 打开时置 display:flex */
     align-items: center;
     justify-content: center;
-    padding: 20px 14px;   /* 模态框四周留白，不拥挤 */
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
 }
 .nf-modal-overlay.nf-show { display: flex; }
 .nf-modal {
     width: 340px;
     max-width: 92vw;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f7f5f2 100%);
-    border: 1px solid var(--cream-line, rgba(122, 115, 105, .10));
-    border-radius: var(--cream-radius-lg, 24px);
-    padding: 24px 20px 20px;   /* 间距增加 */
-    box-shadow: var(--soft-modal-shadow, 0 0 0 1px rgba(122,115,105,.06), 0 2px 8px rgba(97,88,76,.03), 0 16px 60px rgba(97,88,76,.10));
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+    border: 1px solid rgba(255, 255, 255, .75);
+    border-radius: 20px;
+    padding: 20px 18px 18px;
+    box-shadow: 0 0 0 1px rgba(40, 60, 100, .05), 0 4px 14px rgba(40, 60, 100, .07), 0 24px 56px rgba(40, 60, 100, .18);
     box-sizing: border-box;
     position: relative;
     max-height: 82vh;
@@ -37,28 +36,26 @@
 }
 @keyframes nfPop { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .nf-modal-title {
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-size: 16px;
-    color: #4a4741;
+    color: #3d4a5d;
     text-align: center;
     font-weight: 600;
-    letter-spacing: .3px;
 }
 .nf-modal-sub {
     font-size: 12px;
-    color: #9c9892;
+    color: #8a97ab;
     text-align: center;
     line-height: 1.6;
-    margin-bottom: 16px;
-    padding: 0 8px;
-    letter-spacing: .2px;
+    margin-bottom: 12px;
+    padding: 0 6px;
 }
 .nf-modal-close {
     position: absolute;
     top: 8px;
     right: 14px;
     font-size: 15px;
-    color: #b3afa9;
+    color: #aab4c2;
     line-height: 1;
     cursor: pointer;
     padding: 6px;
@@ -72,66 +69,65 @@
     overscroll-behavior: contain;
 }
 .nf-btn {
-    padding: 10px 18px;
+    padding: 9px 16px;
     border: none;
     border-radius: 999px;
     font-size: 13px;
     cursor: pointer;
     font-family: inherit;
-    background: #eceae6;
-    color: #6f6b65;
+    background: #eef2f7;
+    color: #5a6b85;
     transition: all .15s;
     white-space: nowrap;
-    letter-spacing: .2px;
 }
-.nf-btn.primary { background: #4a4640; color: #fbfaf8; }
-.nf-btn.plain { background: #eceae6; color: #6f6b65; }
+.nf-btn.primary { background: #5f9ef0; color: #fff; }
+.nf-btn.plain { background: #eef2f7; color: #5a6b85; }
 .nf-btn:active { transform: scale(.96); }
 .nf-btns {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
-    margin-top: 16px;
+    margin-top: 12px;
 }
 .nf-modal-btns {
     display: flex;
-    gap: 12px;
-    margin-top: 18px;
+    gap: 10px;
+    margin-top: 14px;
 }
 .nf-modal-btns .nf-btn { flex: 1; }
 .nf-empty {
     text-align: center;
     font-size: 12px;
-    color: #b3afa9;
+    color: #aab4c4;
     padding: 20px 0;
     line-height: 1.6;
 }
-.nf-empty-inline { font-size: 12px; color: #b3afa9; }
+.nf-empty-inline { font-size: 12px; color: #aab4c4; }
 .nf-modal input[type="text"] {
-    border: 1px solid rgba(122, 115, 105, .16);
-    border-radius: 50px;
-    padding: 10px 16px;
+    border: 1px solid #e0e6ee;
+    border-radius: 10px;
+    padding: 9px 12px;
     font-size: 13px;
     outline: none;
-    color: #4a4741;
-    background: #faf9f7;
+    color: #3d4a5d;
+    background: #fbfcfe;
     font-family: inherit;
     box-sizing: border-box;
     min-width: 0;
 }
-.nf-modal input[type="text"]:focus { border-color: #a8a49e; background: #fcfbf9; }
-.nf-modal input[type="range"] { accent-color: #8c8880; }
+.nf-modal input[type="text"]:focus { border-color: #5f9ef0; background: #fff; }
+.nf-modal input[type="range"] { accent-color: #5f9ef0; }
 
 /* 聊天流内的小卡片（头像更换/备注更换/真心话/备份提醒共用） */
 .nf-card {
     width: 80%;
     max-width: 310px;
-    margin: 16px auto;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f7f5f2 100%);
-    border: 1px solid var(--cream-line, rgba(122, 115, 105, .10));
-    border-radius: 20px;
-    box-shadow: var(--cream-shadow, 0 1px 3px rgba(97, 88, 76, .03), 0 8px 50px rgba(97, 88, 76, .05));
-    padding: 16px 16px 12px;
+    margin: 12px auto;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+    border: 1px solid rgba(255, 255, 255, .65);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(40, 60, 100, .04), 0 6px 18px rgba(80, 110, 150, .10);
+    padding: 14px 14px 10px;
     box-sizing: border-box;
     text-align: center;
     position: relative;
@@ -144,25 +140,24 @@
     transform: translateX(-50%) rotate(-3deg);
     width: 58px;
     height: 13px;
-    background: rgba(122, 115, 105, .15);
-    border-radius: 3px;
-    box-shadow: 0 1px 2px rgba(122, 115, 105, .08);
+    background: rgba(95, 158, 240, .28);
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(95, 158, 240, .15);
 }
 .nf-card-title {
     font-size: 14px;
-    color: #4a4741;
+    color: #3d4a5d;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    letter-spacing: .3px;
 }
-.nf-card-title svg { color: #8c8880; }
+.nf-card-title svg { color: #5f9ef0; }
 .nf-card-date {
     font-size: 11px;
-    color: #b3afa9;
+    color: #aab4c2;
     margin-top: 10px;
     letter-spacing: 1px;
 }
@@ -175,19 +170,19 @@
 }
 .nf-hex-input {
     width: 82px;
-    border: 1px solid rgba(122, 115, 105, .16);
-    border-radius: 50px;
-    padding: 5px 10px;
+    border: 1px solid #e0e6ee;
+    border-radius: 8px;
+    padding: 4px 8px;
     font-size: 12px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     letter-spacing: .5px;
-    color: #4a4741;
-    background: rgba(252, 251, 249, .85);
+    color: #3d4a5d;
+    background: rgba(255, 255, 255, .8);
     outline: none;
     text-align: center;
     text-transform: uppercase;
 }
-.nf-hex-input:focus { border-color: #a8a49e; background: #fcfbf9; }
+.nf-hex-input:focus { border-color: #5f9ef0; background: #fff; }
 
 /* ==================== 2. 第5项：聊天设置长方形色盘改圆形 ==================== */
 /* 仅影响聊天设置里的 .color-setting 色盘，其它区域色盘不受影响 */
@@ -200,7 +195,7 @@
     cursor: pointer;
     padding: 0;
     align-self: flex-start;
-    box-shadow: 0 0 0 3px #fcfbf9, 0 3px 14px rgba(97, 88, 76, .12);
+    box-shadow: 0 0 0 3px #fff, 0 3px 10px rgba(80, 110, 150, .22);
     transition: transform .15s;
     -webkit-appearance: none;
     appearance: none;
@@ -217,16 +212,16 @@
     width: 150px;
     height: 150px;
     margin: 4px auto 12px;
-    border-radius: 18px;
+    border-radius: 14px;
     overflow: hidden;
     background:
-        linear-gradient(45deg, #efedea 25%, transparent 25%, transparent 75%, #efedea 75%),
-        linear-gradient(45deg, #efedea 25%, #faf9f7 25%, #faf9f7 75%, #efedea 75%);
+        linear-gradient(45deg, #f0f3f8 25%, transparent 25%, transparent 75%, #f0f3f8 75%),
+        linear-gradient(45deg, #f0f3f8 25%, #fbfcfe 25%, #fbfcfe 75%, #f0f3f8 75%);
     background-size: 16px 16px;
     background-position: 0 0, 8px 8px;
     position: relative;
     touch-action: none;
-    box-shadow: inset 0 0 0 1px #e5e2de;
+    box-shadow: inset 0 0 0 1px #e6ebf2;
 }
 .nf-crop-stage img {
     position: absolute;
@@ -243,18 +238,18 @@
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: #6f6b65;
+    color: #5a6b85;
     margin-bottom: 6px;
 }
 .nf-crop-zoom-row input[type="range"] { flex: 1; }
-.nf-crop-zoom-val { min-width: 42px; text-align: right; color: #9c9892; }
-.nf-crop-tip { font-size: 11px; color: #9c9892; text-align: center; margin: 8px 0 2px; line-height: 1.5; }
+.nf-crop-zoom-val { min-width: 42px; text-align: right; color: #8a97ab; }
+.nf-crop-tip { font-size: 11px; color: #8a97ab; text-align: center; margin: 8px 0 2px; line-height: 1.5; }
 
 /* ==================== 4. 第6项：头像库管理弹窗 ==================== */
 .nf-av-sec {
-    margin-bottom: 18px;
-    padding-bottom: 18px;
-    border-bottom: 1px dashed #e5e2de;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed #e8eef5;
 }
 .nf-av-sec:last-child { border-bottom: none; margin-bottom: 4px; padding-bottom: 4px; }
 .nf-av-sec-head {
@@ -262,25 +257,25 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: #4a4741;
+    color: #3d4a5d;
     font-weight: 600;
     margin-bottom: 8px;
 }
-.nf-av-sec-head svg { color: #8c8880; width: 15px; height: 15px; }
-.nf-av-count { font-size: 11px; color: #9c9892; font-weight: 400; margin-left: auto; }
+.nf-av-sec-head svg { color: #5f9ef0; width: 15px; height: 15px; }
+.nf-av-count { font-size: 11px; color: #8a97ab; font-weight: 400; margin-left: auto; }
 .nf-av-prob-row {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: #6f6b65;
+    color: #5a6b85;
     margin-bottom: 10px;
 }
 .nf-av-prob-row input[type="range"] { flex: 1; }
-.nf-av-prob-row b { min-width: 38px; text-align: right; color: #6f6b65; font-weight: 600; }
-.nf-av-btns { display: flex; gap: 10px; margin-bottom: 10px; }
+.nf-av-prob-row b { min-width: 38px; text-align: right; color: #5f9ef0; font-weight: 600; }
+.nf-av-btns { display: flex; gap: 8px; margin-bottom: 8px; }
 .nf-av-btns .nf-btn { flex: 1; }
-.nf-av-url-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.nf-av-url-row { display: flex; gap: 6px; margin-bottom: 8px; }
 .nf-av-url-row input { flex: 1; }
 .nf-av-grid {
     display: grid;
@@ -290,17 +285,17 @@
 .nf-av-cell {
     position: relative;
     aspect-ratio: 1;
-    border-radius: 14px;
+    border-radius: 10px;
     overflow: visible;
-    background: #f2f0ed;
+    background: #f5f7fa;
 }
 .nf-av-cell img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 14px;
+    border-radius: 10px;
     display: block;
-    box-shadow: inset 0 0 0 1px #ebe8e4;
+    box-shadow: inset 0 0 0 1px #eef1f4;
 }
 .nf-av-del {
     position: absolute;
@@ -309,15 +304,15 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #fcfbf9;
+    background: #fff;
     border: none;
-    box-shadow: 0 2px 6px rgba(97, 88, 76, .14);
+    box-shadow: 0 2px 6px rgba(40, 60, 100, .25);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     padding: 0;
-    color: #9c9892;
+    color: #8a97ab;
     z-index: 2;
 }
 .nf-av-del svg { width: 10px; height: 10px; }
@@ -329,25 +324,25 @@
     justify-content: center;
     gap: 8px;
     padding: 8px 6px;
-    background: #f6f4f1;
-    border-radius: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
     position: relative;
 }
 .nf-av-couple-item img {
     width: 46px;
     height: 46px;
     object-fit: cover;
-    border-radius: 14px;
-    box-shadow: inset 0 0 0 1px #ebe8e4;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px #eef1f4;
 }
-.nf-av-x { color: #a8a29a; display: flex; }
+.nf-av-x { color: #ff8fa3; display: flex; }
 .nf-av-x svg { width: 14px; height: 14px; }
 .nf-av-couple-item .nf-av-del { top: -8px; right: -8px; }
 .nf-av-tip {
     font-size: 11px;
-    color: #9c9892;
-    background: #f3f1ee;
-    border-radius: 12px;
+    color: #8a97ab;
+    background: #f5f8fc;
+    border-radius: 8px;
     padding: 8px 10px;
     margin-top: 8px;
     line-height: 1.6;
@@ -365,10 +360,10 @@
     width: 64px;
     height: 64px;
     object-fit: cover;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(97, 88, 76, .11), inset 0 0 0 1px rgba(252, 251, 249, .6);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(80, 110, 150, .2), inset 0 0 0 1px rgba(255, 255, 255, .6);
 }
-.nf-avcard-heart { color: #a8a29a; display: flex; }
+.nf-avcard-heart { color: #ff8fa3; display: flex; }
 .nf-avcard-heart svg { width: 18px; height: 18px; }
 
 /* ==================== 5. 第3项：键盘高度调节滑块 ==================== */
@@ -376,8 +371,8 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 12px 0 14px;
-    border-bottom: 1px dashed rgba(122, 115, 105, .12);
+    padding: 10px 0 12px;
+    border-bottom: 1px dashed rgba(0, 0, 0, .06);
     margin-bottom: 4px;
 }
 .nf-kb-slider-wrap {
@@ -385,18 +380,18 @@
     align-items: center;
     gap: 10px;
 }
-.nf-kb-slider-wrap input[type="range"] { flex: 1; accent-color: #8c8880; }
-.nf-kb-side { font-size: 12px; color: #9c9892; flex: none; }
+.nf-kb-slider-wrap input[type="range"] { flex: 1; accent-color: #5f9ef0; }
+.nf-kb-side { font-size: 12px; color: #8a97ab; flex: none; }
 .nf-kb-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 11px;
-    color: #9c9892;
+    color: #8a97ab;
 }
-.nf-kb-reset { color: #6f6b65; cursor: pointer; padding: 2px 4px; }
+.nf-kb-reset { color: #5f9ef0; cursor: pointer; padding: 2px 4px; }
 .nf-kb-reset:active { opacity: .6; }
-.nf-kb-tip { font-size: 11px; color: #b3afa9; line-height: 1.6; }
+.nf-kb-tip { font-size: 11px; color: #aab4c2; line-height: 1.6; }
 
 /* ==================== 6. 第7项：表情包分类 ==================== */
 #nfEmojiCatbar {
@@ -405,7 +400,7 @@
 }
 .nf-emoji-side {
     display: flex;
-    background: #efedea;
+    background: #f0f3f8;
     border-radius: 999px;
     padding: 3px;
     margin-bottom: 8px;
@@ -414,17 +409,17 @@
     flex: 1;
     text-align: center;
     font-size: 12px;
-    color: #6f6b65;
+    color: #5a6b85;
     padding: 6px 0;
     border-radius: 999px;
     cursor: pointer;
     transition: all .15s;
 }
 .nf-emoji-side-b.on {
-    background: #fcfbf9;
-    color: #4a4741;
+    background: #fff;
+    color: #5f9ef0;
     font-weight: 600;
-    box-shadow: 0 1px 4px rgba(97, 88, 76, .08);
+    box-shadow: 0 1px 4px rgba(80, 110, 150, .15);
 }
 .nf-emoji-cats {
     display: flex;
@@ -432,7 +427,7 @@
     gap: 6px;
     margin-bottom: 10px;
     padding-top: 8px;
-    border-top: 1px solid #ebe8e4;
+    border-top: 1px solid #eef1f5;
 }
 .nf-emoji-chip {
     display: inline-flex;
@@ -441,8 +436,8 @@
     font-size: 11px;
     padding: 5px 11px;
     border-radius: 999px;
-    background: #efedea;
-    color: #6f6b65;
+    background: #f0f3f8;
+    color: #5a6b85;
     cursor: pointer;
     transition: all .15s;
     max-width: 100%;
@@ -450,22 +445,22 @@
 .nf-emoji-chip i {
     font-style: normal;
     font-size: 10px;
-    color: #9c9892;
+    color: #8a97ab;
 }
 .nf-emoji-chip.on {
-    background: #4a4640;
-    color: #fbfaf8;
+    background: #5f9ef0;
+    color: #fff;
 }
-.nf-emoji-chip.on i { color: rgba(251, 250, 248, .85); }
-.nf-emoji-chip.add { border: 1px dashed #cfccc7; background: transparent; color: #9c9892; }
+.nf-emoji-chip.on i { color: rgba(255, 255, 255, .85); }
+.nf-emoji-chip.add { border: 1px dashed #b8c6da; background: transparent; color: #8a97ab; }
 .nf-emoji-chip.add svg { width: 12px; height: 12px; }
-.nf-emoji-chip.mgr { background: transparent; border: 1px solid #ddd9d4; color: #9c9892; }
+.nf-emoji-chip.mgr { background: transparent; border: 1px solid #dbe4ef; color: #8a97ab; }
 .nf-emoji-chip:active { transform: scale(.95); }
 .nf-emoji-empty {
     grid-column: 1 / -1;
     text-align: center;
     font-size: 11px;
-    color: #b3afa9;
+    color: #aab4c4;
     padding: 14px 0;
 }
 /* 表情管理弹层（长按/管理模式点表情） */
@@ -473,10 +468,10 @@
     position: fixed;
     z-index: 10060;
     min-width: 150px;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f7f5f2 100%);
-    border: 1px solid var(--cream-line, rgba(122, 115, 105, .10));
-    border-radius: 18px;
-    box-shadow: var(--soft-modal-shadow, 0 0 0 1px rgba(122,115,105,.06), 0 2px 8px rgba(97,88,76,.03), 0 16px 60px rgba(97,88,76,.10));
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+    border: 1px solid rgba(255, 255, 255, .75);
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px rgba(40, 60, 100, .05), 0 4px 14px rgba(40, 60, 100, .08), 0 20px 44px rgba(40, 60, 100, .20);
     padding: 6px;
     font-size: 13px;
     animation: nfPop .18s ease;
@@ -484,44 +479,44 @@
 }
 .nf-popmenu-title {
     font-size: 11px;
-    color: #b3afa9;
+    color: #aab4c2;
     padding: 6px 12px 4px;
 }
 .nf-popmenu-sub {
     font-size: 11px;
-    color: #9c9892;
+    color: #8a97ab;
     padding: 0 12px 5px;
 }
 .nf-popmenu-item {
-    padding: 11px 14px;
-    border-radius: 16px;
-    color: #4a4741;
+    padding: 10px 12px;
+    border-radius: 9px;
+    color: #3d4a5d;
     cursor: pointer;
     transition: background .12s;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.nf-popmenu-item:active { background: #f1efec; }
+.nf-popmenu-item:active { background: #f0f4fa; }
 .nf-popmenu-item.danger { color: #e05656; }
 
 /* ==================== 7. 第8项：备注更换 ==================== */
-.nf-remark-cur { font-size: 13px; color: #6f6b65; margin-bottom: 12px; }
-.nf-remark-cur b { color: #4a4741; }
+.nf-remark-cur { font-size: 13px; color: #5a6b85; margin-bottom: 12px; }
+.nf-remark-cur b { color: #3d4a5d; }
 .nf-remark-input-row { display: flex; gap: 8px; margin-bottom: 14px; }
 .nf-remark-input-row input { flex: 1; }
-.nf-remark-hist-head { font-size: 12px; color: #9c9892; margin: 2px 0 8px; }
+.nf-remark-hist-head { font-size: 12px; color: #8a97ab; margin: 2px 0 8px; }
 .nf-remark-hist { display: flex; flex-wrap: wrap; gap: 6px; }
 .nf-remark-chip {
     padding: 6px 13px;
     border-radius: 999px;
-    background: #efedea;
+    background: #f0f3f8;
     font-size: 12px;
-    color: #6f6b65;
+    color: #5a6b85;
     cursor: pointer;
     transition: all .15s;
 }
-.nf-remark-chip:active { transform: scale(.94); background: #e6e3df; }
+.nf-remark-chip:active { transform: scale(.94); background: #e2ecfa; }
 /* 备注更换卡片 */
 .nf-rm2-row {
     display: flex;
@@ -530,33 +525,33 @@
     gap: 10px;
     padding: 4px 0;
 }
-.nf-rm2-old { font-size: 13px; color: #b3afa9; text-decoration: line-through; }
-.nf-rm2-arrow { color: #a8a49e; display: flex; }
+.nf-rm2-old { font-size: 13px; color: #aab4c2; text-decoration: line-through; }
+.nf-rm2-arrow { color: #9db3cf; display: flex; }
 .nf-rm2-arrow svg { width: 14px; height: 14px; }
-.nf-rm2-new { font-size: 15px; color: #4a4741; font-weight: 600; }
+.nf-rm2-new { font-size: 15px; color: #3d4a5d; font-weight: 600; }
 
 /* ==================== 8. 第9项：真心话问问问 ==================== */
 .nf-truth-card input[type="text"],
 .nf-truth-input-row input {
-    border: 1px solid rgba(122, 115, 105, .16);
-    border-radius: 50px;
-    padding: 9px 16px;
+    border: 1px solid #e0e6ee;
+    border-radius: 10px;
+    padding: 8px 12px;
     font-size: 13px;
     outline: none;
-    color: #4a4741;
-    background: #faf9f7;
+    color: #3d4a5d;
+    background: #fbfcfe;
     font-family: inherit;
     box-sizing: border-box;
     min-width: 0;
 }
-.nf-truth-input-row input:focus { border-color: #a8a49e; background: #fcfbf9; }
-.nf-truth-sub { font-size: 12px; color: #9c9892; margin-bottom: 10px; }
+.nf-truth-input-row input:focus { border-color: #5f9ef0; background: #fff; }
+.nf-truth-sub { font-size: 12px; color: #8a97ab; margin-bottom: 10px; }
 .nf-truth-q {
-    background: #f3f1ee;
-    border-radius: 14px;
+    background: #f5f8fc;
+    border-radius: 10px;
     padding: 8px 11px;
     font-size: 13px;
-    color: #4a4741;
+    color: #3d4a5d;
     text-align: left;
     margin-bottom: 8px;
     line-height: 1.6;
@@ -566,22 +561,22 @@
 .nf-truth-a span {
     display: block;
     font-size: 11px;
-    color: #9c9892;
+    color: #8a97ab;
     margin-bottom: 2px;
 }
 .nf-truth-a {
-    background: #efedea;
-    border-radius: 14px;
+    background: #eef8ef;
+    border-radius: 10px;
     padding: 8px 11px;
     font-size: 13px;
-    color: #4a4741;
+    color: #3d4a5d;
     text-align: left;
     margin-bottom: 6px;
     line-height: 1.6;
     word-break: break-all;
 }
-.nf-truth-wait { font-size: 12px; color: #b3afa9; padding: 2px 0; }
-.nf-truth-react { font-size: 12px; color: #a8a29a; margin-top: 6px; }
+.nf-truth-wait { font-size: 12px; color: #aab4c2; padding: 2px 0; }
+.nf-truth-react { font-size: 12px; color: #ff8fa3; margin-top: 6px; }
 .nf-truth-input-row { display: flex; gap: 8px; margin-top: 6px; }
 .nf-truth-input-row input { flex: 1; }
 .nf-truth-input-row .nf-btn { flex: none; padding: 8px 16px; }
@@ -592,10 +587,10 @@
     width: 100%;
     margin-top: 8px;
     padding: 7px 10px;
-    border: 1px dashed #cfccc7;
-    border-radius: 14px;
+    border: 1px dashed #c3d2e6;
+    border-radius: 10px;
     background: transparent;
-    color: #6f6b65;
+    color: #5f9ef0;
     font-size: 12px;
     text-align: center;
     cursor: pointer;
@@ -603,46 +598,46 @@
     -webkit-appearance: none;
     appearance: none;
 }
-.nf-truth-opttoggle:active { background: #eceae6; }
+.nf-truth-opttoggle:active { background: #eaf2fe; }
 .nf-truth-optbuild { margin-top: 8px; text-align: left; }
 .nf-truth-optitem { display: flex; gap: 6px; margin-bottom: 6px; }
 .nf-truth-optitem input {
     flex: 1;
-    border: 1px solid rgba(122, 115, 105, .16);
-    border-radius: 50px;
-    padding: 8px 16px;
+    border: 1px solid #e0e6ee;
+    border-radius: 10px;
+    padding: 7px 11px;
     font-size: 13px;
     outline: none;
-    color: #4a4741;
-    background: #faf9f7;
+    color: #3d4a5d;
+    background: #fbfcfe;
     font-family: inherit;
     box-sizing: border-box;
     min-width: 0;
 }
-.nf-truth-optitem input:focus { border-color: #a8a49e; background: #fcfbf9; }
+.nf-truth-optitem input:focus { border-color: #5f9ef0; background: #fff; }
 .nf-truth-optitem button {
     flex: none;
     width: 32px;
     border: none;
-    border-radius: 14px;
-    background: #f1efec;
-    color: #9c9892;
+    border-radius: 10px;
+    background: #f0f4fa;
+    color: #8a97ab;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 .nf-truth-optitem button svg { width: 13px; height: 13px; }
-.nf-truth-optitem button:active { background: #e5e2de; color: #e8483f; }
+.nf-truth-optitem button:active { background: #e2e9f4; color: #e8483f; }
 .nf-truth-addopt {
     display: block;
     width: 100%;
     padding: 6px 10px;
     margin-top: 2px;
     border: none;
-    border-radius: 14px;
-    background: #f1efec;
-    color: #6f6b65;
+    border-radius: 10px;
+    background: #f0f4fa;
+    color: #5a6b85;
     font-size: 12px;
     text-align: center;
     cursor: pointer;
@@ -650,15 +645,15 @@
     -webkit-appearance: none;
     appearance: none;
 }
-.nf-truth-addopt:active { background: #e5e2de; }
-.nf-truth-buildtip { font-size: 11px; color: #b3afa9; margin-top: 6px; line-height: 1.5; }
+.nf-truth-addopt:active { background: #e2e9f4; }
+.nf-truth-buildtip { font-size: 11px; color: #aab4c2; margin-top: 6px; line-height: 1.5; }
 /* 答题时的选项按钮（有选项的问题：点一下直接回答） */
 .nf-truth-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .nf-truth-opt {
-    border: 1.5px solid #d6d3ce;
-    background: #f4f2ef;
-    color: #5a564f;
-    border-radius: 16px;
+    border: 1.5px solid #c9dcf4;
+    background: #f2f8ff;
+    color: #3d6fa8;
+    border-radius: 12px;
     padding: 8px 14px;
     font-size: 13px;
     cursor: pointer;
@@ -667,20 +662,20 @@
     appearance: none;
     transition: transform .12s, background .12s;
 }
-.nf-truth-opt:active { transform: scale(.94); background: #e8e5e1; }
+.nf-truth-opt:active { transform: scale(.94); background: #e2efff; }
 /* 已出题/已回答时展示的选项条（被选中的选项高亮） */
 .nf-truth-optchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
 .nf-truth-optchips span {
-    background: #f1efec;
-    color: #6f6b65;
-    border-radius: 12px;
+    background: #f0f4fa;
+    color: #5a6b85;
+    border-radius: 9px;
     padding: 4px 10px;
     font-size: 12px;
     line-height: 1.5;
 }
 .nf-truth-optchips span.picked {
-    background: #e6e3df;
-    color: #4a4741;
+    background: #e2f4e6;
+    color: #2e8b4a;
     font-weight: 600;
 }
 /* 题库弹窗：题目下挂的选项小签（题目+选项最多显示4行，避免长题挤压） */
@@ -688,28 +683,28 @@
 .nf-tb-opts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; font-style: normal; }
 .nf-tb-opts i {
     font-style: normal;
-    background: #eceae6;
-    color: #5a564f;
-    border-radius: 10px;
+    background: #eaf2fe;
+    color: #3d6fa8;
+    border-radius: 7px;
     padding: 2px 8px;
     font-size: 11px;
 }
 /* 题库弹窗：回答规则说明 */
-.nf-truth-rule { font-size: 12px; color: #9c9892; line-height: 1.7; text-align: left; }
+.nf-truth-rule { font-size: 12px; color: #8a97ab; line-height: 1.7; text-align: left; }
 /* 真心话题库弹窗 */
 .nf-tb-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 13px;
-    color: #4a4741;
+    color: #3d4a5d;
     font-weight: 600;
     margin-bottom: 14px;
 }
 .nf-tb-toggle .nf-btn { font-size: 12px; padding: 7px 16px; }
 .nf-tb-sec { margin-bottom: 14px; }
-.nf-tb-head { font-size: 12px; color: #6f6b65; font-weight: 600; margin-bottom: 8px; }
-.nf-tb-add { display: flex; gap: 8px; margin-bottom: 10px; }
+.nf-tb-head { font-size: 12px; color: #5a6b85; font-weight: 600; margin-bottom: 8px; }
+.nf-tb-add { display: flex; gap: 6px; margin-bottom: 8px; }
 .nf-tb-add input { flex: 1; }
 .nf-tb-add .nf-btn { flex: none; padding: 8px 14px; font-size: 12px; }
 .nf-tb-list { max-height: 190px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -719,11 +714,11 @@
     justify-content: space-between;
     gap: 8px;
     padding: 8px 10px;
-    background: #f6f4f1;
-    border-radius: 12px;
+    background: #f8fafc;
+    border-radius: 9px;
     margin-bottom: 5px;
     font-size: 12px;
-    color: #4a4741;
+    color: #3d4a5d;
     line-height: 1.5;
 }
 .nf-tb-item span {
@@ -736,7 +731,7 @@
 .nf-tb-item button {
     border: none;
     background: none;
-    color: #b3afa9;
+    color: #aab4c2;
     font-size: 15px;
     cursor: pointer;
     padding: 2px 4px;
@@ -761,8 +756,8 @@
     width: 26px;
     height: 18px;
     border-radius: 999px;
-    background: #fcfbf9;
-    box-shadow: 0 1px 4px rgba(97, 88, 76, .10), inset 0 0 0 1px #ebe8e4;
+    background: #fff;
+    box-shadow: 0 1px 5px rgba(40, 60, 100, .18), inset 0 0 0 1px #eef1f4;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -770,19 +765,19 @@
     animation: nfReactIn .25s ease;
 }
 @keyframes nfReactIn { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.nf-react-chip.oth { box-shadow: 0 1px 4px rgba(97, 88, 76, .10), inset 0 0 0 1px rgba(122, 115, 105, .30); }
-.nf-react-chip.me { box-shadow: 0 1px 4px rgba(97, 88, 76, .10), inset 0 0 0 1px rgba(74, 70, 64, .32); }
+.nf-react-chip.oth { box-shadow: 0 1px 5px rgba(40, 60, 100, .18), inset 0 0 0 1px rgba(95, 158, 240, .45); }
+.nf-react-chip.me { box-shadow: 0 1px 5px rgba(40, 60, 100, .18), inset 0 0 0 1px rgba(255, 143, 163, .5); }
 .nf-react-chip.both {
-    box-shadow: 0 1px 4px rgba(97, 88, 76, .10), inset 0 0 0 1px rgba(122, 115, 105, .30), 3px 0 0 rgba(74, 70, 64, .32);
+    box-shadow: 0 1px 5px rgba(40, 60, 100, .18), inset 0 0 0 1px rgba(95, 158, 240, .45), 3px 0 0 rgba(255, 143, 163, .5);
 }
 /* 反应选择弹层 */
 .nf-react-picker {
     position: fixed;
     z-index: 10050;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f7f5f2 100%);
-    border: 1px solid var(--cream-line, rgba(122, 115, 105, .10));
-    border-radius: 26px;   /* 原胶囊形改方一点 */
-    box-shadow: var(--soft-modal-shadow, 0 0 0 1px rgba(122,115,105,.06), 0 2px 8px rgba(97,88,76,.03), 0 16px 60px rgba(97,88,76,.10));
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+    border: 1px solid rgba(255, 255, 255, .75);
+    border-radius: 999px;
+    box-shadow: 0 0 0 1px rgba(40, 60, 100, .05), 0 4px 14px rgba(40, 60, 100, .08), 0 20px 44px rgba(40, 60, 100, .20);
     padding: 6px 8px;
     display: flex;
     gap: 2px;
@@ -800,7 +795,7 @@
 }
 .nf-react-opt svg { width: 22px; height: 22px; }
 .nf-react-opt:active { transform: scale(.85); }
-.nf-react-opt.on { background: #eceae6; box-shadow: inset 0 0 0 1.5px #4a4640; }
+.nf-react-opt.on { background: #eaf2fe; box-shadow: inset 0 0 0 1.5px #5f9ef0; }
 
 /* ==================== 10. 第11项：桌宠 ==================== */
 .nf-pet {
@@ -846,7 +841,7 @@
     width: 38px;
     height: 7px;
     border-radius: 50%;
-    background: rgba(74, 70, 64, .12);
+    background: rgba(40, 50, 70, .13);
     filter: blur(2px);
     z-index: 1;
 }
@@ -857,14 +852,14 @@
     left: 50%;
     transform: translateX(-50%) scale(.75);
     transform-origin: bottom center;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f7f5f2 100%);
-    border: 1px solid var(--cream-line, rgba(122, 115, 105, .10));
-    border-radius: 16px;
-    padding: 9px 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+    border: 1px solid rgba(255, 255, 255, .75);
+    border-radius: 12px;
+    padding: 8px 12px;
     font-size: 12px;
-    color: #4a4741;
+    color: #3d4a5d;
     line-height: 1.6;
-    box-shadow: 0 0 0 1px rgba(122, 115, 105, .06), 0 2px 8px rgba(97, 88, 76, .03), 0 12px 44px rgba(97, 88, 76, .10);
+    box-shadow: 0 0 0 1px rgba(40, 60, 100, .04), 0 4px 12px rgba(40, 60, 100, .08), 0 16px 36px rgba(40, 60, 100, .18);
     max-width: 190px;
     width: max-content;
     opacity: 0;
@@ -882,9 +877,9 @@
     transform: translateX(-50%) rotate(45deg);
     width: 10px;
     height: 10px;
-    background: #fbfaf8;
+    background: #fbfcfd;
     border-radius: 2px;
-    box-shadow: 2px 2px 4px rgba(97, 88, 76, .06);
+    box-shadow: 2px 2px 4px rgba(40, 60, 100, .08);
 }
 .nf-pet-bubble.show {
     opacity: 1;
@@ -908,13 +903,13 @@
     align-items: center;
     justify-content: space-between;
     font-size: 13px;
-    color: #4a4741;
+    color: #3d4a5d;
     margin-bottom: 12px;
 }
 .nf-pet-row .nf-btn { font-size: 12px; padding: 7px 16px; }
 .nf-pet-sec-title {
     font-size: 11px;
-    color: #9c9892;
+    color: #8a97ab;
     letter-spacing: 1px;
     margin: 4px 0 8px;
 }
@@ -930,91 +925,82 @@
     align-items: center;
     gap: 3px;
     padding: 8px 12px 6px;
-    border-radius: 16px;
-    background: #f2f0ed;
+    border-radius: 12px;
+    background: #f5f7fa;
     border: 1.5px solid transparent;
     cursor: pointer;
     transition: all .15s;
 }
 .nf-pet-preset svg { width: 34px; height: 34px; display: block; }
-.nf-pet-preset i { font-style: normal; font-size: 11px; color: #6f6b65; }
+.nf-pet-preset i { font-style: normal; font-size: 11px; color: #5a6b85; }
 .nf-pet-preset.on {
-    border-color: #8c8880;
-    background: #eceae6;
+    border-color: #5f9ef0;
+    background: #eaf2fe;
 }
-.nf-pet-preset.on i { color: #4a4741; font-weight: 600; }
+.nf-pet-preset.on i { color: #5f9ef0; font-weight: 600; }
 .nf-pet-preset:active { transform: scale(.95); }
-.nf-pet-custom-ico { display: flex; color: #a8a49e; }
+.nf-pet-custom-ico { display: flex; color: #9db3cf; }
 .nf-pet-custom-ico svg { width: 30px; height: 30px; }
 .nf-pet-slider {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: #6f6b65;
+    color: #5a6b85;
     margin-bottom: 10px;
 }
 .nf-pet-slider input[type="range"] { flex: 1; }
-.nf-pet-slider b { min-width: 40px; text-align: right; color: #6f6b65; font-weight: 600; font-size: 11px; }
+.nf-pet-slider b { min-width: 40px; text-align: right; color: #5f9ef0; font-weight: 600; font-size: 11px; }
 
 /* ==================== 11. 第12项 & 第13项：备份提醒卡片 ==================== */
 .nf-backup-text {
     font-size: 12px;
-    color: #6f6b65;
+    color: #5a6b85;
     line-height: 1.7;
     margin-bottom: 4px;
     text-align: left;
 }
 
-/* ==================== 12. 深色模式适配（暖调深灰） ==================== */
-html.dark-mode .nf-modal { background: linear-gradient(180deg, #37342e 0%, #302d28 100%); border-color: rgba(251,250,248,.08); }
-html.dark-mode .nf-modal-title { color: #eae7e1; }
-html.dark-mode .nf-modal-sub { color: #9c9892; }
-html.dark-mode .nf-btn { background: #3e3b35; color: #c6c2bb; }
-html.dark-mode .nf-btn.primary { background: #6f6b65; color: #f5f4f1; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
-html.dark-mode .nf-modal input[type="text"] { background: #282622; border-color: #3e3b35; color: #eae7e1; }
-html.dark-mode .nf-card { background: linear-gradient(180deg, #37342e 0%, #302d28 100%); border-color: rgba(251,250,248,.07); }
-html.dark-mode .nf-card-tape { background: rgba(251,250,248,.10); box-shadow: none; }
-html.dark-mode .nf-card-title { color: #eae7e1; }
-html.dark-mode .nf-card-title svg { color: #a8a49e; }
-html.dark-mode .nf-popmenu { background: linear-gradient(180deg, #37342e 0%, #302d28 100%); border-color: rgba(251,250,248,.08); }
-html.dark-mode .nf-popmenu-item { color: #eae7e1; }
-html.dark-mode .nf-popmenu-item:active { background: #3e3b35; }
-html.dark-mode .nf-react-picker { background: linear-gradient(180deg, #37342e 0%, #302d28 100%); border-color: rgba(251,250,248,.08); }
-html.dark-mode .nf-react-chip { background: #302d28; box-shadow: 0 1px 5px rgba(0,0,0,.35), inset 0 0 0 1px #3e3b35; }
-html.dark-mode .nf-react-chip.oth { box-shadow: 0 1px 5px rgba(0,0,0,.35), inset 0 0 0 1px rgba(176,170,160,.38); }
-html.dark-mode .nf-react-chip.me { box-shadow: 0 1px 5px rgba(0,0,0,.35), inset 0 0 0 1px rgba(140,136,128,.5); }
-html.dark-mode .nf-react-chip.both { box-shadow: 0 1px 5px rgba(0,0,0,.35), inset 0 0 0 1px rgba(176,170,160,.38), 3px 0 0 rgba(140,136,128,.5); }
+/* ==================== 12. 深色模式适配 ==================== */
+html.dark-mode .nf-modal { background: linear-gradient(180deg, #31353d 0%, #2b2f36 100%); border-color: rgba(255,255,255,.07); }
+html.dark-mode .nf-modal-title { color: #e8ecf2; }
+html.dark-mode .nf-modal-sub { color: #8a93a3; }
+html.dark-mode .nf-btn { background: #3a4150; color: #c2cbd8; }
+html.dark-mode .nf-btn.primary { background: #5f9ef0; color: #fff; }
+html.dark-mode .nf-modal input[type="text"] { background: #22262c; border-color: #3a4150; color: #e8ecf2; }
+html.dark-mode .nf-card { background: linear-gradient(180deg, #31353d 0%, #2b2f36 100%); border-color: rgba(255,255,255,.06); }
+html.dark-mode .nf-card-title { color: #e8ecf2; }
+html.dark-mode .nf-popmenu { background: linear-gradient(180deg, #31353d 0%, #2b2f36 100%); border-color: rgba(255,255,255,.07); }
+html.dark-mode .nf-popmenu-item { color: #e8ecf2; }
+html.dark-mode .nf-react-picker { background: linear-gradient(180deg, #31353d 0%, #2b2f36 100%); border-color: rgba(255,255,255,.07); }
+html.dark-mode .nf-react-chip { background: #2b2f36; box-shadow: 0 1px 5px rgba(0,0,0,.4), inset 0 0 0 1px #3a4150; }
 html.dark-mode .nf-emoji-side,
-html.dark-mode .nf-emoji-chip { background: #3e3b35; color: #c6c2bb; }
-html.dark-mode .nf-emoji-side-b.on { background: #302d28; color: #eae7e1; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
-html.dark-mode .nf-emoji-chip.on { background: #6f6b65; color: #f5f4f1; }
-html.dark-mode .nf-emoji-chip.on i { color: rgba(245,244,241,.85); }
-html.dark-mode .nf-pet-bubble { background: linear-gradient(180deg, #37342e 0%, #302d28 100%); border-color: rgba(251,250,248,.08); color: #eae7e1; }
-html.dark-mode .nf-pet-bubble::after { background: #302d28; }
-html.dark-mode .nf-truth-q { background: #282622; color: #eae7e1; }
-html.dark-mode .nf-truth-a { background: #2e2c27; color: #eae7e1; }
-html.dark-mode .nf-tb-item { background: #282622; color: #eae7e1; }
-html.dark-mode .nf-remark-chip { background: #3e3b35; color: #c6c2bb; }
-html.dark-mode .nf-remark-chip:active { background: #45423c; }
-html.dark-mode .nf-av-couple-item { background: #282622; }
-html.dark-mode .nf-av-tip { background: #282622; color: #9c9892; }
+html.dark-mode .nf-emoji-chip { background: #3a4150; color: #c2cbd8; }
+html.dark-mode .nf-emoji-chip.on { background: #5f9ef0; color: #fff; }
+html.dark-mode .nf-pet-bubble { background: linear-gradient(180deg, #31353d 0%, #2b2f36 100%); border-color: rgba(255,255,255,.07); color: #e8ecf2; }
+html.dark-mode .nf-pet-bubble::after { background: #2b2f36; }
+html.dark-mode .nf-truth-q { background: #22262c; color: #e8ecf2; }
+html.dark-mode .nf-truth-a { background: #1f2b22; color: #e8ecf2; }
+html.dark-mode .nf-tb-item { background: #22262c; color: #e8ecf2; }
+html.dark-mode .nf-remark-chip { background: #3a4150; color: #c2cbd8; }
+html.dark-mode .nf-av-couple-item { background: #22262c; }
+html.dark-mode .nf-av-tip { background: #22262c; color: #8a93a3; }
 /* 深色模式：真心话选项 */
-html.dark-mode .nf-truth-card input[type="text"] { background: #282622; border-color: #3e3b35; color: #eae7e1; }
-html.dark-mode .nf-truth-opttoggle { border-color: #3e3b35; color: #b3afa9; }
-html.dark-mode .nf-truth-opttoggle:active { background: #282622; }
-html.dark-mode .nf-truth-optitem input { background: #282622; border-color: #3e3b35; color: #eae7e1; }
-html.dark-mode .nf-truth-optitem input:focus { border-color: #8c8880; }
-html.dark-mode .nf-truth-optitem button { background: #3e3b35; color: #9c9892; }
-html.dark-mode .nf-truth-optitem button:active { background: #45423c; color: #d99a90; }
-html.dark-mode .nf-truth-addopt { background: #3e3b35; color: #c6c2bb; }
-html.dark-mode .nf-truth-addopt:active { background: #45423c; }
-html.dark-mode .nf-truth-opt { border-color: #45423c; background: #2e2c27; color: #c6c2bb; }
-html.dark-mode .nf-truth-opt:active { background: #35332d; }
-html.dark-mode .nf-truth-optchips span { background: #3e3b35; color: #c6c2bb; }
-html.dark-mode .nf-truth-optchips span.picked { background: #45423c; color: #eae7e1; }
-html.dark-mode .nf-tb-opts i { background: #2e2c27; color: #b3afa9; }
-html.dark-mode .nf-truth-rule { color: #9c9892; }
+html.dark-mode .nf-truth-card input[type="text"] { background: #22262c; border-color: #3a4150; color: #e8ecf2; }
+html.dark-mode .nf-truth-opttoggle { border-color: #3a4150; color: #7ab3f7; }
+html.dark-mode .nf-truth-opttoggle:active { background: #22262c; }
+html.dark-mode .nf-truth-optitem input { background: #22262c; border-color: #3a4150; color: #e8ecf2; }
+html.dark-mode .nf-truth-optitem input:focus { border-color: #5f9ef0; }
+html.dark-mode .nf-truth-optitem button { background: #3a4150; color: #8a93a3; }
+html.dark-mode .nf-truth-optitem button:active { background: #465063; color: #ff8f86; }
+html.dark-mode .nf-truth-addopt { background: #3a4150; color: #c2cbd8; }
+html.dark-mode .nf-truth-addopt:active { background: #465063; }
+html.dark-mode .nf-truth-opt { border-color: #34486a; background: #232c3a; color: #9cc4f5; }
+html.dark-mode .nf-truth-opt:active { background: #2a3850; }
+html.dark-mode .nf-truth-optchips span { background: #3a4150; color: #c2cbd8; }
+html.dark-mode .nf-truth-optchips span.picked { background: #24371f; color: #7fd394; }
+html.dark-mode .nf-tb-opts i { background: #232c3a; color: #9cc4f5; }
+html.dark-mode .nf-truth-rule { color: #8a93a3; }
 
 /* ==================== 13. 性能优化 ==================== */
 /* 聊天消息行按需渲染：长聊天记录只渲染可视区域附近的消息，滚动到哪渲染到哪
@@ -1033,24 +1019,23 @@ html.dark-mode .nf-truth-rule { color: #9c9892; }
     position: fixed;
     inset: 0;
     z-index: 999999;          /* 压过锁屏(9999)与所有弹窗，确保一定能看到 */
-    background: rgba(64, 58, 51, .34);
-    backdrop-filter: blur(4px) saturate(110%);
-    -webkit-backdrop-filter: blur(4px) saturate(110%);
+    background: rgba(20, 26, 38, .48);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px 14px;   /* 模态框四周留白，不拥挤 */
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
 }
 .nf-upd-box {
     width: 340px;
     max-width: 92vw;
     max-height: 80vh;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f7f5f2 100%);
-    border: 1px solid var(--cream-line, rgba(122, 115, 105, .10));
-    border-radius: var(--cream-radius-lg, 24px);
-    padding: 22px 20px 18px;   /* 间距增加 */
-    box-shadow: var(--soft-modal-shadow, 0 0 0 1px rgba(122,115,105,.06), 0 2px 8px rgba(97,88,76,.03), 0 16px 60px rgba(97,88,76,.10));
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+    border: 1px solid rgba(255, 255, 255, .75);
+    border-radius: 20px;
+    padding: 18px 16px 14px;
+    box-shadow: 0 0 0 1px rgba(40, 60, 100, .05), 0 4px 14px rgba(40, 60, 100, .08), 0 24px 56px rgba(40, 60, 100, .20);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -1060,36 +1045,35 @@ html.dark-mode .nf-truth-rule { color: #9c9892; }
     text-align: center;
     font-size: 16px;
     font-weight: 600;
-    color: #4a4741;
-    margin-bottom: 12px;
+    color: #3d4a5d;
+    margin-bottom: 10px;
     flex-shrink: 0;
-    letter-spacing: .3px;
 }
 .nf-upd-list {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     font-size: 13px;
-    color: #6f6b65;
+    color: #5a6b85;
     line-height: 1.7;
 }
-.nf-upd-list p { margin: 0 0 12px; }
-.nf-upd-list b { color: #4a4741; }
+.nf-upd-list p { margin: 0 0 10px; }
+.nf-upd-list b { color: #3d4a5d; }
 .nf-upd-btn {
-    margin-top: 14px;
-    padding: 11px 0;
+    margin-top: 10px;
+    padding: 10px 0;
     border: none;
     border-radius: 999px;
-    background: var(--soft-black-btn, #4a4640);
-    color: #fbfaf8;
+    background: #5f9ef0;
+    color: #fff;
     font-size: 14px;
     font-family: inherit;
     cursor: pointer;
     flex-shrink: 0;
 }
 .nf-upd-btn:active { transform: scale(.97); }
-.nf-upd-btn:disabled { background: #d8d5d0; color: #fbfaf8; cursor: default; }
-html.dark-mode .nf-upd-box { background: linear-gradient(180deg, #37342e 0%, #302d28 100%); border-color: rgba(251,250,248,.08); }
-html.dark-mode .nf-upd-title { color: #eae7e1; }
-html.dark-mode .nf-upd-list { color: #c6c2bb; }
-html.dark-mode .nf-upd-list b { color: #eae7e1; }
+.nf-upd-btn:disabled { background: #c6d4e6; color: #fff; cursor: default; }
+html.dark-mode .nf-upd-box { background: linear-gradient(180deg, #31353d 0%, #2b2f36 100%); border-color: rgba(255,255,255,.07); }
+html.dark-mode .nf-upd-title { color: #e8ecf2; }
+html.dark-mode .nf-upd-list { color: #c2cbd8; }
+html.dark-mode .nf-upd-list b { color: #e8ecf2; }
